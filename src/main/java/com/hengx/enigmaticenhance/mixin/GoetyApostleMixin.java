@@ -47,7 +47,7 @@ public class GoetyApostleMixin {
                                 victim.die(source);
                                 // 2.11.9:它的 die() 只播动画不结算掉落 —— 这里强制补一次掉落结算
                                 try {
-                                    ((LivingEntityDropInvoker) victim).enigmaticenhance$dropAllDeathLoot(source);
+                                    com.hengx.enigmaticenhance.DropHelper.dropAllDeathLoot(victim, source);
                                 }
                                 catch (RuntimeException | LinkageError ignored) {
                                     // 忽略

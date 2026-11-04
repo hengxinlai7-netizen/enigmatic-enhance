@@ -40,7 +40,6 @@
           "BloodbathHealthLockMixin",
     "TrueDamageBypassMixin",
     "GoetyNamelessOneMixin",
-    "LivingEntityDropInvoker",
     "BeaconApplyEffectsMixin",
     "LegendaryPaladinMixin",
     "GoetyVizierMixin",
