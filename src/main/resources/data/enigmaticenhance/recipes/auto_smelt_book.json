@@ -1,0 +1,39 @@
+{
+    "type": "minecraft:crafting_shapeless",
+    "category": "misc",
+    "group": "enigmaticenhance_auto_smelt",
+    "ingredients": [
+        {
+            "item": "minecraft:book"
+        },
+        {
+            "item": "minecraft:coal_block"
+        },
+        {
+            "item": "minecraft:coal_block"
+        },
+        {
+            "item": "minecraft:coal_block"
+        },
+        {
+            "item": "minecraft:coal_block"
+        },
+        {
+            "item": "minecraft:coal_block"
+        },
+        {
+            "item": "minecraft:coal_block"
+        },
+        {
+            "item": "minecraft:coal_block"
+        },
+        {
+            "item": "minecraft:coal_block"
+        }
+    ],
+    "result": {
+        "item": "minecraft:enchanted_book",
+        "count": 1,
+        "nbt": "{StoredEnchantments:[{id:\"enigmaticenhance:auto_smelt\",lvl:1s}]}"
+    }
+}

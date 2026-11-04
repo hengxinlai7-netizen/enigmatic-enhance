@@ -1,0 +1,6 @@
+{
+  "parent": "minecraft:item/generated",
+  "textures": {
+    "layer0": "enigmaticenhance:item/sea_of_consciousness"
+  }
+}

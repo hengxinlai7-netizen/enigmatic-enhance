@@ -1,0 +1,31 @@
+{
+    "_comment": [
+        "enigmaticenhance:auto_smelt (中文: 自动熔炼) —— 声明式附魔定义。",
+        "1.20.1 的附魔是代码注册的(没有数据驱动附魔),本文件是同一份字段的机器可读说明 + 1.21+ 的前向兼容描述;",
+        "1.20.1 运行期不会读取它(未知的 data/<ns>/ 子目录被忽略),真正生效的是 AutoSmeltEnchantment.java。",
+        "字段映射: max_level -> getMaxLevel(); supported_items/primary_items -> 1.2.5a 起只认镐/斧/锹(AutoSmeltEnchantment#isAllowedTool,排除锄);",
+        "weight 5 -> Rarity.UNCOMMON 的 weight; anvil_cost 2 / min_cost / max_cost -> getMinCost()/getMaxCost()(1.20.1 没有 getAnvilCost);",
+        "slots -> new EquipmentSlot[]{MAINHAND}; isDiscoverable=true + canApplyAtEnchantingTable=true => 可进附魔台随机池(1.2.2b 起);",
+        "获取途径 = 附魔台 / 铁砧 / 村民 / 战利品附魔书(AutoSmeltLoot:废弃矿井/地牢/要塞图书馆/远古城市),isTradeable=true;",
+        "旧行为回退开关: 配置 autoSmelt.lootOnlyAcquisition=true 时三项全部变回 false(只有战利品)。"
+    ],
+    "description": {
+        "translate": "enchantment.enigmaticenhance.auto_smelt"
+    },
+    "supported_items": "#minecraft:enchantable/mining",
+    "primary_items": "#minecraft:enchantable/mining",
+    "weight": 5,
+    "max_level": 1,
+    "min_cost": {
+        "base": 1,
+        "per_level_above_first": 0
+    },
+    "max_cost": {
+        "base": 41,
+        "per_level_above_first": 0
+    },
+    "anvil_cost": 2,
+    "slots": [
+        "mainhand"
+    ]
+}

@@ -1,0 +1,21 @@
+{
+    "type": "minecraft:crafting_shapeless",
+    "conditions": [
+        {
+            "type": "forge:mod_loaded",
+            "modid": "enigmaticaddons"
+        }
+    ],
+    "ingredients": [
+        {
+            "item": "minecraft:glass_bottle"
+        },
+        {
+            "item": "enigmaticaddons:earth_heart_fragment"
+        }
+    ],
+    "result": {
+        "item": "enigmaticenhance:earth_bottle",
+        "count": 1
+    }
+}

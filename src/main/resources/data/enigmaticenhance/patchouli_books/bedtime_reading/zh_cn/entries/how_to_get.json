@@ -1,0 +1,12 @@
+{
+    "name": "获取方式",
+    "category": "basics",
+    "icon": "enigmaticenhance:bedtime_reading",
+    "sortnum": 3,
+    "pages": [
+        {
+            "type": "text",
+            "text": "一本书 + 纯净之心，无序合成。"
+        }
+    ]
+}

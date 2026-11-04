@@ -1,0 +1,21 @@
+{
+  "textures": {
+    "particle": "enigmaticenhance:block/war_banner",
+    "flag": "enigmaticenhance:block/war_banner",
+    "pole": "enigmaticenhance:block/war_banner_pole"
+  },
+  "elements": [
+    { "from": [7,0,7], "to": [9,31,9], "faces": {
+        "north": {"texture":"#pole"}, "south": {"texture":"#pole"},
+        "east": {"texture":"#pole"}, "west": {"texture":"#pole"},
+        "up": {"texture":"#pole"}, "down": {"texture":"#pole"} } },
+    { "from": [0,29,7], "to": [16,31,9], "faces": {
+        "north": {"texture":"#pole"}, "south": {"texture":"#pole"},
+        "east": {"texture":"#pole"}, "west": {"texture":"#pole"},
+        "up": {"texture":"#pole"}, "down": {"texture":"#pole"} } },
+    { "from": [1,1,9], "to": [15,29,10], "faces": {
+        "north": {"uv":[0,0,16,16],"texture":"#flag"}, "south": {"uv":[16,16,0,0],"texture":"#flag"},
+        "east": {"uv":[0,0,1,16],"texture":"#flag"}, "west": {"uv":[15,0,16,16],"texture":"#flag"},
+        "up": {"uv":[0,0,16,1],"texture":"#flag"}, "down": {"uv":[0,15,16,16],"texture":"#flag"} } }
+  ]
+}

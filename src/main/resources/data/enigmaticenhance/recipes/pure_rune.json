@@ -1,0 +1,20 @@
+{
+    "type": "minecraft:crafting_shaped",
+    "pattern": [
+        " S ",
+        "SIS",
+        " S "
+    ],
+    "key": {
+        "S": {
+            "item": "minecraft:stone"
+        },
+        "I": {
+            "item": "enigmaticaddons:ichor_droplet"
+        }
+    },
+    "result": {
+        "item": "enigmaticenhance:pure_rune",
+        "count": 4
+    }
+}

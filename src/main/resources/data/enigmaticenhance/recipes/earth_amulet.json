@@ -1,0 +1,23 @@
+{
+    "type": "minecraft:crafting_shapeless",
+    "category": "equipment",
+    "group": "enigmaticenhance_earth_amulet",
+    "ingredients": [
+        {
+            "item": "enigmaticlegacy:earth_heart"
+        },
+        {
+            "item": "minecraft:gold_nugget"
+        },
+        {
+            "item": "minecraft:gold_nugget"
+        },
+        {
+            "item": "minecraft:gold_nugget"
+        }
+    ],
+    "result": {
+        "item": "enigmaticenhance:earth_amulet",
+        "count": 1
+    }
+}

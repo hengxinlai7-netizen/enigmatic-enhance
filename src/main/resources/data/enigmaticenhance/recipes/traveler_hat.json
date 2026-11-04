@@ -1,0 +1,22 @@
+{
+    "type": "enigmaticenhance:heart_shaped",
+    "category": "equipment",
+    "heart": "any",
+    "_comment": "旅行家帽子:任意形态的大地之心都可以(干净 / 受污染 / 深渊侵蚀)",
+    "pattern": [
+        " L ",
+        "LHL",
+        "L L"
+    ],
+    "key": {
+        "L": {
+            "item": "minecraft:leather"
+        },
+        "H": {
+            "item": "enigmaticlegacy:earth_heart"
+        }
+    },
+    "result": {
+        "item": "enigmaticenhance:traveler_hat"
+    }
+}

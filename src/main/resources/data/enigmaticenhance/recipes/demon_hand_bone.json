@@ -1,0 +1,25 @@
+{
+    "type": "enigmaticenhance:heart_shaped",
+    "category": "equipment",
+    "heart": "abyssal",
+    "_comment": "恶魔的手骨:必须用深渊侵蚀的大地之心",
+    "pattern": [
+        " EB",
+        "EHE",
+        "BE "
+    ],
+    "key": {
+        "E": {
+            "item": "enigmaticlegacy:evil_essence"
+        },
+        "B": {
+            "item": "minecraft:bone"
+        },
+        "H": {
+            "item": "enigmaticlegacy:earth_heart"
+        }
+    },
+    "result": {
+        "item": "enigmaticenhance:demon_hand_bone"
+    }
+}

@@ -1,0 +1,12 @@
+{
+    "name": "这是什么",
+    "category": "basics",
+    "icon": "enigmaticenhance:bedtime_reading",
+    "sortnum": 0,
+    "pages": [
+        {
+            "type": "text",
+            "text": "This is a plain bound book; open it and you read old notes about resting."
+        }
+    ]
+}

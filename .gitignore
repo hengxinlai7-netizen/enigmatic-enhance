@@ -1,0 +1,22 @@
+.gradle/
+build/
+run/
+out/
+.idea/
+*.iml
+.vscode/
+bin/
+mcmodsrepo/
+
+# 第三方依赖 jar:体积近 200 MB,不进仓库
+libs/
+
+# 日志/崩溃
+logs/
+*.log
+hs_err_pid*
+
+# 系统
+.DS_Store
+Thumbs.db
+desktop.ini

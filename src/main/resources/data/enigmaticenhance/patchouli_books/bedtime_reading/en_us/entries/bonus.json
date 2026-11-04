@@ -1,0 +1,12 @@
+{
+    "name": "睡前读物的加成",
+    "category": "basics",
+    "icon": "enigmaticenhance:bedtime_reading",
+    "sortnum": 2,
+    "pages": [
+        {
+            "type": "text",
+            "text": "While wearing the Ring of Seven Curses, keep this book in the Antique Bag or in hand: insomnia is lifted."
+        }
+    ]
+}

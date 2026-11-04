@@ -1,0 +1,12 @@
+{
+    "name": "睡前读物的加成",
+    "category": "basics",
+    "icon": "enigmaticenhance:bedtime_reading",
+    "sortnum": 2,
+    "pages": [
+        {
+            "type": "text",
+            "text": "佩戴七咒之戒时，把本书放进古旧书袋或持在手中：第七重咒（失眠）失效，睡眠可正常完成。"
+        }
+    ]
+}

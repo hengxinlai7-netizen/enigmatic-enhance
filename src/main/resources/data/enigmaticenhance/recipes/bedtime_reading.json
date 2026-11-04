@@ -1,0 +1,15 @@
+{
+    "type": "minecraft:crafting_shapeless",
+    "ingredients": [
+        {
+            "item": "minecraft:book"
+        },
+        {
+            "item": "enigmaticaddons:pure_heart"
+        }
+    ],
+    "result": {
+        "item": "enigmaticenhance:bedtime_reading",
+        "count": 1
+    }
+}

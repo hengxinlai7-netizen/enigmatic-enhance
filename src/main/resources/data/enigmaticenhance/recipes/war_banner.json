@@ -1,0 +1,8 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "ingredients": [
+    { "tag": "minecraft:banners" },
+    { "item": "enigmaticenhance:war_fog" }
+  ],
+  "result": { "item": "enigmaticenhance:war_banner", "count": 1 }
+}

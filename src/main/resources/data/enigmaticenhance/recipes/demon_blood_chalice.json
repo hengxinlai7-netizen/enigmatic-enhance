@@ -1,0 +1,28 @@
+{
+    "type": "enigmaticenhance:heart_shaped",
+    "category": "equipment",
+    "heart": "abyssal",
+    "_comment": "恶魔的血杯:必须用深渊侵蚀的大地之心",
+    "pattern": [
+        " F ",
+        "GHG",
+        "EGE"
+    ],
+    "key": {
+        "F": {
+            "item": "minecraft:crimson_fungus"
+        },
+        "G": {
+            "item": "minecraft:glass"
+        },
+        "E": {
+            "item": "enigmaticlegacy:evil_essence"
+        },
+        "H": {
+            "item": "enigmaticlegacy:earth_heart"
+        }
+    },
+    "result": {
+        "item": "enigmaticenhance:demon_blood_chalice"
+    }
+}

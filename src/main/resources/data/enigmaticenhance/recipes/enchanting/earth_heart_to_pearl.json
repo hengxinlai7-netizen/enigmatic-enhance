@@ -1,0 +1,31 @@
+{
+    "type": "apotheosis:enchanting",
+    "conditions": [
+        {
+            "type": "apotheosis:module",
+            "module": "enchantment"
+        },
+        {
+            "type": "forge:mod_loaded",
+            "modid": "enigmaticlegacy"
+        }
+    ],
+    "input": {
+        "item": "enigmaticlegacy:earth_heart"
+    },
+    "requirements": {
+        "eterna": 15,
+        "quanta": 0,
+        "arcana": 0
+    },
+    "max_requirements": {
+        "eterna": -1,
+        "quanta": -1,
+        "arcana": -1
+    },
+    "display_level": 15,
+    "result": {
+        "item": "enigmaticlegacy:enchanter_pearl",
+        "count": 1
+    }
+}

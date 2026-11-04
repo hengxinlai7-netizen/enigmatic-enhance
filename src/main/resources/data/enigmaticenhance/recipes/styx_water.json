@@ -1,0 +1,16 @@
+{
+    "type": "minecraft:crafting_shapeless",
+    "category": "misc",
+    "ingredients": [
+        {
+            "item": "enigmaticenhance:earth_bottle"
+        },
+        {
+            "item": "minecraft:totem_of_undying"
+        }
+    ],
+    "result": {
+        "item": "enigmaticenhance:styx_water",
+        "count": 1
+    }
+}

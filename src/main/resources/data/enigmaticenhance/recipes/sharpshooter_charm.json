@@ -1,0 +1,16 @@
+{
+    "type": "minecraft:crafting_shaped",
+    "pattern": [
+        "FAF",
+        "IXI",
+        " S "
+    ],
+    "key": {
+        "F": { "item": "minecraft:feather" },
+        "A": { "item": "minecraft:arrow" },
+        "I": { "item": "minecraft:iron_ingot" },
+        "X": { "item": "minecraft:gold_ingot" },
+        "S": { "item": "minecraft:string" }
+    },
+    "result": { "item": "enigmaticenhance:sharpshooter_charm", "count": 1 }
+}

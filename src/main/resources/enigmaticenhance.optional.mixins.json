@@ -1,0 +1,21 @@
+{
+    "required": false,
+    "minVersion": "0.8.5",
+    "package": "com.hengx.enigmaticenhance.mixin",
+    "compatibilityLevel": "JAVA_17",
+    "refmap": "enigmaticenhance.refmap.json",
+    "mixins": [
+        "AncientReforgeMixin",
+        "CursedShapedRecipeTaintMixin",
+        "EnigmaticEventHandlerSleepMixin",
+        "LivingEntityDemonSetMixin",
+        "LivingEntityEffectSealMixin",
+        "MobEffectInstanceSealMixin",
+        "MobEffectSealMixin",
+        "SuperpositionBloodbathMixin",
+        "SuperpositionCurseMixin"
+    ],
+    "injectors": {
+        "defaultRequire": 0
+    }
+}

@@ -1,0 +1,12 @@
+{
+    "name": "睡前读物",
+    "landing_text": "一本记着安眠旧事的书。$(br2)佩戴七咒之戒的人夜里难以入眠，而这本书能让第七重咒安静下来。",
+    "use_blocky_font": false,
+    "i18n": true,
+    "creative_tab": "tools_and_utilities",
+    "book_texture": "patchouli:textures/gui/book_purple.png",
+    "model": "enigmaticenhance:bedtime_reading",
+    "text_color": "404040",
+    "header_color": "404040",
+    "use_resource_pack": true
+}

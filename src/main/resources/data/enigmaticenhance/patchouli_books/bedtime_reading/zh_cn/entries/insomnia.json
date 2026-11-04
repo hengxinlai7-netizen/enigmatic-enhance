@@ -1,0 +1,12 @@
+{
+    "name": "七咒之戒与失眠",
+    "category": "basics",
+    "icon": "enigmaticenhance:bedtime_reading",
+    "sortnum": 1,
+    "pages": [
+        {
+            "type": "text",
+            "text": "七咒之戒的第七重咒会让佩戴者无法入睡。佩戴本书可免除这一重咒。"
+        }
+    ]
+}

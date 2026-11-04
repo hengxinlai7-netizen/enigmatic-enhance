@@ -1,0 +1,11 @@
+{
+    "message_id": "enigmaticenhance.true_damage",
+    "exhaustion": 0.0,
+    "scaling": "never",
+    "bypasses_armor": true,
+    "bypasses_invulnerability": true,
+    "bypasses_magic": true,
+    "bypasses_effects": true,
+    "bypasses_enchantments": true,
+    "bypasses_shield": true
+}

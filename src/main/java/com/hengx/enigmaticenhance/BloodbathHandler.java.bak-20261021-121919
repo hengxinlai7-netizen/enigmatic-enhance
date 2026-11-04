@@ -1,0 +1,157 @@
+package com.hengx.enigmaticenhance;
+
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.item.Item;
+import net.minecraft.world.item.ItemStack;
+import net.minecraftforge.event.TickEvent;
+import net.minecraftforge.eventbus.api.SubscribeEvent;
+import net.minecraftforge.fml.common.Mod;
+
+/**
+ * 「血战沙场之证」({@code enigmaticlegacy:berserk_charm},类 {@code com.aizistral.enigmaticlegacy.items.BerserkEmblem})的
+ * <b>额外效果</b>:佩戴时把**当前生命值**夹到不超过 {@code bloodbathLockValue}(默认 1)。
+ *
+ * <h2>锁血逻辑(与 wonder-enchant 里「命悬一线」({@code LastStandHandler})同一套做法)</h2>
+ * <ul>
+ * <li><b>只往下夹</b>:{@code if (health > lock) setHealth(lock);} —— 小于等于锁定值时**一个字节都不写**
+ *     (自检里用写入计数器断言"已经是 1 血时不再写");</li>
+ * <li><b>永远不写 0 或负数</b>:配置范围下限就是 0.5,运行时再 {@code Math.max(0.5F, ...)} 兜一次,
+ *     所以这个锁定本身绝不可能把玩家弄死(1 血 + 一次 ≥1 点伤害照样会死,那才是"血战沙场");</li>
+ * <li><b>不改 maxHealth</b>:只夹当前血量,不碰任何属性修饰符 —— 所以摘掉勋章 / 关掉开关后血量立刻能正常回复,
+ *     也不会污染其它模组对最大生命的读取;</li>
+ * <li>只在**服务端 + 每 tick 末尾**执行(客户端不写,避免不同步);玩家已死({@code !isAlive()})时不动。</li>
+ * </ul>
+ *
+ * <h2>与它原本作用的关系</h2>
+ * 它本来给"攻击伤害/攻击速度/移动速度/伤害抗性"四项加成,数值**乘以你当前损失的生命百分比**
+ * (本体 {@code BerserkEmblem#createAttributeMap} → {@code SuperpositionHandler.getMissingHealthPool})。
+ * 我们**没有改它的任何代码**:锁血只是让"损失的生命百分比"长期保持在接近 100%,于是它原本的加成自然拉满 ——
+ * 这是这两个效果叠加后的结果,而不是我们替它改了数值(自检里用"同一血量下开/关本功能,勋章自己的属性修饰符完全相同"来证明)。
+ *
+ * <h2>Ctrl+左键 开关</h2>
+ * 逐件、状态在物品 NBT {@value #NBT_LOCK_DISABLED} 上(<b>键不存在 = 开 = 默认行为</b>),
+ * 走 1.1.15 抽出来的通用 {@link ItemToggleHandler}(与万钧之护卷轴共用同一条网络通道与服务端校验)。
+ * 佩戴判定沿用项目既有方式:{@link Superposition#hasCurio}(反射到本体 {@code SuperpositionHandler.hasCurio});
+ * 物品在 `curios:charm` 槽里(本体 {@code data/curios/tags/items/charm.json} 收录了 `enigmaticlegacy:berserk_charm`)。
+ */
+@Mod.EventBusSubscriber(modid = EnigmaticEnhance.MODID, bus = Mod.EventBusSubscriber.Bus.FORGE)
+public final class BloodbathHandler {
+
+    /** 物品 NBT 键:true = 玩家用 Ctrl+左键 关掉了这个锁血;键不存在 = 开。 */
+    public static final String NBT_LOCK_DISABLED = "enigmaticenhance:BloodbathLockDisabled";
+
+    /** 锁血允许的最小值(绝不写 0/负数)。 */
+    public static final float MIN_LOCK_VALUE = 0.5F;
+
+    /** 自检用:真正执行过写入的次数(已经是锁定值时不写,计数不变)。 */
+    private static int healthWrites;
+
+    /** 1.1.15:交给通用的 Ctrl+左键 开关设施。 */
+    public static final ItemToggleHandler.Target TOGGLE_TARGET = new ItemToggleHandler.Target() {
+
+        @Override
+        public boolean matches(ItemStack stack) {
+            return isTargetCharm(stack);
+        }
+
+        @Override
+        public String nbtKey() {
+            return NBT_LOCK_DISABLED;
+        }
+
+        @Override
+        public String displayName() {
+            return "血战沙场之证·锁血";
+        }
+
+        @Override
+        public boolean toggleAllowed() {
+            return RingConfig.bloodbathAllowToggle();
+        }
+    };
+
+    private BloodbathHandler() {}
+
+    // ------------------------------------------------------------------ 目标判定 / NBT
+
+    public static boolean isTargetCharm(ItemStack stack) {
+        return stack != null && !stack.isEmpty() && RingConfig.isBerserkCharm(stack.getItem());
+    }
+
+    /** 该勋章是否被玩家关掉了锁血(键不存在 = 开)。 */
+    public static boolean isLockDisabled(ItemStack stack) {
+        return ItemToggleHandler.isDisabled(stack, NBT_LOCK_DISABLED);
+    }
+
+    public static void setLockDisabled(ItemStack stack, boolean disabled) {
+        ItemToggleHandler.setDisabled(stack, NBT_LOCK_DISABLED, disabled);
+    }
+
+    /** 切换锁血开关,返回切换后"锁血是否开启"。 */
+    public static boolean toggleLock(ItemStack stack) {
+        return ItemToggleHandler.toggle(TOGGLE_TARGET, stack);
+    }
+
+    public static int healthWrites() {
+        return healthWrites;
+    }
+
+    // ------------------------------------------------------------------ 生效条件 / 锁定值
+
+    /** 锁定到多少点生命值(配置下限 0.5,这里再兜一次)。 */
+    public static float lockValue() {
+        return Math.max(MIN_LOCK_VALUE, (float) RingConfig.bloodbathLockValue());
+    }
+
+    /** 完整生效条件:总开关 + 佩戴该勋章 + 该件的锁血没被关掉。 */
+    public static boolean lockActive(Player player) {
+        if (player == null || !RingConfig.bloodbathLockEnabled()) {
+            return false;
+        }
+        Item charm = RingConfig.berserkCharmItem();
+        if (charm == null || !Superposition.hasCurio(player, charm)) {
+            return false;
+        }
+        ItemStack worn = Superposition.getCurioStack(player, charm);
+        return worn.isEmpty() || !isLockDisabled(worn);
+    }
+
+    // ------------------------------------------------------------------ 锁血
+
+    @SubscribeEvent
+    public static void onPlayerTick(TickEvent.PlayerTickEvent event) {
+        if (event.phase != TickEvent.Phase.END || !(event.player instanceof ServerPlayer player)) {
+            return;
+        }
+        clampHealth(player);
+    }
+
+    /**
+     * 把当前生命值夹到不超过 {@link #lockValue()}。
+     * <b>只往下夹</b>:已经 ≤ 锁定值时一个字节都不写;永远不会写 0 或负数。
+     *
+     * @return true 表示这次真的写了值
+     */
+    public static boolean clampHealth(ServerPlayer player) {
+        if (player == null || !player.isAlive() || !lockActive(player)) {
+            return false;
+        }
+        float lock = lockValue();
+        float health = player.getHealth();
+        if (health > lock) {
+            player.setHealth(lock);
+            healthWrites++;
+            if (RingConfig.debugLog()) {
+                DebugLog.info("[血战沙场] 锁血:{} {} -> {}", player.getGameProfile().getName(), health, lock);
+            }
+            return true;
+        }
+        return false;
+    }
+
+    /** 自检用:清空写入计数。 */
+    public static void resetWrites() {
+        healthWrites = 0;
+    }
+}

@@ -1,0 +1,31 @@
+{
+    "type": "enigmaticenhance:heart_shaped",
+    "category": "equipment",
+    "heart": "abyssal",
+    "_comment": "恶魔契约:必须用深渊侵蚀的大地之心",
+    "pattern": [
+        "EHE",
+        "RDR",
+        "RTR"
+    ],
+    "key": {
+        "E": {
+            "item": "enigmaticlegacy:evil_essence"
+        },
+        "R": {
+            "item": "minecraft:redstone"
+        },
+        "D": {
+            "item": "enigmaticlegacy:darkest_scroll"
+        },
+        "T": {
+            "item": "enigmaticlegacy:twisted_heart"
+        },
+        "H": {
+            "item": "enigmaticlegacy:earth_heart"
+        }
+    },
+    "result": {
+        "item": "enigmaticenhance:demon_pact"
+    }
+}

@@ -1,0 +1,185 @@
+
+#神秘遗物增强:所有开关与数值都在这里。
+[enigmaticenhance]
+	#佩戴冒险者之证时仍可正常挖掘方块。关闭后恢复它原本"无法挖掘"的负面。
+	adventureCharmAllowMining = true
+	#佩戴绝望者证章时仍可正常挖掘方块。关闭后恢复原本"无法挖掘"的负面。
+	despairInsigniaAllowMining = true
+	#在上面两件饰品的说明里加一行"可正常挖掘方块"。默认开启。
+	miningTooltip = true
+	#死亡时把手里的冒险者之证变成绝望者证章(1 换 1)。默认开启。
+	convertOnDeath = true
+	#只算主手/副手(默认);关闭后背包与饰品栏里的第一枚也会一起转化。
+	convertHandsOnly = true
+	#转化时给玩家一条聊天提示。默认开启。
+	convertNotify = true
+	#是否在启动时打印一行加载提示(便于确认模组装上了)。默认关闭。
+	logStartupLine = false
+	#是否输出调试日志(排查问题时才需要打开)。默认关闭。
+	debugLog = false
+
+	#【全属性】:给所有属性加成的独立加成项。
+	[enigmaticenhance.omni]
+		#是否启用这个加成项。默认开启。
+		enabled = true
+		#是否让它对玩家生效。默认开启。
+		attachToPlayers = true
+
+	#救赎之戒:让它不会损坏、可与七咒之戒同戴。
+	[enigmaticenhance.ring]
+		#全属性加成;0.2 = 所有属性 +20%(默认)。
+		#Range: -10.0 ~ 10.0
+		omniBonus = 0.2
+		#让戒指永远不会损坏的总开关。关闭后下面两项也不再生效。
+		unbreakable = true
+		#让戒指永远不会损坏。开启后背叛值不再增长,也就不会触发"戒指破损"。
+		freezeBetrayal = true
+		#不在物品栏里显示那条假的耐久条。默认开启。
+		hideBetrayalBar = true
+		#允许和七咒之戒一起戴,并且不再受同戴的惩罚。默认开启。
+		allowWithCursedRing = true
+		#允许和破损之戒一起戴。默认开启。
+		allowWithBrokenRing = true
+		#重进游戏后把戒指留在饰品栏,而不是掉进背包(不会丢也不会复制)。默认开启。
+		keepRingOnRelogin = true
+
+	#卷轴相关:两本卷轴的同戴开关,以及万钧之护卷轴的改动。
+	[enigmaticenhance.scroll]
+		#是否放行造物主的恩赐与千咒卷轴同戴。默认关闭。
+		allowWithCursedScroll = false
+		#放行所需的物品(注册 id)。只在上一条开启时有用。
+		enablerItemId = "enigmaticlegacy:fabulous_scroll"
+		#万钧之护卷轴的总开关:开启后改为加攻击伤害、雷击可开关。默认开启。
+		scaleOfProtectionEnabled = true
+		#卷轴的雷击效果开关。关闭后命中不再累积电荷,也就不会落雷。默认开启。
+		scaleOfProtectionLightningEnabled = true
+		#每次命中累积电荷的概率(百分比)。100 = 每击都累积(默认)。
+		#Range: 0.0 ~ 100.0
+		scaleOfProtectionLightningChance = 100.0
+		#卷轴提供的攻击伤害加成(百分比)。100 = +100%(默认);0 = 不加成。
+		#Range: -1000.0 ~ 10000.0
+		scaleOfProtectionAttackDamagePercent = 100.0
+		#命中时把雷击电荷像横扫一样带给附近目标(不造成伤害)。默认开启。
+		scaleOfProtectionChargeSpread = true
+		#恢复卷轴原本的"横扫造成 100% 伤害"。默认关闭,改用攻击伤害加成。
+		scaleOfProtectionRestoreSweepBoost = false
+		#允许用 Ctrl+左键 逐件开关卷轴的雷击。默认开启。
+		scaleOfProtectionToggleEnabled = true
+
+	#古旧书袋:把袋子里的加成写进物品说明(只显示,不改任何效果)。
+	[enigmaticenhance.bagHud]
+		#是否显示这些说明。默认开启。
+		bagTooltipEnabled = true
+
+	#血战沙场之证:佩戴时把当前生命值锁定(只往下夹,不改它原本的作用)。
+	[enigmaticenhance.bloodbath]
+		#是否启用锁血。只往下夹、不会把血量写成 0,摘下后立刻恢复。默认开启。
+		bloodbathLockEnabled = true
+		#允许用 Ctrl+左键 逐件开关锁血。默认开启。
+		bloodbathAllowToggle = true
+		#锁定到多少点生命值。默认 1,最低 0.5。
+		#Range: 0.5 ~ 1024.0
+		bloodbathLockValue = 1.0
+
+	#七咒之戒:修正第四重咒的伤害削减(不改那三本书本身)。
+	[enigmaticenhance.cursedRing]
+		#是否修正:戴着七咒之戒、身上带着古旧书袋、袋里有倒转之启/恩惠之典/无止之言时生效。默认开启。
+		fourthCurseFixEnabled = true
+		#修正后仍保留的惩罚百分比。0 = 完全不削减(默认);100 = 等于不修正。
+		#Range: 0.0 ~ 100.0
+		fourthCurseFixResidualPercent = 0.0
+
+	#失落引擎:拦下它的惩罚雷击。
+	[enigmaticenhance.engine]
+		#佩戴时取消附近的惩罚雷击(不会被点燃、不会掉血、物品不会被清)。默认开启。
+		disableLightningItemClear = true
+
+	#无止暴食之证(神秘佳肴):饱食度锁定与自动回血。
+	[enigmaticenhance.gluttony]
+		#是否启用佩戴效果。默认开启。
+		enabled = true
+		#佩戴时强制保持的饱食度。默认 0(饥饿条常空)。
+		#Range: 0 ~ 20
+		lockedFoodLevel = 0
+		#佩戴时强制保持的饱和度。默认 20(消耗只扣饱和度)。
+		#Range: 0.0 ~ 20.0
+		lockedSaturation = 20.0
+		#每多少游戏刻回一次血。默认 10 刻(约 0.5 秒)。
+		#Range: 1 ~ 200
+		healIntervalTicks = 10
+		#每次回血恢复多少生命。默认 1 点。
+		#Range: 0.0 ~ 20.0
+		healAmount = 1.0
+
+	#附魔师的珍珠:在神化附魔台与重铸台(神化/远古)上同样生效。
+	[enigmaticenhance.pearl]
+		#神化附魔台:不需要青金石,并额外多掷一次附魔。默认开启。
+		fixEnchantingTable = true
+		#神化/远古重铸台:不消耗新生符石。默认开启。
+		freeReforge = true
+
+	#书籍:在物品栏里用 Ctrl+左键 禁止/恢复翻阅。
+	[enigmaticenhance.books]
+		#总开关。关闭后不能再禁止翻阅,已经禁止的也会恢复。默认开启。
+		enabled = true
+		#允许用 Ctrl+左键 切换。关闭后已禁止的书仍不能翻阅,但不能再改。默认开启。
+		toggleEnabled = true
+
+	#自动熔炼:挖到的掉落先按普通熔炉烧一遍再掉出来(新附魔)。
+	[enigmaticenhance.autoSmelt]
+		#总开关。关闭后附魔还在,但不再替换任何掉落。默认开启。
+		enabled = true
+		#按住潜行键时,这次挖掘不熔炼。默认开启。
+		disabledWhileSneaking = true
+		#是否把附魔书加进一些原版箱子的战利品。默认开启。
+		lootEnabled = true
+		#和奇妙附魔的同类附魔同时存在时让位给对方,保证只烧一次。默认开启。
+		yieldToWonderenchant = true
+		#是否退回"只有战利品附魔书才拿得到"的旧行为。默认关闭 = 附魔台/铁砧/村民也能拿到。
+		lootOnlyAcquisition = false
+
+	#恶魔契约:佩戴者受伤时,这次伤害的数值被改成当前生命值。
+	[enigmaticenhance.demonPact]
+		#开启(默认)= 任何伤害都会当场致死;关闭 = 只把伤害上限压到当前生命值。
+		lethal = true
+
+	#旅行家帽子:移动速度、生命上限、攻击力三项加成。
+	[enigmaticenhance.travelerHat]
+		#速度加成方式:PERCENT(默认)= 按比例 +50%;FLAT = 直接在原速度上加 0.5。
+		speedMode = "PERCENT"
+		#速度加成的数值(默认 0.5,含义由上一项决定)。
+		#Range: 0.0 ~ 100.0
+		speedValue = 0.5
+		#每探索一个群系增加多少生命上限。默认 2。
+		#Range: 0.0 ~ 1024.0
+		healthPerBiome = 2.0
+		#每去一个维度增加多少攻击力。默认 2。
+		#Range: 0.0 ~ 1024.0
+		attackPerDimension = 2.0
+		#群系最多算多少个。默认 256。
+		#Range: 0 ~ 4096
+		maxBiomes = 256
+		#维度最多算多少个。默认 32。
+		#Range: 0 ~ 4096
+		maxDimensions = 32
+
+	#恶魔的手骨:三件套共鸣里的禁疗时长。
+	[enigmaticenhance.demonBone]
+		#被手骨命中过的目标多少秒内不能回血(三件套时生效)。默认 5 秒,0 = 关闭。
+		#Range: 0 ~ 60
+		healBlockSeconds = 5
+
+	#睡前读物:修正七咒之戒的第七重咒(失眠)。
+	[enigmaticenhance.bedtimeReading]
+		#书在古旧书袋里或拿在手中时,第七重咒不再打断睡眠。默认开启。
+		fixSeventhCurse = true
+
+	#深渊侵蚀的大地之心:身上带着深渊之心时,大地之心会被侵蚀。
+	[enigmaticenhance.abyssalEarthHeart]
+		#是否启用这种形态的转化。默认开启。
+		enabled = true
+		#自动把"用深渊之心做出来的东西"也算作来源(按已加载的配方推导)。默认开启。
+		autoDeriveTriggers = true
+		#额外追加的来源物品(填注册名,例如 enigmaticlegacy:desolation_ring)。留空即可。
+		extraTriggerItems = []
+

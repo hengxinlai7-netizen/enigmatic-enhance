@@ -1,0 +1,12 @@
+{
+    "name": "这是什么",
+    "category": "basics",
+    "icon": "enigmaticenhance:bedtime_reading",
+    "sortnum": 0,
+    "pages": [
+        {
+            "type": "text",
+            "text": "一本装帧朴素的书，翻开就能读到关于安眠的旧事。"
+        }
+    ]
+}
