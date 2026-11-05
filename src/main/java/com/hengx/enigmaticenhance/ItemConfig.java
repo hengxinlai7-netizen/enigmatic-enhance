@@ -48,7 +48,10 @@ public final class ItemConfig {
         builder.comment("大地护符:灌注药水时记录多少。" ).push("earthAmulet");
         EARTH_AMULET_MAX_POTION_TYPES = builder
             .comment("一瓶药水最多记录多少种效果。0 = 无上限(默认,一瓶里有多少记多少)。")
-            .defineInRange("maxPotionTypes", 0, 0, 64);
+            .defineInRange("maxPotionTypes", 1, 0, 64);
+        UNLIMITED_POTION_TYPES = builder
+            .comment("4.3.7:开启后忽略 maxPotionTypes,一瓶药水能记录多少种就记多少(旧行为)。默认 false。")
+            .define("unlimitedPotionTypes", false);
         EARTH_AMULET_MAX_CAPTURED_ITEMS = builder
             .comment("一个护符最多记录多少条效果(累计上限)。0 = 无上限(默认)。")
             .defineInRange("maxCapturedItems", 0, 0, 256);
@@ -101,13 +104,41 @@ public final class ItemConfig {
     public static final ForgeConfigSpec.BooleanValue ALLOW_INSTANT_EFFECTS;
     public static final ForgeConfigSpec.IntValue MAX_EFFECT_LEVEL;
 
+    public static final ForgeConfigSpec.BooleanValue UNLIMITED_POTION_TYPES;
+
+    /** 4.3.7:是否不限种类。 */
+    public static boolean earthAmuletUnlimitedPotionTypes() {
+        try {
+            return UNLIMITED_POTION_TYPES.get();
+        }
+        catch (RuntimeException | LinkageError e) {
+            return false;
+        }
+    }
+
     public static int earthAmuletMaxPotionTypes() {
         try { return EARTH_AMULET_MAX_POTION_TYPES.get(); } catch (Throwable t) { return 0; }
     }
 
+    /** 4.3.2:永远生效的内置黑名单 —— 只放「极高风险」效果(永久减伤/闪避类)。 */
+    private static final java.util.Set<String> BUILTIN_BLACKLIST = java.util.Set.of(
+        "minecraft:resistance",              // 抗性提升(原版/神化可制作)
+        "irons_spellbooks:evasion",          // 铁魔法 闪避
+        "irons_spellbooks:oakskin",          // 铁魔法 树皮(减伤)
+        "goety:iron_hide",                   // 诡厄巫法 铁皮
+        "goety:soul_armor",                  // 诡厄巫法 灵魂护甲
+        "enigmaticaddons:pure_resistance",  // 神秘遗物扩展 纯净抗性
+        "minecraft:absorption",             // 伤害吸收(金心)
+        "goety:frosty_aura",                 // 诡厄巫法 凛寒气场
+        "youkaisfeasts:earthy",               // 妖怪盛宴 醇厚
+        "irons_spellbooks:true_invisibility"); // 铁魔法 真实隐身
+
     /** 大地护符的 buff 黑名单(小写 effect id)。 */
     public static java.util.Set<String> earthAmuletBlacklistedEffects() {
-        java.util.Set<String> out = new java.util.LinkedHashSet<>();
+        // 4.3.1:这两条做成【内置默认】,永远生效。
+        // 原因:Forge 不会覆盖已存在的配置值,旧存档里的 effectBlacklist = [] 会让
+        // 新版默认值完全不生效(实测就是这样)。
+        java.util.Set<String> out = new java.util.LinkedHashSet<>(BUILTIN_BLACKLIST);
         try {
             for (String s : EARTH_AMULET_EFFECT_BLACKLIST.get()) {
                 if (s != null && !s.isBlank()) {

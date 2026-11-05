@@ -124,7 +124,17 @@ public class FakeLedgerScreen extends Screen {
 
         private Entry(ResourceLocation id) {
             this.id = id;
-            this.stat = Stats.CUSTOM.get(id);
+            this.stat = resolveStat(id);
+        }
+
+        /** 4.3.1:对未注册的自定义 stat id,Stats.CUSTOM.get 会抛 NPE,这里吞掉。 */
+        private static Stat<ResourceLocation> resolveStat(ResourceLocation id) {
+            try {
+                return id == null ? null : Stats.CUSTOM.get(id);
+            }
+            catch (RuntimeException | LinkageError ignored) {
+                return null;
+            }
         }
 
         private Component label() {

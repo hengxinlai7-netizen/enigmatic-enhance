@@ -29,6 +29,18 @@ import net.minecraft.world.phys.shapes.VoxelShape;
  */
 public class WarBannerBlock extends Block {
 
+    /** 4.3.3:物品栏里的说明(用户要求加在物品描述里)。 */
+    @Override
+    public void appendHoverText(net.minecraft.world.item.ItemStack stack, net.minecraft.world.level.BlockGetter level,
+        java.util.List<net.minecraft.network.chat.Component> tooltip, net.minecraft.world.item.TooltipFlag flag) {
+        tooltip.add(net.minecraft.network.chat.Component
+            .translatable("tooltip.enigmaticenhance.war_banner.lore")
+            .withStyle(net.minecraft.ChatFormatting.GRAY));
+        tooltip.add(net.minecraft.network.chat.Component
+            .translatable("tooltip.enigmaticenhance.war_banner.effect")
+            .withStyle(net.minecraft.ChatFormatting.YELLOW));
+    }
+
     public static final double RADIUS = 12.0D;
     public static final int APPLY_INTERVAL = 60;
     public static final int DURATION_TICKS = 100;

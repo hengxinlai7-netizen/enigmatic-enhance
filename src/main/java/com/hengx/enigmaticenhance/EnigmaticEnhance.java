@@ -126,13 +126,8 @@ public class EnigmaticEnhance {
         MinecraftForge.EVENT_BUS.register(FateWorldApplier.class);   // 1.6.6:创建世界选项写入 gamerule
         MinecraftForge.EVENT_BUS.register(ConsciousnessSeaHandler.class);   // 1.6.15:瓶装意识之海
         MinecraftForge.EVENT_BUS.register(EarthHeartLootHandler.class);
-        MinecraftForge.EVENT_BUS.register(AddonRevivalLeafTooltip.class);
         MinecraftForge.EVENT_BUS.register(PlayerCritHandler.class);
         MinecraftForge.EVENT_BUS.register(GluttonyBookCleanup.class);   // 4.1.0:贪食之书复活清理
-        MinecraftForge.EVENT_BUS.register(MagnetRangeHandler.class);   // 3.8.6:磁吸戒指范围
-        MagnetRangeHandler.apply();
-        net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext.get().getModEventBus()
-            .addListener(MagnetRangeHandler::onCommonSetup);   // 3.7.0:全伤暴击   // 3.6.0:给扩展的复苏之叶加说明
         MinecraftForge.EVENT_BUS.register(HellBladeLootHandler.class);
         MinecraftForge.EVENT_BUS.register(SpellstoneLootBoostHandler.class);   // 3.1.0:术石战利品加权   // 2.7.0:地狱刃片保底
         MinecraftForge.EVENT_BUS.register(HandOfExecutionHandler.class);

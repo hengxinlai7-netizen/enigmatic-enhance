@@ -124,6 +124,8 @@ public final class EarthAmuletHandler {
 
     /** 把保存的药水效果刷新成"短时长"(每 20 tick 调一次,不会显示成 ∞)。 */
     private static void applyStoredPotionEffects(Player player, ItemStack amulet) {
+        // 4.3.8:先清掉"已经记录但后来进黑名单/被禁用"的效果(老存档也会被纠正)
+        EarthAmuletData.sanitize(amulet);
         List<EarthAmuletData.StoredEffect> stored = EarthAmuletData.effects(amulet);
         double healthBonus = 0.0D;
         for (EarthAmuletData.StoredEffect entry : stored) {

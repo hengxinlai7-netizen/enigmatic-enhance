@@ -250,15 +250,12 @@
   "jei.enigmaticenhance.sea_of_consciousness.line4": "· 环境伤害、PvP、你自己受伤均不受影响。",
   "jei.enigmaticenhance.earth_amulet_potion.line1": "把任意携带效果药水 / 精灵药（含铁魔法）灌进大地护符。",
   "jei.enigmaticenhance.styx_water.line3": "获取：地之瓶 + 不死图腾 无形合成。",
-  "tooltip.enigmaticenhance.addon_revival_leaf.header": "[+] 森林女神的鲜翠之力",
-  "tooltip.enigmaticenhance.addon_revival_leaf.effect": "· 佩戴时可用 Ctrl+左键 关闭/开启「龙首护符」的创造飞行。",
-  "tooltip.enigmaticenhance.addon_revival_leaf.state": "· 关闭后既能保留龙首其它加成，也不会获得飞行与穿方块。",
-  "tooltip.enigmaticenhance.addon_revival_leaf.flight.on": "· 飞行：开（龙首可授予创造飞行）",
-  "tooltip.enigmaticenhance.addon_revival_leaf.flight.off": "· 飞行：关（已禁用龙首的创造飞行）",
   "item.enigmaticenhance.gluttony_book": "贪食之书",
   "tooltip.enigmaticenhance.gluttony_book.lore": "· 一本装满食欲的书，翻开它的人会被自己的饥饿吞噬。",
   "tooltip.enigmaticenhance.gluttony_book.effect": "· 使用：补上一条上限为负的血条，然后强制死亡。（复活后不会残留）",
   "tooltip.enigmaticenhance.sea_of_consciousness.header": "§7手持时生效：",
   "tooltip.enigmaticenhance.sea_of_consciousness.line1": "§8· 你无法造成任何伤害",
-  "tooltip.enigmaticenhance.sea_of_consciousness.line2": "§8· 对你没有仇恨的生物会主动远离你"
+  "tooltip.enigmaticenhance.sea_of_consciousness.line2": "§8· 对你没有仇恨的生物会主动远离你",
+  "tooltip.enigmaticenhance.war_banner.lore": "§7· 一面沉重的战旗，插下去就是宣言。",
+  "tooltip.enigmaticenhance.war_banner.effect": "§e· 插在地上时为周围的玩家提供加成。"
 }

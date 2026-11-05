@@ -24,7 +24,6 @@
         "LivingEntityRandomTeleportMixin",
         "GluttonyFoodTickMixin",
         "EntityMoveNoClipMixin",
-    "RevivalLeafFlightMixin",
         "ArrowSharpshooterMixin",
         "AugmentingSigilMixin",
           "ReforgingMenuMixin",

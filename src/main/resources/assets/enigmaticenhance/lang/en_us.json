@@ -242,15 +242,12 @@
   "jei.enigmaticenhance.sea_of_consciousness.line4": "· Hostile mobs will not actively chase you while you hold it.",
   "jei.enigmaticenhance.earth_amulet_potion.line1": "Infuse any effect potion or elixir (incl. Iron's Spells) into the Earth Amulet.",
   "jei.enigmaticenhance.styx_water.line3": "Obtain: craft the Earth Bottle with a Totem of Undying (shapeless).",
-  "tooltip.enigmaticenhance.addon_revival_leaf.header": "[+] Verdant power of the forest goddess",
-  "tooltip.enigmaticenhance.addon_revival_leaf.effect": "· While worn: Ctrl + Left Click toggles the Dragon Head's creative flight.",
-  "tooltip.enigmaticenhance.addon_revival_leaf.state": "· When disabled, the Dragon Head keeps its other bonuses but grants no flight or phasing.",
-  "tooltip.enigmaticenhance.addon_revival_leaf.flight.on": "· Flight: ON (Dragon Head may grant creative flight)",
-  "tooltip.enigmaticenhance.addon_revival_leaf.flight.off": "· Flight: OFF (Dragon Head flight disabled)",
   "item.enigmaticenhance.gluttony_book": "Book of Gluttony",
   "tooltip.enigmaticenhance.gluttony_book.lore": "· A tome soaked in hunger; whoever opens it is devoured by their own appetite.",
   "tooltip.enigmaticenhance.gluttony_book.effect": "· On use: gains a negative-max health bar, then dies. (No remnants after respawn.)",
   "tooltip.enigmaticenhance.sea_of_consciousness.header": "§7While held:",
   "tooltip.enigmaticenhance.sea_of_consciousness.line1": "§8· You cannot deal any damage",
-  "tooltip.enigmaticenhance.sea_of_consciousness.line2": "§8· Creatures without aggro on you actively move away"
+  "tooltip.enigmaticenhance.sea_of_consciousness.line2": "§8· Creatures without aggro on you actively move away",
+  "tooltip.enigmaticenhance.war_banner.lore": "§7· A heavy banner; planting it is a declaration.",
+  "tooltip.enigmaticenhance.war_banner.effect": "§e· While placed, buffs nearby players."
 }

@@ -118,6 +118,55 @@ public final class EarthAmuletData {
     }
 
     /** 覆盖写入药水效果列表(只保留最新一次合成结果)。 */
+    /**
+     * 4.3.8:把护符上【已经记录】的非法效果清掉。
+     *
+     * <p>黑名单是后加的,老存档里的护符可能早就把抗性/金心之类记进去了。
+     * 这里在每次应用前扫一遍,发现内置黑名单、或在配置黑名单里、或是被禁的瞬时效果,
+     * 直接从记录里删掉并写回 NBT。</p>
+     *
+     * @return 清理掉的条数(0 = 没变)
+     */
+    public static int sanitize(ItemStack stack) {
+        try {
+            if (stack == null || stack.isEmpty()) {
+                return 0;
+            }
+            List<StoredEffect> stored = effects(stack);
+            if (stored.isEmpty()) {
+                return 0;
+            }
+            List<StoredEffect> keep = new ArrayList<>(stored.size());
+            for (StoredEffect e : stored) {
+                if (e == null || e.id() == null) {
+                    continue;
+                }
+                String id = e.id().toLowerCase(java.util.Locale.ROOT);
+                if (ItemConfig.isEffectBlacklisted(id)) {
+                    continue;   // 内置 + 配置黑名单(内置白名单逻辑在 isEffectBlacklisted 里)
+                }
+                if (!ItemConfig.earthAmuletAllowInstantEffects()) {
+                    var effect = net.minecraftforge.registries.ForgeRegistries.MOB_EFFECTS
+                        .getValue(net.minecraft.resources.ResourceLocation.tryParse(e.id()));
+                    if (effect != null && effect.isInstantenous()) {
+                        continue;
+                    }
+                }
+                keep.add(e);
+            }
+            if (keep.size() == stored.size()) {
+                return 0;
+            }
+            setEffects(stack, keep);
+            int removed = stored.size() - keep.size();
+            DebugLog.warn("[EarthAmulet] 清理了 {} 条已记录的非法效果", removed);
+            return removed;
+        }
+        catch (RuntimeException | LinkageError ignored) {
+            return 0;
+        }
+    }
+
     public static void setEffects(ItemStack stack, List<StoredEffect> effects) {
         // 2.5.0:一个护符最多记多少条(0 = 无上限)
         int maxItems = ItemConfig.earthAmuletMaxCapturedItems();
@@ -222,9 +271,15 @@ public final class EarthAmuletData {
             }
         }
         // 2.5.0:一瓶药水最多记多少种(0 = 无上限)
-        int maxTypes = ItemConfig.earthAmuletMaxPotionTypes();
-        if (maxTypes > 0 && out.size() > maxTypes) {
-            out = new ArrayList<>(out.subList(0, maxTypes));
+        // 4.3.7:默认只记 1 种。开启 unlimitedPotionTypes 才恢复"有多少记多少"。
+        if (!ItemConfig.earthAmuletUnlimitedPotionTypes()) {
+            int maxTypes = ItemConfig.earthAmuletMaxPotionTypes();
+            if (maxTypes <= 0) {
+                maxTypes = 1;   // 旧配置里是 0(旧默认 = 无上限),按 1 处理
+            }
+            if (out.size() > maxTypes) {
+                out = new ArrayList<>(out.subList(0, maxTypes));
+            }
         }
 return out;
     }
