@@ -41,7 +41,20 @@ public class BeaconApplyEffectsMixin {
             }
             int duration = (9 + levels * 2) * 20;
             int amp = levels >= 4 ? 1 : 0;
-            for (Player player : level.players()) {
+            // 3.4.0:跨维度生效 —— 不再只看信标所在维度,而是遍历服务器全部在线玩家
+            java.util.List<? extends Player> targets;
+            if (level instanceof net.minecraft.server.level.ServerLevel serverLevel
+                && serverLevel.getServer() != null) {
+                targets = serverLevel.getServer().getPlayerList().getPlayers();
+            }
+            else {
+                targets = level.players();   // 没有服务器引用的兜底
+            }
+            int applied = 0;
+            for (Player player : targets) {
+                if (player == null || player.isSpectator()) {
+                    continue;
+                }
                 if (primary != null) {
                     player.addEffect(new MobEffectInstance(primary, duration,
                         BeaconEnhanceHandler.amplifierFor(primary, amp), true, true));
@@ -50,7 +63,12 @@ public class BeaconApplyEffectsMixin {
                     player.addEffect(new MobEffectInstance(secondary, duration,
                         BeaconEnhanceHandler.amplifierFor(secondary, amp), true, true));
                 }
+                applied++;
             }
+            com.hengx.enigmaticenhance.DebugLog.once(
+                "beacon:apply:" + pos.asLong(),
+                "[Beacon] {} 施加信标效果:主={} 副={} 等级={} 跨维度命中 {} 人",
+                pos, primary, secondary, levels, applied);
             ci.cancel();
         }
         catch (RuntimeException | LinkageError ignored) {

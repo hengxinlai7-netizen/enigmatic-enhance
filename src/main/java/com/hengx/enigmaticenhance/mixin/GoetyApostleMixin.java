@@ -36,24 +36,30 @@ public class GoetyApostleMixin {
             }
             self.setHealth(0.0F);
             self.die(source);   // 先走它的 die() —— 掉落/经验都在里面
-            if (self.isAlive()) {
+            if (!self.isRemoved()) {
                 // 被死亡动画保护复活了 → 稍后强制移除(掉落已经在上面结算过)
                 final LivingEntity victim = self;
                 if (!self.level().isClientSide) {
                     ((net.minecraft.server.level.ServerLevel) self.level()).getServer().execute(() -> {
                         try {
-                            if (victim.isAlive()) {
+                            if (!victim.isRemoved()) {
+                                // 3.8.1:区分两种收尾情形,避免重复结算掉落
+                                //   复活=true  :它靠死亡动画/复活机制活回来了,掉落大概率没结算 ⇒ 补一次
+                                //   复活=false :血已经 0 但实体没进移除队列(卡死),掉落通常已由上面的 die() 结算
+                                boolean revived = victim.getHealth() > 0.0F;
                                 victim.setHealth(0.0F);
-                                victim.die(source);
-                                // 2.11.9:它的 die() 只播动画不结算掉落 —— 这里强制补一次掉落结算
-                                try {
-                                    com.hengx.enigmaticenhance.DropHelper.dropAllDeathLoot(victim, source);
-                                }
-                                catch (RuntimeException | LinkageError ignored) {
-                                    // 忽略
+                                if (revived) {
+                                    victim.die(source);
+                                    try {
+                                        com.hengx.enigmaticenhance.DropHelper.dropAllDeathLoot(victim, source);
+                                    }
+                                    catch (RuntimeException | LinkageError ignored) {
+                                        // 忽略
+                                    }
                                 }
                                 victim.remove(Entity.RemovalReason.KILLED);
-                                DebugLog.warn("[BossBypass] {} 复活后被强制移除", victim.getName().getString());
+                                DebugLog.warn("[BossBypass] {} 已强制移除(复活={})",
+                                    victim.getName().getString(), revived);
                             }
                         }
                         catch (RuntimeException | LinkageError ignored) {

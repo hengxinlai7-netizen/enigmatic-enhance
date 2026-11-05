@@ -83,7 +83,6 @@ public final class CreativeTabContents {
         Item sea = ModItems.SEA_OF_CONSCIOUSNESS.get();
         Item editor = ModItems.VALUE_EDITOR.get();
         Item fishing = ModItems.FISHING_HAUL_BOTTLE.get();
-        Item leafStone = ModItems.revivalLeafStoneOrNull();
         if (amulet != null) {
             items.add(amulet);
         }
@@ -151,9 +150,6 @@ public final class CreativeTabContents {
         }
         if (fishing != null) {
             items.add(fishing);
-        }
-        if (leafStone != null) {
-            items.add(leafStone);
         }
         // 2.5.0:隐藏被禁用的物品
         if (ItemConfig.hideDisabledFromTab()) {

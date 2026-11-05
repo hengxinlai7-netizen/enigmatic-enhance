@@ -79,6 +79,7 @@ dependencies {
     // 远古重铸台(仅编译期:让 Mixin 注解处理器能解析 @Mixin(targets="com.ianm1647...") 的注释目标;
     // 运行时是第三方模组、可能缺席,登记在 enigmaticenhance.optional.mixins.json(required:false + defaultRequire:0))。
     compileOnly files('libs/ancientreforging-1.3.jar')
+    compileOnly files('libs/lootr-forge-1.20-0.7.35.94.jar')
 
     // Mixin 注解处理器(编译期校验 @Mixin 注入目标)
     annotationProcessor 'org.spongepowered:mixin:0.8.5:processor'

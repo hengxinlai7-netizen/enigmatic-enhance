@@ -12,6 +12,7 @@ import net.minecraft.nbt.Tag;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.Container;
+import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.entity.BlockEntity;
@@ -53,22 +54,51 @@ public final class EarthHeartLootHandler {
     private EarthHeartLootHandler() {
     }
 
-    /** 这一叠物品能提供几次记录（大地之心 1 次，寰宇之心 10 次，其它 0）。 */
-    private static int recordsFor(ItemStack stack) {
-        if (stack == null || stack.isEmpty()) {
-            return 0;
-        }
+    /** 末地城宝箱表：只认寰宇之心，且一颗只算 1 次。 */
+    public static final String END_CITY_TABLE = "minecraft:chests/end_city_treasure";
+
+    /** 是否只是「大地之心」（用来给出拒绝提示）。 */
+    private static boolean isEarthOnly(ItemStack stack) {
         Item earth = RingConfig.earthHeartItem();
-        if (earth != null && stack.is(earth)) {
-            return 1;
+        return earth != null && stack != null && !stack.isEmpty() && stack.is(earth);
+    }
+
+    /** 是否为「寰宇之心」一类（宇宙之心 / 全属性之心 / 通用之心）。 */
+    private static boolean isCosmicHeart(ItemStack stack) {
+        if (stack == null || stack.isEmpty()) {
+            return false;
         }
         ResourceLocation id = ForgeRegistries.ITEMS.getKey(stack.getItem());
         if (id == null) {
-            return 0;
+            return false;
         }
         String path = id.getPath();
-        if (path.contains("cosmic_heart") || path.contains("omni_heart") || path.contains("universal_heart")) {
-            return 10;
+        return path.contains("cosmic_heart") || path.contains("omni_heart") || path.contains("universal_heart");
+    }
+
+    /**
+     * 这一叠物品对<b>指定战利品表</b>能提供几次记录。
+     *
+     * <ul>
+     *   <li>普通表：大地之心 1 次，寰宇之心 10 次；</li>
+     *   <li><b>末地城宝箱表</b>：<b>只认寰宇之心</b>，而且<b>一颗只算 1 次</b>（大地之心无效）。</li>
+     * </ul>
+     *
+     * @return 0 表示这件物品对该表无效
+     */
+    private static int recordsFor(ItemStack stack, String table) {
+        if (stack == null || stack.isEmpty()) {
+            return 0;
+        }
+        boolean endCity = END_CITY_TABLE.equals(table);
+        Item earth = RingConfig.earthHeartItem();
+        if (earth != null && stack.is(earth)) {
+            // 末地城：大地之心不可用
+            return endCity ? 0 : 1;
+        }
+        if (isCosmicHeart(stack)) {
+            // 末地城：一颗寰宇之心只刷新一次
+            return endCity ? 1 : 10;
         }
         return 0;
     }
@@ -88,19 +118,27 @@ public final class EarthHeartLootHandler {
                 return;   // 只在服务端处理；必须潜行，避免影响正常开箱
             }
             ItemStack held = event.getItemStack();
-            int add = recordsFor(held);
-            if (add <= 0) {
-                return;
-            }
-            DebugLog.once("ehl:enter:" + event.getPos().asLong(),
-                "[EarthHeartLoot] 进入记录流程 pos={} item={} add={}",
-                event.getPos(), net.minecraftforge.registries.ForgeRegistries.ITEMS
-                    .getKey(held.getItem()), add);
             BlockEntity be = event.getLevel().getBlockEntity(event.getPos());
             if (!(be instanceof RandomizableContainerBlockEntity container)) {
                 return;   // 不是带战利品表的容器 → 不管
             }
             ResourceLocation table = lootTableOf(be);
+            // 3.3.0:次数必须先看是「哪张表」——末地城表只认寰宇之心,且一颗只算 1 次
+            int add = recordsFor(held, table == null ? null : table.toString());
+            if (add <= 0) {
+                if (table != null && END_CITY_TABLE.equals(table.toString()) && isEarthOnly(held)) {
+                    event.getEntity().displayClientMessage(
+                        net.minecraft.network.chat.Component.literal(
+                            "§c末地城的宝箱只能用§b寰宇之心§c刷新，且一颗只刷新一次"), true);
+                    DebugLog.info("{} {} 试图用大地之心刷新末地城宝箱，已拒绝",
+                        LOG_TAG, event.getEntity().getName().getString());
+                }
+                return;
+            }
+            DebugLog.once("ehl:enter:" + event.getPos().asLong(),
+                "[EarthHeartLoot] 进入记录流程 pos={} item={} add={} table={}",
+                event.getPos(), net.minecraftforge.registries.ForgeRegistries.ITEMS
+                    .getKey(held.getItem()), add, table);
             if (table == null) {
                 // 没有战利品表 ⇒ 不消耗、什么也不做（返还）
                 DebugLog.info("{} {} 对 {} 使用大地之心：该容器没有战利品表，不消耗",
@@ -138,6 +176,11 @@ public final class EarthHeartLootHandler {
                 return;
             }
             Container container = containerOf(event.getContainer());
+            // 3.5.0:战利品矿车(箱子矿车等)——不是方块实体,走单独路径
+            if (container instanceof net.minecraft.world.entity.vehicle.AbstractMinecartContainer cart) {
+                handleCartClose(event.getEntity(), cart, level);
+                return;
+            }
             BlockPos pos = container == null ? null : posOf(container);
             if (pos == null) {
                 return;
@@ -181,6 +224,94 @@ public final class EarthHeartLootHandler {
         }
         catch (RuntimeException | LinkageError e) {
             DebugLog.error(LOG_TAG + " 重投战利品失败", e);
+        }
+    }
+
+    /**
+     * 3.5.0:战利品矿车(箱子矿车 / 漏斗矿车等)关闭时的重投。
+     *
+     * <p>矿车不是方块实体,`AbstractMinecartContainer` 自己持有 {@code lootTable} 字段。
+     * 战利品由 {@code startOpen(Player)} 在首次打开时生成,所以这里:</p>
+     * <ol>
+     *   <li>先把表重新挂回去;</li>
+     *   <li>再调一次 {@code startOpen(player)} 触发生成;</li>
+     *   <li>消耗一次记录。</li>
+     * </ol>
+     */
+    private static void handleCartClose(Player player,
+        net.minecraft.world.entity.vehicle.AbstractMinecartContainer cart,
+        ServerLevel level) {
+        try {
+            BlockPos pos = cart.blockPosition();
+            Data data = data(level);
+            String table = data.lootTable(level, pos);
+            if (table == null) {
+                return;   // 这辆矿车没被记录过
+            }
+            if (!isEmpty(cart)) {
+                return;   // 还有东西 ⇒ 不重投
+            }
+            int records = data.records(level, pos);
+            if (records <= 0) {
+                return;
+            }
+            ResourceLocation rl = ResourceLocation.tryParse(table);
+            if (rl == null) {
+                return;
+            }
+            long seed = level.random.nextLong();
+            cart.setLootTable(rl, seed);
+            cart.startOpen(player);   // 触发生成
+            int left = data.consume(level, pos, 1);
+            data.setDirty();
+            DebugLog.info("{} {} 关闭空矿车 {} → 重投 {}，剩余 {} 次",
+                LOG_TAG, player.getName().getString(), pos, table, left);
+        }
+        catch (RuntimeException | LinkageError e) {
+            DebugLog.warn(LOG_TAG + " 矿车重投失败: {}", e.toString());
+        }
+    }
+
+    /**
+     * 3.5.0:对着战利品矿车潜行 + 右键 → 记录刷新次数。
+     *
+     * <p>矿车不是方块,{@code RightClickBlock} 不会触发,所以这里单独接 {@code EntityInteract}。</p>
+     */
+    @SubscribeEvent(priority = net.minecraftforge.eventbus.api.EventPriority.LOWEST,
+        receiveCanceled = true)
+    public static void onEntityInteract(PlayerInteractEvent.EntityInteract event) {
+        try {
+            if (event.getLevel().isClientSide() || !event.getEntity().isShiftKeyDown()) {
+                return;
+            }
+            if (!(event.getTarget() instanceof net.minecraft.world.entity.vehicle.AbstractMinecartContainer cart)) {
+                return;
+            }
+            ItemStack held = event.getItemStack();
+            ResourceLocation table = cart.getLootTable();
+            if (table == null) {
+                return;   // 没有战利品表 ⇒ 普通矿车,不管
+            }
+            int add = recordsFor(held, table.toString());
+            if (add <= 0) {
+                return;
+            }
+            if (!(event.getLevel() instanceof ServerLevel level)) {
+                return;
+            }
+            BlockPos pos = cart.blockPosition();
+            Data data = data(level);
+            int total = data.add(level, pos, table, add);
+            data.setDirty();
+            if (!event.getEntity().isCreative()) {
+                held.shrink(1);
+            }
+            DebugLog.info("{} {} 记录矿车 {} 的战利品表 {} → 累计 {} 次（本次 +{}）",
+                LOG_TAG, event.getEntity().getName().getString(), pos, table, total, add);
+            event.setCanceled(true);   // 只记录,不开箱
+        }
+        catch (RuntimeException | LinkageError e) {
+            DebugLog.error(LOG_TAG + " 记录矿车战利品表失败", e);
         }
     }
 

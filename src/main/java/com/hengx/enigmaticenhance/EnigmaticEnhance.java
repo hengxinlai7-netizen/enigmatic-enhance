@@ -126,9 +126,17 @@ public class EnigmaticEnhance {
         MinecraftForge.EVENT_BUS.register(FateWorldApplier.class);   // 1.6.6:创建世界选项写入 gamerule
         MinecraftForge.EVENT_BUS.register(ConsciousnessSeaHandler.class);   // 1.6.15:瓶装意识之海
         MinecraftForge.EVENT_BUS.register(EarthHeartLootHandler.class);
-        MinecraftForge.EVENT_BUS.register(HellBladeLootHandler.class);   // 2.7.0:地狱刃片保底
+        MinecraftForge.EVENT_BUS.register(AddonRevivalLeafTooltip.class);
+        MinecraftForge.EVENT_BUS.register(PlayerCritHandler.class);
+        MinecraftForge.EVENT_BUS.register(MagnetRangeHandler.class);   // 3.8.6:磁吸戒指范围
+        MagnetRangeHandler.apply();
+        net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext.get().getModEventBus()
+            .addListener(MagnetRangeHandler::onCommonSetup);   // 3.7.0:全伤暴击   // 3.6.0:给扩展的复苏之叶加说明
+        MinecraftForge.EVENT_BUS.register(HellBladeLootHandler.class);
+        MinecraftForge.EVENT_BUS.register(SpellstoneLootBoostHandler.class);   // 3.1.0:术石战利品加权   // 2.7.0:地狱刃片保底
         MinecraftForge.EVENT_BUS.register(HandOfExecutionHandler.class);
-        MinecraftForge.EVENT_BUS.register(BeaconEnhanceHandler.class);   // 2.11.15:信标增强   // 2.9.6:执行之手
+        MinecraftForge.EVENT_BUS.register(BeaconEnhanceHandler.class);
+        MinecraftForge.EVENT_BUS.register(BastionTreasureHandler.class);   // 3.0.0:扭曲之心堡垒遗迹抽取   // 2.11.15:信标增强   // 2.9.6:执行之手
         MinecraftForge.EVENT_BUS.register(ItemUseGuard.class);   // 2.5.0:禁用物品统一拦截   // 2.3.0:大地之心记录战利品表
         MinecraftForge.EVENT_BUS.register(ExperienceOverflowGuard.class);   // 1.6.17:经验溢出保护
         MinecraftForge.EVENT_BUS.register(OmniContaminationGuard.class);   // 1.6.23:清除生物身上的全属性污染

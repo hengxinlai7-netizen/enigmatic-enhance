@@ -123,7 +123,6 @@ public final class ModIds {
     public static final String SUN_BOTTLE_PATH = "bottled_sun";
 
     /** 2.6.1 新增「复苏之叶术石」(Curios charm,Ctrl+左键 开关龙首飞行)。 */
-    public static final String REVIVAL_LEAF_STONE_PATH = "revival_leaf_stone";
 
     /** 1.7.2 新增「渔获瓶」(大地之瓶 + 海洋之心;每点幸运 +10% 钓鱼产物,古旧书袋里 +2 幸运)。 */
     public static final String FISHING_HAUL_BOTTLE_PATH = "fishing_haul_bottle";
@@ -183,7 +182,6 @@ public final class ModIds {
         // 1.2.6d:瓶装太阳
         check(out, "sun bottle item", EnigmaticEnhance.MODID, SUN_BOTTLE_PATH);
         check(out, "fishing haul bottle item", EnigmaticEnhance.MODID, FISHING_HAUL_BOTTLE_PATH);
-        check(out, "revival leaf stone item", EnigmaticEnhance.MODID, REVIVAL_LEAF_STONE_PATH);
         check(out, "uncertain fog item", EnigmaticEnhance.MODID, UNCERTAIN_FOG_PATH);
         check(out, "mirror shadow item", EnigmaticEnhance.MODID, MIRROR_SHADOW_PATH);
         checkSingle(out, "earth amulet recipe", EnigmaticEnhance.MODID + ":" + RECIPE_EARTH_AMULET_PATH);

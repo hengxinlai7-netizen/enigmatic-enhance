@@ -89,7 +89,20 @@ public final class RingConfig {
     public static final ForgeConfigSpec.IntValue COMBAT_INVULN_OUTPUT;
     /** 2.7.0:地狱刃片保底 / 附魔师珍珠灌注开关。 */
     public static final ForgeConfigSpec.BooleanValue HELL_BLADE_GUARANTEED;
+    /** 3.1.0:术石战利品加权。 */
+    public static final ForgeConfigSpec.BooleanValue SPELLSTONE_BOOST_ENABLED;
+
+    /** 3.9.0:术石池的出现概率(0~1)。 */
+    public static final ForgeConfigSpec.DoubleValue SPELLSTONE_BOOST_CHANCE;
+    public static final ForgeConfigSpec.DoubleValue SPELLSTONE_BOOST_ROLLS;
+    public static final ForgeConfigSpec.DoubleValue SPELLSTONE_BOOST_WEIGHT;
     public static final ForgeConfigSpec.BooleanValue PEARL_INFUSION_ENABLED;
+
+    /** 3.8.2:执行之手总开关(未完成功能,默认关闭)。 */
+    public static final ForgeConfigSpec.BooleanValue HAND_OF_EXECUTION_ENABLED;
+
+    /** 3.8.5:珍珠补掷是否只提升已有附魔(过滤书架兼容)。 */
+    public static final ForgeConfigSpec.BooleanValue PEARL_EXTRA_ONLY_EXISTING;
 
     /** 1.8.4:不受无敌帧限制的伤害白名单。 */
     public static final ForgeConfigSpec.ConfigValue<List<? extends String>> COMBAT_INVULN_WHITELIST;
@@ -252,6 +265,31 @@ public final class RingConfig {
         PEARL_INFUSION_ENABLED = builder
             .comment("启用「附魔台位阶 ≥ 15 时,大地之心可灌注成附魔师珍珠」的神化灌注配方。默认开启。")
             .define("pearlInfusionEnabled", true);
+        PEARL_EXTRA_ONLY_EXISTING = builder
+            .comment("3.8.5:珍珠在神化附魔台上的补掷,是否只提升输入物品【已有】的附魔。",
+                "true = 不新增任何新附魔(过滤书架/海洋过滤书架的限制不会被绕过);",
+                "false = 旧行为,允许补掷带出新附魔。默认 true。")
+            .define("pearlExtraEnchantOnlyExisting", true);
+
+        builder.comment("【执行之手】未完成功能:对 Boss 的破防(跳过死亡动画)与真实伤害转化。",
+            "实测会导致部分 Boss 无法被击杀,默认【关闭】。需要时再打开。").push("handOfExecution");
+        HAND_OF_EXECUTION_ENABLED = builder
+            .comment("执行之手总开关。false = 完全失效(既不改真实伤害、也不破防 Boss)。默认 false。")
+            .define("enabled", false);
+        builder.pop();
+        SPELLSTONE_BOOST_ENABLED = builder
+            .comment("3.1.0:给神秘遗物/扩展的战利品表追加一个术石池,大幅提升术石被抽到的概率。默认开启。")
+            .define("spellstoneBoostEnabled", true);
+        SPELLSTONE_BOOST_CHANCE = builder
+            .comment("3.9.0:每个符合条件的箱子,出现术石的概率(0.15 = 15%)。",
+                "落在 0~1 之间;0 = 永不出现,1 = 每箱必出。默认 0.15。")
+            .defineInRange("spellstoneBoostChance", 0.15D, 0.0D, 1.0D);
+        SPELLSTONE_BOOST_ROLLS = builder
+            .comment("追加术石池的 rolls(每箱抽几次)。1.0 = 每个符合条件的箱子必抽一次。")
+            .defineInRange("spellstoneBoostRolls", 1.0D, 0.0D, 8.0D);
+        SPELLSTONE_BOOST_WEIGHT = builder
+            .comment("术石条目权重倍数。1.0 = 与神秘遗物原权重一致。")
+            .defineInRange("spellstoneBoostWeight", 1.0D, 0.1D, 100.0D);
         builder.pop();
 
         builder.comment("七咒之戒:修正第四重咒的伤害削减(不改那三本书本身)。").push("cursedRing");
@@ -680,12 +718,54 @@ public final class RingConfig {
         }
     }
 
+    /** 3.1.0:术石战利品加权开关。 */
+    /** 3.9.0:术石池出现概率(0~1),默认 0.15。 */
+    public static double spellstoneBoostChance() {
+        try {
+            return SPELLSTONE_BOOST_CHANCE.get();
+        }
+        catch (RuntimeException | LinkageError e) {
+            return 0.15D;
+        }
+    }
+
+    public static boolean spellstoneBoostEnabled() {
+        try { return SPELLSTONE_BOOST_ENABLED.get(); } catch (Throwable t) { return true; }
+    }
+
+    public static double spellstoneBoostRolls() {
+        try { return SPELLSTONE_BOOST_ROLLS.get(); } catch (Throwable t) { return 1.0D; }
+    }
+
+    public static double spellstoneBoostWeight() {
+        try { return SPELLSTONE_BOOST_WEIGHT.get(); } catch (Throwable t) { return 1.0D; }
+    }
+
     /** 2.7.0:地狱刃片保底开关。 */
     public static boolean hellBladeGuaranteed() {
         try {
             return HELL_BLADE_GUARANTEED.get();
         }
         catch (Throwable t) {
+            return true;
+        }
+    }
+    /** 3.8.2:执行之手是否启用(默认 false)。 */
+    public static boolean handOfExecutionEnabled() {
+        try {
+            return HAND_OF_EXECUTION_ENABLED.get();
+        }
+        catch (RuntimeException | LinkageError e) {
+            return false;
+        }
+    }
+
+    /** 3.8.5:珍珠补掷是否只提升已有附魔(默认 true)。 */
+    public static boolean pearlExtraEnchantOnlyExisting() {
+        try {
+            return PEARL_EXTRA_ONLY_EXISTING.get();
+        }
+        catch (RuntimeException | LinkageError e) {
             return true;
         }
     }

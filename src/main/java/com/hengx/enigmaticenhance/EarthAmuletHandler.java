@@ -154,11 +154,13 @@ public final class EarthAmuletHandler {
         // 2.11.2 诊断:每秒打一次血量/上限/生命提升剩余时长
         if (player.tickCount % 20 == 0) {
             MobEffectInstance boost = player.getEffect(MobEffects.HEALTH_BOOST);
-            DebugLog.warn("[AmuletHealthProbe] max={} health={} boostAmp={} boostDur={} stored={}",
+            if (RingConfig.debugLog()) {
+                    DebugLog.warn("[AmuletHealthProbe] max={} health={} boostAmp={} boostDur={} stored={}",
                 player.getMaxHealth(), player.getHealth(),
                 boost == null ? -1 : boost.getAmplifier(),
                 boost == null ? -1 : boost.getDuration(),
                 stored.size());
+            }
         }
     }
 
@@ -198,10 +200,9 @@ public final class EarthAmuletHandler {
 
     /** 授予创造飞行(只记录"原本不能飞"的情形)。 */
     public static void grantFlight(Player player) {
-        // 2.6.1:戴「复苏之叶术石」并 Ctrl+左键关掉飞行 → 不再授予创造飞行
-        if (RevivalLeafStoneHandler.flightDisabled(player)) {
-            return;
-        }
+        // 3.7.1:这里原来拦的是「复苏之叶开关关掉时不给龙首飞行」—— 那是错误理解。
+        // 复苏之叶的飞行是它自己授予 abilities.mayfly(见 RevivalLeaf#handleFlight),与龙首无关;
+        // 它的开关现在由 mixin.RevivalLeafFlightMixin 接管,这里不再牵连龙首。
         if (player == null || player.level().isClientSide || player.isCreative() || player.isSpectator()) {
             return;
         }

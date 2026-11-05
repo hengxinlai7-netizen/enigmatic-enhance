@@ -242,5 +242,10 @@
   "jei.enigmaticenhance.sea_of_consciousness.line3": "Only affects awareness and aggro; neither your damage nor incoming damage changes.",
   "jei.enigmaticenhance.sea_of_consciousness.line4": "· Hostile mobs will not actively chase you while you hold it.",
   "jei.enigmaticenhance.earth_amulet_potion.line1": "Infuse any effect potion or elixir (incl. Iron's Spells) into the Earth Amulet.",
-  "jei.enigmaticenhance.styx_water.line3": "Obtain: craft the Earth Bottle with a Totem of Undying (shapeless)."
+  "jei.enigmaticenhance.styx_water.line3": "Obtain: craft the Earth Bottle with a Totem of Undying (shapeless).",
+  "tooltip.enigmaticenhance.addon_revival_leaf.header": "[+] Verdant power of the forest goddess",
+  "tooltip.enigmaticenhance.addon_revival_leaf.effect": "· While worn: Ctrl + Left Click toggles the Dragon Head's creative flight.",
+  "tooltip.enigmaticenhance.addon_revival_leaf.state": "· When disabled, the Dragon Head keeps its other bonuses but grants no flight or phasing.",
+  "tooltip.enigmaticenhance.addon_revival_leaf.flight.on": "· Flight: ON (Dragon Head may grant creative flight)",
+  "tooltip.enigmaticenhance.addon_revival_leaf.flight.off": "· Flight: OFF (Dragon Head flight disabled)"
 }

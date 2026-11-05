@@ -22,6 +22,10 @@ public final class HandOfExecutionHandler {
 
     /** 2.10.6:这次伤害的攻击者是否带着「执行之手」(给针对性 Mixin 用)。 */
     public static boolean shouldBypass(net.minecraft.world.damagesource.DamageSource source) {
+        // 3.8.2:总开关关闭 ⇒ 所有 Boss 破防 Mixin 直接放行,绝不干预击杀流程
+        if (!RingConfig.handOfExecutionEnabled()) {
+            return false;
+        }
         try {
             if (!(source.getEntity() instanceof net.minecraft.world.entity.LivingEntity attacker)) {
                 return false;
@@ -30,10 +34,23 @@ public final class HandOfExecutionHandler {
             if (enchant == null) {
                 return false;
             }
-            return net.minecraft.world.item.enchantment.EnchantmentHelper.getItemEnchantmentLevel(
-                enchant, attacker.getMainHandItem()) > 0
-                || net.minecraft.world.item.enchantment.EnchantmentHelper.getItemEnchantmentLevel(
-                    enchant, attacker.getOffhandItem()) > 0;
+            // 3.8.1:改为与 AutoSmeltHandler.levelOf 相同的读法(getEnchantments 映射),
+            // 这样附魔书 / 被别的模组塞进 StoredEnchantments 的物品也能认出来,
+            // 并且与 handle() 里打印的等级保持一致(之前两处读法不同,出现过
+            // "日志说没有附魔、破防却触发"的矛盾)。
+            java.util.Map<net.minecraft.world.item.enchantment.Enchantment, Integer> main =
+                net.minecraft.world.item.enchantment.EnchantmentHelper.getEnchantments(attacker.getMainHandItem());
+            java.util.Map<net.minecraft.world.item.enchantment.Enchantment, Integer> off =
+                net.minecraft.world.item.enchantment.EnchantmentHelper.getEnchantments(attacker.getOffhandItem());
+            Integer mainLevel = main.get(enchant);
+            Integer offLevel = off.get(enchant);
+            if ((mainLevel != null && mainLevel > 0) || (offLevel != null && offLevel > 0)) {
+                DebugLog.once("exec:bypass:" + attacker.getUUID(),
+                    "[Execution] 破防已启用:主手等级={} 副手等级={}",
+                    mainLevel == null ? 0 : mainLevel, offLevel == null ? 0 : offLevel);
+                return true;
+            }
+            return false;
         }
         catch (RuntimeException | LinkageError ignored) {
             return false;
@@ -52,6 +69,9 @@ public final class HandOfExecutionHandler {
     private static void apply(LivingEntity target, net.minecraft.world.damagesource.DamageSource source,
         float amount, Object event) {
         try {
+            if (!RingConfig.handOfExecutionEnabled()) {
+                return;   // 3.8.2:总开关关闭 ⇒ 执行之手完全失效(不改真实伤害)
+            }
             if (target == null || amount <= 0.0F) {
                 return;
             }

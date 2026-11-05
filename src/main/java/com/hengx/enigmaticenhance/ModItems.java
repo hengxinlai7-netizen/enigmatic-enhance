@@ -80,9 +80,6 @@ public final class ModItems {
     public static final RegistryObject<Item> SUN_BOTTLE =
         ITEMS.register(ModIds.SUN_BOTTLE_PATH, SunBottleItem::new);
 
-    /** 2.6.1:enigmaticenhance:revival_leaf_stone —— 复苏之叶术石(Ctrl+左键 开关龙首飞行)。 */
-    public static final RegistryObject<Item> REVIVAL_LEAF_STONE =
-        ITEMS.register(ModIds.REVIVAL_LEAF_STONE_PATH, RevivalLeafStoneItem::new);
 
     /** 1.7.2:enigmaticenhance:fishing_haul_bottle —— 渔获瓶(大地之瓶 + 海洋之心)。 */
     public static final RegistryObject<Item> FISHING_HAUL_BOTTLE =
@@ -348,7 +345,4 @@ public final class ModItems {
     }
 
     /** 2.6.1:复苏之叶术石(缺失返回 null)。 */
-    public static Item revivalLeafStoneOrNull() {
-        return REVIVAL_LEAF_STONE.isPresent() ? REVIVAL_LEAF_STONE.get() : null;
-    }
 }

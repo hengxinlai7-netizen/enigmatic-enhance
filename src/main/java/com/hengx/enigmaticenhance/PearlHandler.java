@@ -49,6 +49,14 @@ public final class PearlHandler {
     public static ItemStack applyExtraEnchant(Player player, ItemStack result, ItemStack original, int cost) {
         int power = Math.min(cost + 7, 40);
         ItemStack extra = EnchantmentHelper.enchantItem(player.getRandom(), original.copy(), power, false);
+        // 3.8.5:过滤书架兼容。
+        // EnchantmentHelper#enchantItem 是一次【独立的原版掷取】,它不知道附魔台上挂了什么书架,
+        // 所以会把过滤书架(例如海洋过滤书架)本该排掉的附魔重新塞进结果 —— 表现就是"过滤失效"。
+        // 这里把补掷的结果裁剪成"只提升输入栈本来就有的附魔",不再新增任何新附魔;
+        // 想恢复旧行为(允许新增)把配置 pearl.extraEnchantOnlyExisting 改成 false。
+        if (RingConfig.pearlExtraEnchantOnlyExisting()) {
+            extra = keepOnlyExisting(extra, original);
+        }
         ItemStack merged = PearlCompat.mergeEnchantments(result, extra);
         merged = PearlCompat.maybeApplyEternalBinding(merged);
         extraRollCount++;
@@ -57,5 +65,28 @@ public final class PearlHandler {
                 + " extra=" + extra.getAllEnchantments() + " -> " + merged.getAllEnchantments());
         }
         return merged;
+    }
+
+    /** 只保留 {@code base} 上已经存在的附魔(数量取栈本数量,不制造新附魔)。 */
+    private static ItemStack keepOnlyExisting(ItemStack rolled, ItemStack base) {
+        try {
+            var baseEnch = base.getAllEnchantments();
+            var rolledEnch = rolled.getAllEnchantments();
+            if (rolledEnch.isEmpty()) {
+                return rolled;
+            }
+            ItemStack out = base.copy();
+            boolean any = false;
+            for (var e : rolledEnch.entrySet()) {
+                if (baseEnch.containsKey(e.getKey())) {
+                    out.enchant(e.getKey(), e.getValue());
+                    any = true;
+                }
+            }
+            return any ? out : base.copy();
+        }
+        catch (RuntimeException | LinkageError ignored) {
+            return rolled;
+        }
     }
 }
