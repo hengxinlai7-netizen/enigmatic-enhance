@@ -240,7 +240,17 @@ return out;
             if (id == null) {
                 continue;
             }
-            out.add(new StoredEffect(id.toString(), instance.getAmplifier() + 1));
+            // 4.3.0:瞬时效果按配置过滤;等级按 maxEffectLevel 夹紧(0 = 无上限)
+            if (!ItemConfig.earthAmuletAllowInstantEffects()
+                && instance.getEffect().isInstantenous()) {
+                continue;
+            }
+            int level = instance.getAmplifier() + 1;
+            int maxLevel = ItemConfig.earthAmuletMaxEffectLevel();
+            if (maxLevel > 0 && level > maxLevel) {
+                level = maxLevel;
+            }
+            out.add(new StoredEffect(id.toString(), level));
         }
         return out;
     }

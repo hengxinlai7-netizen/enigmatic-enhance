@@ -83,6 +83,7 @@ public final class CreativeTabContents {
         Item sea = ModItems.SEA_OF_CONSCIOUSNESS.get();
         Item editor = ModItems.VALUE_EDITOR.get();
         Item fishing = ModItems.FISHING_HAUL_BOTTLE.get();
+        Item gluttony = ModItems.GLUTTONY_BOOK.get();
         if (amulet != null) {
             items.add(amulet);
         }
@@ -121,6 +122,10 @@ public final class CreativeTabContents {
         if (editor != null) {
             items.add(editor);
             items.add(sea);
+        }
+        // 4.1.0:贪食之书单独加,不跟上面的 editor 判空耦合
+        if (gluttony != null) {
+            items.add(gluttony);
         }
         // 1.3.4:自定义效果药水(普通/喷溅/滞留)都放进创造栏
         addPotions(items);

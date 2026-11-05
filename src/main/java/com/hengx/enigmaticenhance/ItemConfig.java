@@ -52,11 +52,17 @@ public final class ItemConfig {
         EARTH_AMULET_MAX_CAPTURED_ITEMS = builder
             .comment("一个护符最多记录多少条效果(累计上限)。0 = 无上限(默认)。")
             .defineInRange("maxCapturedItems", 0, 0, 256);
+        ALLOW_INSTANT_EFFECTS = builder
+            .comment("4.3.0:是否允许灌注【瞬时效果】(如瞬间治疗/瞬间伤害)。默认 false。")
+            .define("allowInstantEffects", false);
+        MAX_EFFECT_LEVEL = builder
+            .comment("4.3.0:灌注药水的效果等级上限。0 = 无上限。默认 1。")
+            .defineInRange("maxEffectLevel", 1, 0, 255);
         EARTH_AMULET_EFFECT_BLACKLIST = builder
             .comment("buff 黑名单:填效果 id,大地护符灌注时**不会**记录这些效果。",
                      "例:\"minecraft:instant_damage\"、\"irons_spellbooks:oakskin\"。",
                      "默认空 = 什么都记。")
-            .defineList("effectBlacklist", new ArrayList<String>(),
+            .defineList("effectBlacklist", new ArrayList<String>(List.of("minecraft:resistance", "irons_spellbooks:evasion")),
                 o -> o instanceof String s && s.contains(":"));
         builder.pop();
 
@@ -92,6 +98,9 @@ public final class ItemConfig {
         try { return HIDE_DISABLED_FROM_TAB.get(); } catch (Throwable t) { return true; }
     }
 
+    public static final ForgeConfigSpec.BooleanValue ALLOW_INSTANT_EFFECTS;
+    public static final ForgeConfigSpec.IntValue MAX_EFFECT_LEVEL;
+
     public static int earthAmuletMaxPotionTypes() {
         try { return EARTH_AMULET_MAX_POTION_TYPES.get(); } catch (Throwable t) { return 0; }
     }
@@ -116,6 +125,26 @@ public final class ItemConfig {
     public static boolean isEffectBlacklisted(String effectId) {
         return effectId != null
             && earthAmuletBlacklistedEffects().contains(effectId.toLowerCase(java.util.Locale.ROOT));
+    }
+
+    /** 4.3.0:是否允许灌注瞬时效果。 */
+    public static boolean earthAmuletAllowInstantEffects() {
+        try {
+            return ALLOW_INSTANT_EFFECTS.get();
+        }
+        catch (RuntimeException | LinkageError e) {
+            return false;
+        }
+    }
+
+    /** 4.3.0:灌注药水的等级上限(0 = 无上限)。 */
+    public static int earthAmuletMaxEffectLevel() {
+        try {
+            return MAX_EFFECT_LEVEL.get();
+        }
+        catch (RuntimeException | LinkageError e) {
+            return 1;
+        }
     }
 
     public static int earthAmuletMaxCapturedItems() {

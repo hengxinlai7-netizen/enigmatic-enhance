@@ -128,6 +128,7 @@ public class EnigmaticEnhance {
         MinecraftForge.EVENT_BUS.register(EarthHeartLootHandler.class);
         MinecraftForge.EVENT_BUS.register(AddonRevivalLeafTooltip.class);
         MinecraftForge.EVENT_BUS.register(PlayerCritHandler.class);
+        MinecraftForge.EVENT_BUS.register(GluttonyBookCleanup.class);   // 4.1.0:贪食之书复活清理
         MinecraftForge.EVENT_BUS.register(MagnetRangeHandler.class);   // 3.8.6:磁吸戒指范围
         MagnetRangeHandler.apply();
         net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext.get().getModEventBus()

@@ -39,26 +39,44 @@ import net.minecraft.world.entity.player.Player;
 @Mixin(targets = "auviotre.enigmatic.addon.contents.items.RevivalLeaf", remap = false)
 public class RevivalLeafFlightMixin {
 
-    @Inject(method = "handleFlight", at = @At("HEAD"), cancellable = true, remap = false, require = 0)
-    private void enigmaticenhance$gateFlight(Player player, CallbackInfo ci) {
+    /** 本次调用之前玩家是否已经能飞(用于区分"这枚术石刚给的飞行"和"别的来源给的飞行")。 */
+    private static final ThreadLocal<Boolean> HAD_FLIGHT_BEFORE = ThreadLocal.withInitial(() -> Boolean.FALSE);
+
+    @Inject(method = "handleFlight", at = @At("HEAD"), remap = false, require = 0)
+    private void enigmaticenhance$recordFlight(Player player, CallbackInfo ci) {
         try {
-            if (player == null) {
+            HAD_FLIGHT_BEFORE.set(player != null && player.getAbilities().mayfly);
+        }
+        catch (RuntimeException | LinkageError ignored) {
+            HAD_FLIGHT_BEFORE.set(Boolean.FALSE);
+        }
+    }
+
+    /**
+     * 4.2.2:只在「这枚术石刚刚授予了飞行」时撤销它,别的来源(创造模式、龙首、其它模组)
+     * 给的飞行一律不动 —— 之前是无条件撤销,把它们一起禁掉了。
+     */
+    @Inject(method = "handleFlight", at = @At("RETURN"), remap = false, require = 0)
+    private void enigmaticenhance$revokeFlight(Player player, CallbackInfo ci) {
+        try {
+            boolean hadBefore = Boolean.TRUE.equals(HAD_FLIGHT_BEFORE.get());
+            HAD_FLIGHT_BEFORE.remove();
+            if (player == null || !RevivalLeafStoneHandler.flightDisabled(player)) {
                 return;
             }
-            if (!RevivalLeafStoneHandler.flightDisabled(player)) {
-                return;   // 开关是开的 ⇒ 交给扩展自己处理
+            if (hadBefore) {
+                return;   // 原本就能飞 ⇒ 不是它给的,别动
             }
-            // 开关关闭:撤销这枚术石给过的飞行能力(不动创造/旁观的原生飞行)
-            if (!player.isCreative() && !player.isSpectator()
-                && player.getAbilities().mayfly) {
+            if (player.isCreative() || player.isSpectator()) {
+                return;
+            }
+            if (player.getAbilities().mayfly) {
                 player.getAbilities().mayfly = false;
                 player.getAbilities().flying = false;
                 player.onUpdateAbilities();
             }
-            ci.cancel();
         }
         catch (RuntimeException | LinkageError ignored) {
-            // 判定失败 ⇒ 放行原逻辑
+            // 忽略
         }
-    }
-}
+    }}

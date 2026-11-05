@@ -36,7 +36,16 @@ public class EntityMoveNoClipMixin {
         try {
             Entity self = (Entity) (Object) this;
             if (NoClipState.isActive(self)) {
-                self.noPhysics = true;
+                if (!self.noPhysics) {
+                    self.noPhysics = true;
+                }
+                // 记下"这个 noPhysics 是我们打开的",关闭时才能安全还原
+                NoClipState.markForced(self);
+            }
+            else if (NoClipState.releaseForced(self)) {
+                // 4.2.2:关闭穿墙后必须把 noPhysics 还原,
+                // 否则会一直穿方块(而且因为人在方块里,还会持续窒息)。
+                self.noPhysics = false;
             }
         }
         catch (Throwable ignored) {

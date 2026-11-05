@@ -59,4 +59,34 @@ public final class NoClipState {
     public static boolean isMarked(Player player) {
         return player != null && serverActive.contains(player.getUUID());
     }
+
+    // ------------------------------------------------------------------ 4.2.2 复原支持
+
+    /** 被我们强行打开 noPhysics 的实体(用 id 记,避免强引用实体)。 */
+    private static final java.util.Set<Integer> FORCED =
+        java.util.concurrent.ConcurrentHashMap.newKeySet();
+
+    /** 记下"这个实体的 noPhysics 是我们打开的"。 */
+    public static void markForced(net.minecraft.world.entity.Entity entity) {
+        try {
+            if (entity != null) {
+                FORCED.add(entity.getId());
+            }
+        }
+        catch (RuntimeException | LinkageError ignored) {
+            // 忽略
+        }
+    }
+
+    /**
+     * 实体不再需要穿墙:返回 true 表示"它确实是我们要还原的",调用方据此把 noPhysics 设回 false。
+     */
+    public static boolean releaseForced(net.minecraft.world.entity.Entity entity) {
+        try {
+            return entity != null && FORCED.remove(entity.getId());
+        }
+        catch (RuntimeException | LinkageError ignored) {
+            return false;
+        }
+    }
 }

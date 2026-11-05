@@ -235,8 +235,7 @@
   "screen.enigmaticenhance.fake_ledger.title": "Statistics Editor",
   "message.enigmaticenhance.fake_ledger.creative_only": "Fake Ledger only works in creative mode",
   "jei.enigmaticenhance.sea_of_consciousness.line5": "Obtain: sleep while holding the Earth Bottle; you receive it upon waking.",
-  "tooltip.enigmaticenhance.sea_of_consciousness.effect": "· While held, mobs take no notice of you and will not target you.",
-  "tooltip.enigmaticenhance.sea_of_consciousness.note": "· Only affects mob awareness and aggro; damage is unchanged.",
+  "tooltip.enigmaticenhance.sea_of_consciousness.note": "§8(Only works in main/off hand)",
   "jei.enigmaticenhance.sea_of_consciousness.line1": "While held: hostile mobs take no notice of you and will not target you.",
   "jei.enigmaticenhance.sea_of_consciousness.line2": "Mobs already locked onto you keep losing aggro, and their gaze is forced away.",
   "jei.enigmaticenhance.sea_of_consciousness.line3": "Only affects awareness and aggro; neither your damage nor incoming damage changes.",
@@ -247,5 +246,11 @@
   "tooltip.enigmaticenhance.addon_revival_leaf.effect": "· While worn: Ctrl + Left Click toggles the Dragon Head's creative flight.",
   "tooltip.enigmaticenhance.addon_revival_leaf.state": "· When disabled, the Dragon Head keeps its other bonuses but grants no flight or phasing.",
   "tooltip.enigmaticenhance.addon_revival_leaf.flight.on": "· Flight: ON (Dragon Head may grant creative flight)",
-  "tooltip.enigmaticenhance.addon_revival_leaf.flight.off": "· Flight: OFF (Dragon Head flight disabled)"
+  "tooltip.enigmaticenhance.addon_revival_leaf.flight.off": "· Flight: OFF (Dragon Head flight disabled)",
+  "item.enigmaticenhance.gluttony_book": "Book of Gluttony",
+  "tooltip.enigmaticenhance.gluttony_book.lore": "· A tome soaked in hunger; whoever opens it is devoured by their own appetite.",
+  "tooltip.enigmaticenhance.gluttony_book.effect": "· On use: gains a negative-max health bar, then dies. (No remnants after respawn.)",
+  "tooltip.enigmaticenhance.sea_of_consciousness.header": "§7While held:",
+  "tooltip.enigmaticenhance.sea_of_consciousness.line1": "§8· You cannot deal any damage",
+  "tooltip.enigmaticenhance.sea_of_consciousness.line2": "§8· Creatures without aggro on you actively move away"
 }

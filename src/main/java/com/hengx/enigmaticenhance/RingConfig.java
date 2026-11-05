@@ -89,6 +89,9 @@ public final class RingConfig {
     public static final ForgeConfigSpec.IntValue COMBAT_INVULN_OUTPUT;
     /** 2.7.0:地狱刃片保底 / 附魔师珍珠灌注开关。 */
     public static final ForgeConfigSpec.BooleanValue HELL_BLADE_GUARANTEED;
+
+    /** 4.0.1:地狱刃片在每个箱子里的出现概率(0~1)。 */
+    public static final ForgeConfigSpec.DoubleValue HELL_BLADE_CHANCE;
     /** 3.1.0:术石战利品加权。 */
     public static final ForgeConfigSpec.BooleanValue SPELLSTONE_BOOST_ENABLED;
 
@@ -262,6 +265,11 @@ public final class RingConfig {
         HELL_BLADE_GUARANTEED = builder
             .comment("战利品表里含「地狱刃片护符」时,每名玩家首次开箱必得一份。默认开启。")
             .define("hellBladeGuaranteed", true);
+        HELL_BLADE_CHANCE = builder
+            .comment("4.0.1:地狱刃片在【每个】下界地牢箱子里的出现概率(0~1)。",
+                "一个堡垒遗迹有多张表、几十个箱子,设成 1.0 会一次刷出十几个。",
+                "默认 0.15(15%)。想要每箱必出就设 1.0。")
+            .defineInRange("hellBladeChance", 0.15D, 0.0D, 1.0D);
         PEARL_INFUSION_ENABLED = builder
             .comment("启用「附魔台位阶 ≥ 15 时,大地之心可灌注成附魔师珍珠」的神化灌注配方。默认开启。")
             .define("pearlInfusionEnabled", true);
@@ -742,6 +750,16 @@ public final class RingConfig {
     }
 
     /** 2.7.0:地狱刃片保底开关。 */
+    /** 4.0.1:地狱刃片在每个箱子里的出现概率,默认 0.15。 */
+    public static double hellBladeChance() {
+        try {
+            return HELL_BLADE_CHANCE.get();
+        }
+        catch (RuntimeException | LinkageError e) {
+            return 0.15D;
+        }
+    }
+
     public static boolean hellBladeGuaranteed() {
         try {
             return HELL_BLADE_GUARANTEED.get();

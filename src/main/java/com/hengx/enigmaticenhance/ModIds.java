@@ -23,6 +23,7 @@ public final class ModIds {
 
     /** 网络通道名(两段式:enigmaticenhance + 这个 path)。 */
     public static final String CHANNEL_PATH = "main";
+    public static final String GLUTTONY_BOOK_PATH = "gluttony_book";
 
     /**
      * 1.1.21:左上角 HUD **整块删除**(不再注册任何 GuiOverlay)。

@@ -23,9 +23,13 @@ public class ConsciousnessSeaItem extends Item {
 
     @Override
     public void appendHoverText(ItemStack stack, Level level, List<Component> tooltip, TooltipFlag flag) {
-        tooltip.add(Component.literal("§7手持时:").withStyle(net.minecraft.ChatFormatting.GRAY));
-        tooltip.add(Component.literal("§8· 生物不会注意你，也不会把你设为目标"));
-        tooltip.add(Component.literal("§8· 已锁定的仇恨会被持续清除"));
-        tooltip.add(Component.literal("§8(主手或副手持有才生效)"));
+        tooltip.add(Component.translatable("tooltip.enigmaticenhance.sea_of_consciousness.header")
+            .withStyle(net.minecraft.ChatFormatting.GRAY));
+        tooltip.add(Component.translatable("tooltip.enigmaticenhance.sea_of_consciousness.line1")
+            .withStyle(net.minecraft.ChatFormatting.DARK_GRAY));
+        tooltip.add(Component.translatable("tooltip.enigmaticenhance.sea_of_consciousness.line2")
+            .withStyle(net.minecraft.ChatFormatting.DARK_GRAY));
+        tooltip.add(Component.translatable("tooltip.enigmaticenhance.sea_of_consciousness.note")
+            .withStyle(net.minecraft.ChatFormatting.DARK_GRAY));
     }
 }

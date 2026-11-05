@@ -81,6 +81,10 @@ public final class ModItems {
         ITEMS.register(ModIds.SUN_BOTTLE_PATH, SunBottleItem::new);
 
 
+    /** 4.1.0:enigmaticenhance:gluttony_book —— 贪食之书(负上限血条 + 强制死亡)。 */
+    public static final RegistryObject<Item> GLUTTONY_BOOK =
+        ITEMS.register(ModIds.GLUTTONY_BOOK_PATH, GluttonyBookItem::new);
+
     /** 1.7.2:enigmaticenhance:fishing_haul_bottle —— 渔获瓶(大地之瓶 + 海洋之心)。 */
     public static final RegistryObject<Item> FISHING_HAUL_BOTTLE =
         ITEMS.register(ModIds.FISHING_HAUL_BOTTLE_PATH, FishingHaulBottleItem::new);

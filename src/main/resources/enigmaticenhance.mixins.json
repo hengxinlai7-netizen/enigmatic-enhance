@@ -37,7 +37,6 @@
           "MercurySerpentEntityGuardMixin",
           "MercurySerpentHealthGuardMixin",
           "MercurySerpentHealthRollbackMixin",
-          "SeaTargetGuardMixin",
           "BloodbathHealthLockMixin",
     "TrueDamageBypassMixin",
     "GoetyNamelessOneMixin",
