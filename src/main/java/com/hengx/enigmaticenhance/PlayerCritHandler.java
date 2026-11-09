@@ -52,8 +52,23 @@ public final class PlayerCritHandler {
     private PlayerCritHandler() {
     }
 
+    /** 4.5.0:暴击概率(读配置,默认 50%)。 */
+    public static float critChance() {
+        try {
+            double pct = RingConfig.allDamageCritChance();
+            return (float) Math.max(0.0D, Math.min(100.0D, pct)) / 100.0F;
+        }
+        catch (Throwable t) {
+            return BASE_CHANCE;
+        }
+    }
+
     @SubscribeEvent(priority = EventPriority.LOW)
     public static void onHurt(LivingHurtEvent event) {
+        // 4.5.0:以前写死开关在代码里,现在改成配置项(默认开启,行为不变)
+        if (!RingConfig.allDamageCritEnabled()) {
+            return;
+        }
         try {
             LivingEntity target = event.getEntity();
             if (target == null || target.level().isClientSide || target.isDeadOrDying()) {
@@ -76,7 +91,7 @@ public final class PlayerCritHandler {
             if (player == target) {
                 return;
             }
-            if (player.getRandom().nextFloat() >= BASE_CHANCE) {
+            if (player.getRandom().nextFloat() >= critChance()) {
                 return;
             }
 

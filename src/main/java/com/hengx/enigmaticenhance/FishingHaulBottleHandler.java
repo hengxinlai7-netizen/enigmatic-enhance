@@ -43,6 +43,10 @@ public final class FishingHaulBottleHandler {
 
     @SubscribeEvent
     public static void onFished(ItemFishedEvent event) {
+        // 4.5.0:配置开关(默认开启)
+        if (!RingConfig.fishingHaulEnabled()) {
+            return;
+        }
         try {
             Player p = event.getEntity();
             if (p == null || p.level().isClientSide || !carried(p)) {

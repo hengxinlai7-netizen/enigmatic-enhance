@@ -79,6 +79,10 @@ public final class SpiritLightHandler {
 
     @SubscribeEvent
     public static void onPlayerTick(TickEvent.PlayerTickEvent event) {
+        // 4.5.0:配置开关(默认开启)
+        if (!RingConfig.spiritLightEnabled()) {
+            return;
+        }
         if (event.phase != TickEvent.Phase.END) {
             return;
         }
@@ -96,6 +100,10 @@ public final class SpiritLightHandler {
 
     @SubscribeEvent
     public static void onDrops(LivingDropsEvent event) {
+        // 4.5.0:配置开关(默认开启)
+        if (!RingConfig.spiritLightEnabled()) {
+            return;
+        }
         try {
             if (!(event.getSource().getEntity() instanceof Player player)) {
                 return;
@@ -118,6 +126,10 @@ public final class SpiritLightHandler {
 
     @SubscribeEvent
     public static void onXpChange(net.minecraftforge.event.entity.player.PlayerXpEvent.XpChange event) {
+        // 4.5.0:配置开关(默认开启)
+        if (!RingConfig.spiritLightEnabled()) {
+            return;
+        }
         try {
             if (event.getEntity() == null || event.getAmount() <= 0) {
                 return;

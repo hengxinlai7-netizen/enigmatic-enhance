@@ -57,6 +57,10 @@ public final class SharpshooterHandler {
 
     @SubscribeEvent
     public static void onHurt(LivingHurtEvent event) {
+        // 4.5.0:配置开关(默认开启)
+        if (!RingConfig.sharpshooterEnabled()) {
+            return;
+        }
         try {
             if (event.getSource().getDirectEntity() == null) {
                 return;

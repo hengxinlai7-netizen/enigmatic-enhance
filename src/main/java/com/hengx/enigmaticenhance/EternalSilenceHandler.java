@@ -23,6 +23,10 @@ public final class EternalSilenceHandler {
     }
 
     public static boolean silenced(LivingEntity entity) {
+        // 4.5.0:配置开关(默认开启)
+        if (!RingConfig.eternalSilenceEnabled()) {
+            return false;
+        }
         MobEffect effect = ModEffects.ETERNAL_SILENCE.isPresent() ? ModEffects.ETERNAL_SILENCE.get() : null;
         return effect != null && entity != null && entity.hasEffect(effect);
     }

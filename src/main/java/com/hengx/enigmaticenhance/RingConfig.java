@@ -104,6 +104,37 @@ public final class RingConfig {
     /** 3.8.2:执行之手总开关(未完成功能,默认关闭)。 */
     public static final ForgeConfigSpec.BooleanValue HAND_OF_EXECUTION_ENABLED;
 
+    /** 4.5.0:磁吸戒指 / 超级磁吸戒指 的吸取范围增强。 */
+    public static final ForgeConfigSpec.BooleanValue MAGNET_RANGE_ENABLED;
+    public static final ForgeConfigSpec.IntValue MAGNET_RANGE;
+
+    /** 4.5.0:锻造者宝石(铁砧上升级附魔书)。 */
+    public static final ForgeConfigSpec.BooleanValue FORGER_GEM_ANVIL_ENABLED;
+    public static final ForgeConfigSpec.BooleanValue FORGER_GEM_TOOLTIP_ENABLED;
+
+    /** 4.5.0:其余原先写死、没有开关的增强。 */
+    public static final ForgeConfigSpec.BooleanValue ALL_DAMAGE_CRIT_ENABLED;
+    public static final ForgeConfigSpec.DoubleValue ALL_DAMAGE_CRIT_CHANCE;
+    public static final ForgeConfigSpec.BooleanValue BEACON_ENHANCE_ENABLED;
+    public static final ForgeConfigSpec.BooleanValue BASTION_TREASURE_ENABLED;
+    public static final ForgeConfigSpec.BooleanValue SHARPSHOOTER_ENABLED;
+    public static final ForgeConfigSpec.BooleanValue MIRROR_SHATTER_ENABLED;
+    public static final ForgeConfigSpec.BooleanValue SUN_BOTTLE_ENABLED;
+    public static final ForgeConfigSpec.BooleanValue WAR_FOG_ENABLED;
+    public static final ForgeConfigSpec.BooleanValue SPIRIT_LIGHT_ENABLED;
+    public static final ForgeConfigSpec.BooleanValue STYX_WATER_ENABLED;
+    public static final ForgeConfigSpec.BooleanValue FISHING_HAUL_ENABLED;
+    public static final ForgeConfigSpec.BooleanValue EVIL_ESSENCE_ENABLED;
+    public static final ForgeConfigSpec.BooleanValue UNBREAKABLE_ENCHANT_ENABLED;
+    public static final ForgeConfigSpec.BooleanValue ELEMENTAL_MAGIC_ENABLED;
+    public static final ForgeConfigSpec.BooleanValue ELEMENTAL_SPELL_CAST_ENABLED;
+    public static final ForgeConfigSpec.BooleanValue MERCURY_SERPENT_ENABLED;
+    public static final ForgeConfigSpec.BooleanValue TACZ_SPELL_CAST_ENABLED;
+    public static final ForgeConfigSpec.BooleanValue BLOOD_CALAMITY_ENABLED;
+    public static final ForgeConfigSpec.BooleanValue CALAMITY_ORIGIN_ENABLED;
+    public static final ForgeConfigSpec.BooleanValue ETERNAL_SILENCE_ENABLED;
+    public static final ForgeConfigSpec.BooleanValue VALUE_EDITOR_ENABLED;
+
     /** 3.8.5:珍珠补掷是否只提升已有附魔(过滤书架兼容)。 */
     public static final ForgeConfigSpec.BooleanValue PEARL_EXTRA_ONLY_EXISTING;
 
@@ -298,6 +329,93 @@ public final class RingConfig {
         SPELLSTONE_BOOST_WEIGHT = builder
             .comment("术石条目权重倍数。1.0 = 与神秘遗物原权重一致。")
             .defineInRange("spellstoneBoostWeight", 1.0D, 0.1D, 100.0D);
+        builder.pop();
+
+        builder.comment("磁吸戒指:把「磁吸戒指」与「超级磁吸戒指」的吸取范围改成指定值。")
+            .push("magnet");
+        MAGNET_RANGE_ENABLED = builder
+            .comment("是否启用范围增强。关闭后完全保留神秘遗物原本的吸取范围。默认开启。")
+            .define("enabled", true);
+        MAGNET_RANGE = builder
+            .comment("吸取范围(格)。默认 36(神秘遗物原本远小于这个数)。")
+            .defineInRange("range", 36, 1, 256);
+        builder.pop();
+
+        builder.comment("锻造者宝石:铁砧里两本同附魔同级的书可以直接升到最高等级。")
+            .push("forgerGem");
+        FORGER_GEM_ANVIL_ENABLED = builder
+            .comment("是否启用铁砧升级。关闭后铁砧完全恢复原版行为。默认开启。")
+            .define("anvilUpgradeEnabled", true);
+        FORGER_GEM_TOOLTIP_ENABLED = builder
+            .comment("是否在宝石/晶体的说明里追加这一行提示。默认开启。")
+            .define("tooltipEnabled", true);
+        builder.pop();
+
+        builder.comment("其他增强:原先写死、没有开关的功能,这里统一补上开关(默认全部开启,保持升级前行为)。")
+            .push("enhancements");
+        ALL_DAMAGE_CRIT_ENABLED = builder
+            .comment("玩家造成任何伤害都有概率触发暴击,并沿用各模组自己加的爆伤。默认开启。")
+            .define("allDamageCritEnabled", true);
+        ALL_DAMAGE_CRIT_CHANCE = builder
+            .comment("上面那条的触发概率(百分比)。默认 50。")
+            .defineInRange("allDamageCritChance", 50.0D, 0.0D, 100.0D);
+        BEACON_ENHANCE_ENABLED = builder
+            .comment("信标增强(扩大作用范围与效果等级)。默认开启。")
+            .define("beaconEnhanceEnabled", true);
+        BASTION_TREASURE_ENABLED = builder
+            .comment("堡垒遗迹宝箱的扭曲之心抽取。默认开启。")
+            .define("bastionTreasureEnabled", true);
+        SHARPSHOOTER_ENABLED = builder
+            .comment("神射手护符:弹射物 +20%。默认开启。")
+            .define("sharpshooterEnabled", true);
+        MIRROR_SHATTER_ENABLED = builder
+            .comment("镜碎(受伤 +100%)与镜中之影的运行时。默认开启。")
+            .define("mirrorShatterEnabled", true);
+        SUN_BOTTLE_ENABLED = builder
+            .comment("瓶装太阳(金块+正午转化 / 亡灵增伤 / 饱和与生命回复)。默认开启。")
+            .define("sunBottleEnabled", true);
+        WAR_FOG_ENABLED = builder
+            .comment("瓶装战争迷雾(击杀转化 + 无差别仇恨)。默认开启。")
+            .define("warFogEnabled", true);
+        SPIRIT_LIGHT_ENABLED = builder
+            .comment("瓶装灵界之光(副手移动转化 + 额外掉落)。默认开启。")
+            .define("spiritLightEnabled", true);
+        STYX_WATER_ENABLED = builder
+            .comment("瓶装冥河之水(图腾转化 + 免死一次)。默认开启。")
+            .define("styxWaterEnabled", true);
+        FISHING_HAUL_ENABLED = builder
+            .comment("渔获瓶(按幸运值提升钓鱼产出)。默认开启。")
+            .define("fishingHaulEnabled", true);
+        EVIL_ESSENCE_ENABLED = builder
+            .comment("邪恶精髓复制。默认开启。")
+            .define("evilEssenceEnabled", true);
+        UNBREAKABLE_ENCHANT_ENABLED = builder
+            .comment("「不毁」附魔的生效逻辑。默认开启。")
+            .define("unbreakableEnchantEnabled", true);
+        ELEMENTAL_MAGIC_ENABLED = builder
+            .comment("元素魔法附魔的伤害追加。关闭后附魔还在,但不再追加属性伤害。默认开启。")
+            .define("elementalMagicEnabled", true);
+        ELEMENTAL_SPELL_CAST_ENABLED = builder
+            .comment("攻击时自动施放武器注入/魔法书选中的法术。默认开启。")
+            .define("elementalSpellCastEnabled", true);
+        MERCURY_SERPENT_ENABLED = builder
+            .comment("水银之蛇效果(护盾/濒死/掉落)。默认开启。")
+            .define("mercurySerpentEnabled", true);
+        TACZ_SPELL_CAST_ENABLED = builder
+            .comment("TACZ 开枪连携施法(需要装 TACZ)。默认开启。")
+            .define("taczSpellCastEnabled", true);
+        BLOOD_CALAMITY_ENABLED = builder
+            .comment("血色之灾效果(每层负面 +10% 受伤)。默认开启。")
+            .define("bloodCalamityEnabled", true);
+        CALAMITY_ORIGIN_ENABLED = builder
+            .comment("根源之祸效果(下一次受伤结算 40% 上限伤害)。默认开启。")
+            .define("calamityOriginEnabled", true);
+        ETERNAL_SILENCE_ENABLED = builder
+            .comment("永暗之寂效果(禁止一切右键使用)。默认开启。")
+            .define("eternalSilenceEnabled", true);
+        VALUE_EDITOR_ENABLED = builder
+            .comment("数值编辑器(创造专用)。默认开启。")
+            .define("valueEditorEnabled", true);
         builder.pop();
 
         builder.comment("七咒之戒:修正第四重咒的伤害削减(不改那三本书本身)。").push("cursedRing");
@@ -776,6 +894,146 @@ public final class RingConfig {
         catch (RuntimeException | LinkageError e) {
             return false;
         }
+    }
+
+    /** 4.5.0:磁吸戒指范围增强的总开关(默认 true)。 */
+    public static boolean magnetRangeEnabled() {
+        try {
+            return MAGNET_RANGE_ENABLED.get();
+        }
+        catch (RuntimeException | LinkageError e) {
+            return true;
+        }
+    }
+
+    /** 4.5.0:磁吸戒指 / 超级磁吸戒指的吸取范围(格,默认 36)。 */
+    public static int magnetRange() {
+        try {
+            return MAGNET_RANGE.get();
+        }
+        catch (RuntimeException | LinkageError e) {
+            return MagnetRangeHandler.DEFAULT_RANGE;
+        }
+    }
+
+    /** 4.5.0:锻造者宝石的铁砧升级开关(默认 true)。 */
+    public static boolean forgerGemAnvilEnabled() {
+        try {
+            return FORGER_GEM_ANVIL_ENABLED.get();
+        }
+        catch (RuntimeException | LinkageError e) {
+            return true;
+        }
+    }
+
+    /** 4.5.0:锻造者宝石的说明行开关(默认 true)。 */
+    public static boolean forgerGemTooltipEnabled() {
+        try {
+            return FORGER_GEM_TOOLTIP_ENABLED.get();
+        }
+        catch (RuntimeException | LinkageError e) {
+            return true;
+        }
+    }
+
+    // ------------------------------------------------------------------
+    // 4.5.0:其余"原先写死"的增强开关(默认全部 true = 升级后行为不变)
+    // ------------------------------------------------------------------
+
+    /** 全伤暴击(默认 true)。 */
+    public static boolean allDamageCritEnabled() {
+        try {
+            return ALL_DAMAGE_CRIT_ENABLED.get();
+        }
+        catch (RuntimeException | LinkageError e) {
+            return true;
+        }
+    }
+
+    /** 全伤暴击的触发概率(百分比,默认 50)。 */
+    public static double allDamageCritChance() {
+        try {
+            return ALL_DAMAGE_CRIT_CHANCE.get();
+        }
+        catch (RuntimeException | LinkageError e) {
+            return 50.0D;
+        }
+    }
+
+    public static boolean beaconEnhanceEnabled() {
+        try { return BEACON_ENHANCE_ENABLED.get(); } catch (RuntimeException | LinkageError e) { return true; }
+    }
+
+    public static boolean bastionTreasureEnabled() {
+        try { return BASTION_TREASURE_ENABLED.get(); } catch (RuntimeException | LinkageError e) { return true; }
+    }
+
+    public static boolean sharpshooterEnabled() {
+        try { return SHARPSHOOTER_ENABLED.get(); } catch (RuntimeException | LinkageError e) { return true; }
+    }
+
+    public static boolean mirrorShatterEnabled() {
+        try { return MIRROR_SHATTER_ENABLED.get(); } catch (RuntimeException | LinkageError e) { return true; }
+    }
+
+    public static boolean sunBottleEnabled() {
+        try { return SUN_BOTTLE_ENABLED.get(); } catch (RuntimeException | LinkageError e) { return true; }
+    }
+
+    public static boolean warFogEnabled() {
+        try { return WAR_FOG_ENABLED.get(); } catch (RuntimeException | LinkageError e) { return true; }
+    }
+
+    public static boolean spiritLightEnabled() {
+        try { return SPIRIT_LIGHT_ENABLED.get(); } catch (RuntimeException | LinkageError e) { return true; }
+    }
+
+    public static boolean styxWaterEnabled() {
+        try { return STYX_WATER_ENABLED.get(); } catch (RuntimeException | LinkageError e) { return true; }
+    }
+
+    public static boolean fishingHaulEnabled() {
+        try { return FISHING_HAUL_ENABLED.get(); } catch (RuntimeException | LinkageError e) { return true; }
+    }
+
+    public static boolean evilEssenceEnabled() {
+        try { return EVIL_ESSENCE_ENABLED.get(); } catch (RuntimeException | LinkageError e) { return true; }
+    }
+
+    public static boolean unbreakableEnchantEnabled() {
+        try { return UNBREAKABLE_ENCHANT_ENABLED.get(); } catch (RuntimeException | LinkageError e) { return true; }
+    }
+
+    public static boolean elementalMagicEnabled() {
+        try { return ELEMENTAL_MAGIC_ENABLED.get(); } catch (RuntimeException | LinkageError e) { return true; }
+    }
+
+    public static boolean elementalSpellCastEnabled() {
+        try { return ELEMENTAL_SPELL_CAST_ENABLED.get(); } catch (RuntimeException | LinkageError e) { return true; }
+    }
+
+    public static boolean mercurySerpentEnabled() {
+        try { return MERCURY_SERPENT_ENABLED.get(); } catch (RuntimeException | LinkageError e) { return true; }
+    }
+
+    public static boolean taczSpellCastEnabled() {
+        try { return TACZ_SPELL_CAST_ENABLED.get(); } catch (RuntimeException | LinkageError e) { return true; }
+    }
+
+    public static boolean bloodCalamityEnabled() {
+        try { return BLOOD_CALAMITY_ENABLED.get(); } catch (RuntimeException | LinkageError e) { return true; }
+    }
+
+    public static boolean calamityOriginEnabled() {
+        try { return CALAMITY_ORIGIN_ENABLED.get(); } catch (RuntimeException | LinkageError e) { return true; }
+    }
+
+    public static boolean eternalSilenceEnabled() {
+        try { return ETERNAL_SILENCE_ENABLED.get(); } catch (RuntimeException | LinkageError e) { return true; }
+    }
+
+    public static boolean valueEditorEnabled() {
+        try { return VALUE_EDITOR_ENABLED.get(); } catch (RuntimeException | LinkageError e) { return true; }
     }
 
     /** 3.8.5:珍珠补掷是否只提升已有附魔(默认 true)。 */

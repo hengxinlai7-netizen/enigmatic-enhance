@@ -75,6 +75,10 @@ public final class UnbreakableHandler {
 
     @SubscribeEvent
     public static void onPlayerTick(TickEvent.PlayerTickEvent event) {
+        // 4.5.0:配置开关(默认开启)
+        if (!RingConfig.unbreakableEnchantEnabled()) {
+            return;
+        }
         if (event.phase != TickEvent.Phase.END) {
             return;
         }

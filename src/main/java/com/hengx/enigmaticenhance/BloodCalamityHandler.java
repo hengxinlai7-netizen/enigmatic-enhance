@@ -70,6 +70,10 @@ public final class BloodCalamityHandler {
     /** 1.2.23:击杀生物后自动清除自己的血色之灾。 */
     @SubscribeEvent
     public static void onKill(net.minecraftforge.event.entity.living.LivingDeathEvent event) {
+        // 4.5.0:配置开关(默认开启)
+        if (!RingConfig.bloodCalamityEnabled()) {
+            return;
+        }
         try {
             if (event.getSource().getEntity() instanceof Player killer && killer.level() instanceof net.minecraft.server.level.ServerLevel) {
                 forceRemove(killer);
@@ -127,6 +131,10 @@ public final class BloodCalamityHandler {
 
     @SubscribeEvent
     public static void onPlayerTick(TickEvent.PlayerTickEvent event) {
+        // 4.5.0:配置开关(默认开启)
+        if (!RingConfig.bloodCalamityEnabled()) {
+            return;
+        }
         if (event.phase != TickEvent.Phase.END || event.player.level().isClientSide) {
             return;
         }
@@ -162,6 +170,10 @@ public final class BloodCalamityHandler {
 
     @SubscribeEvent
     public static void onHurt(LivingHurtEvent event) {
+        // 4.5.0:配置开关(默认开启)
+        if (!RingConfig.bloodCalamityEnabled()) {
+            return;
+        }
         try {
             LivingEntity target = event.getEntity();
             if (target == null || target.level().isClientSide) {

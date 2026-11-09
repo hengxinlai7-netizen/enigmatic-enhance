@@ -52,6 +52,10 @@ public final class WarFogHandler {
 
     @SubscribeEvent
     public static void onDeath(LivingDeathEvent event) {
+        // 4.5.0:配置开关(默认开启)
+        if (!RingConfig.warFogEnabled()) {
+            return;
+        }
         try {
             if (!(event.getSource().getEntity() instanceof Player player)) {
                 return;
@@ -96,6 +100,10 @@ public final class WarFogHandler {
 
     @SubscribeEvent
     public static void onPlayerTick(TickEvent.PlayerTickEvent event) {
+        // 4.5.0:配置开关(默认开启)
+        if (!RingConfig.warFogEnabled()) {
+            return;
+        }
         if (event.phase != TickEvent.Phase.END) {
             return;
         }

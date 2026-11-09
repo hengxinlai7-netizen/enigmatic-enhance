@@ -63,7 +63,9 @@ public class VoidAuraEnchantment extends Enchantment {
 
     @Override
     public boolean canApplyAtEnchantingTable(ItemStack stack) {
-        return stack.getItem() instanceof SwordItem && hasMagicSwordAura(stack) && !RingConfig.autoSmeltLootOnly();
+        // 4.5.0:未完成内容,禁止获得时附魔台刷不出来
+        return UnfinishedContent.allowAcquisition() && stack.getItem() instanceof SwordItem
+            && hasMagicSwordAura(stack) && !RingConfig.autoSmeltLootOnly();
     }
 
     @Override
@@ -73,7 +75,8 @@ public class VoidAuraEnchantment extends Enchantment {
 
     @Override
     public boolean isDiscoverable() {
-        return true;
+        // 4.5.0:战利品 / 随机附魔同样按开关拦截
+        return UnfinishedContent.allowAcquisition();
     }
 
     @Override

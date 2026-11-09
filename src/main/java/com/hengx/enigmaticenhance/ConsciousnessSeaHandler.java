@@ -125,10 +125,13 @@ public final class ConsciousnessSeaHandler {
         }
     }
 
-    /** 手持大地之瓶睡觉 → 获得瓶装意识之海。 */
+    /** 手持大地之瓶睡觉 → 获得瓶装意识之海。4.5.0:未完成内容,禁止获得时不产出。 */
     @SubscribeEvent
     public static void onWakeUp(PlayerWakeUpEvent event) {
         try {
+            if (!UnfinishedContent.allowAcquisition()) {
+                return;
+            }
             Player player = event.getEntity();
             if (player == null || player.level().isClientSide || ModItems.SEA_OF_CONSCIOUSNESS == null
                 || !ModItems.SEA_OF_CONSCIOUSNESS.isPresent()) {

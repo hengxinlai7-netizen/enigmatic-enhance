@@ -57,6 +57,10 @@ public final class SunBottleHandler {
 
     @SubscribeEvent
     public static void onRightClickBlock(PlayerInteractEvent.RightClickBlock event) {
+        // 4.5.0:配置开关(默认开启)
+        if (!RingConfig.sunBottleEnabled()) {
+            return;
+        }
         try {
             Player player = event.getEntity();
             if (player == null || player.level().isClientSide()) {
@@ -99,6 +103,10 @@ public final class SunBottleHandler {
 
     @SubscribeEvent
     public static void onHurt(LivingHurtEvent event) {
+        // 4.5.0:配置开关(默认开启)
+        if (!RingConfig.sunBottleEnabled()) {
+            return;
+        }
         try {
             if (!(event.getSource().getEntity() instanceof Player player)) {
                 return;
@@ -122,6 +130,10 @@ public final class SunBottleHandler {
 
     @SubscribeEvent
     public static void onPlayerTick(TickEvent.PlayerTickEvent event) {
+        // 4.5.0:配置开关(默认开启)
+        if (!RingConfig.sunBottleEnabled()) {
+            return;
+        }
         if (event.phase != TickEvent.Phase.END) {
             return;
         }

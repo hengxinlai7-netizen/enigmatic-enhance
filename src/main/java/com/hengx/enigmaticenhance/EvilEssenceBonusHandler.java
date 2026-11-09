@@ -45,6 +45,10 @@ public final class EvilEssenceBonusHandler {
 
     @SubscribeEvent(priority = EventPriority.LOWEST)
     public static void onDeath(LivingDeathEvent event) {
+        // 4.5.0:配置开关(默认开启)
+        if (!RingConfig.evilEssenceEnabled()) {
+            return;
+        }
         try {
             if (!(event.getSource().getEntity() instanceof Player killer) || killer.level().isClientSide) {
                 return;

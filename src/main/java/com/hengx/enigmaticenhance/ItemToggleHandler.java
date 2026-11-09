@@ -48,7 +48,8 @@ public final class ItemToggleHandler {
     /** 所有支持开关的物品(延迟构建,避免类初始化顺序问题)。 */
     public static synchronized List<Target> targets() {
         if (targets == null) {
-            targets = List.of(ScrollHandler.TOGGLE_TARGET, BloodbathHandler.TOGGLE_TARGET);
+            targets = List.of(ScrollHandler.TOGGLE_TARGET, BloodbathHandler.TOGGLE_TARGET,
+                RevivalLeafStoneHandler.TOGGLE_TARGET);
         }
         return targets;
     }

@@ -125,9 +125,14 @@ public class EnigmaticEnhance {
         // 2.6.0:宿命的试炼已拆分为独立模组(enhancetrial),本模组不再注册。
         MinecraftForge.EVENT_BUS.register(FateWorldApplier.class);   // 1.6.6:创建世界选项写入 gamerule
         MinecraftForge.EVENT_BUS.register(ConsciousnessSeaHandler.class);   // 1.6.15:瓶装意识之海
+        MinecraftForge.EVENT_BUS.register(AddonRevivalLeafTooltip.class);   // 4.5.0:复苏之叶说明(从 enigmaticcurio 取回)
+        MinecraftForge.EVENT_BUS.register(UnfinishedContent.class);   // 4.5.0:四项未完成内容的 tooltip 标记
         MinecraftForge.EVENT_BUS.register(EarthHeartLootHandler.class);
         MinecraftForge.EVENT_BUS.register(PlayerCritHandler.class);
         MinecraftForge.EVENT_BUS.register(GluttonyBookCleanup.class);   // 4.1.0:贪食之书复活清理
+        MinecraftForge.EVENT_BUS.register(MagnetRangeHandler.class);   // 4.5.0:磁吸戒指范围(从 enigmaticcurio 取回)
+        MagnetRangeHandler.apply();
+        modBus.addListener(MagnetRangeHandler::onCommonSetup);
         MinecraftForge.EVENT_BUS.register(HellBladeLootHandler.class);
         MinecraftForge.EVENT_BUS.register(SpellstoneLootBoostHandler.class);   // 3.1.0:术石战利品加权   // 2.7.0:地狱刃片保底
         MinecraftForge.EVENT_BUS.register(HandOfExecutionHandler.class);

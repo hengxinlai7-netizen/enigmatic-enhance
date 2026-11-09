@@ -90,6 +90,10 @@ public final class CalamityOriginHandler {
     /** 龙息挂 buff:只认"末影龙口吐的龙息"伤害类型。 */
     @SubscribeEvent
     public static void onHurt(LivingHurtEvent event) {
+        // 4.5.0:配置开关(默认开启)
+        if (!RingConfig.calamityOriginEnabled()) {
+            return;
+        }
         try {
             LivingEntity entity = event.getEntity();
             if (entity == null || entity.level().isClientSide) {
@@ -119,6 +123,10 @@ public final class CalamityOriginHandler {
     /** 触发真伤:LivingDamageEvent(在此结算后写死扣血)。 */
     @SubscribeEvent(priority = EventPriority.LOWEST)
     public static void onDamage(LivingDamageEvent event) {
+        // 4.5.0:配置开关(默认开启)
+        if (!RingConfig.calamityOriginEnabled()) {
+            return;
+        }
         try {
             LivingEntity entity = event.getEntity();
             if (entity == null || entity.level().isClientSide) {

@@ -23,6 +23,10 @@ public final class TaczCompat {
 
     @SubscribeEvent
     public static void onGunFire(GunFireEvent event) {
+        // 4.5.0:配置开关(默认开启)
+        if (!RingConfig.taczSpellCastEnabled()) {
+            return;
+        }
         try {
             if (event.getLogicalSide() == LogicalSide.CLIENT) {
                 return;

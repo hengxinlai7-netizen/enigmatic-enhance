@@ -82,6 +82,10 @@ public final class ForgerGemAnvilHandler {
     /** 1.7.0:给锻造者宝石/晶体追加说明(铁砧升满级)。 */
     @SubscribeEvent
     public static void onTooltip(ItemTooltipEvent event) {
+        // 4.5.0:说明行可在配置里关掉
+        if (!RingConfig.forgerGemTooltipEnabled()) {
+            return;
+        }
         try {
             ItemStack stack = event.getItemStack();
             if (stack == null || stack.isEmpty() || !isGem(stack)) {
@@ -96,6 +100,10 @@ public final class ForgerGemAnvilHandler {
 
     @SubscribeEvent
     public static void onAnvil(AnvilUpdateEvent event) {
+        // 4.5.0:铁砧升级的总开关(默认开启,关闭后完全恢复原版铁砧行为)
+        if (!RingConfig.forgerGemAnvilEnabled()) {
+            return;
+        }
         try {
             ItemStack left = event.getLeft();
             ItemStack right = event.getRight();

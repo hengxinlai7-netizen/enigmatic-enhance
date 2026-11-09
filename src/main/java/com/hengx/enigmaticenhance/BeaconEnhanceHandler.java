@@ -54,6 +54,10 @@ public final class BeaconEnhanceHandler {
     /** 启动完成后把效果塞进信标表(此时注册表已就绪)。 */
     @SubscribeEvent
     public static void onServerStarted(ServerStartedEvent event) {
+        // 4.5.0:配置开关(默认开启;关闭后不再往信标表里塞增强效果)
+        if (!RingConfig.beaconEnhanceEnabled()) {
+            return;
+        }
         install();
     }
 

@@ -203,6 +203,10 @@ public final class ElementalMagicHandler {
 
     @SubscribeEvent
     public static void onHurt(LivingHurtEvent event) {
+        // 4.5.0:配置开关(默认开启;关闭后不再追加属性伤害)
+        if (!RingConfig.elementalMagicEnabled()) {
+            return;
+        }
         if (!ironsLoaded() || Boolean.TRUE.equals(APPLYING.get())) {
             return;
         }

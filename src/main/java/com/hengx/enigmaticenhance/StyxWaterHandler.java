@@ -46,6 +46,10 @@ public final class StyxWaterHandler {
     /** 触发不死图腾:副手的大地之瓶 → 瓶装冥河之水。 */
     @SubscribeEvent
     public static void onTotemUse(LivingUseTotemEvent event) {
+        // 4.5.0:配置开关(默认开启)
+        if (!RingConfig.styxWaterEnabled()) {
+            return;
+        }
         try {
             if (!(event.getEntity() instanceof Player player)) {
                 return;
@@ -75,6 +79,10 @@ public final class StyxWaterHandler {
     /** 致命伤害:有冥河之水且今天没用过 ⇒ 免死(生命回一半)。 */
     @SubscribeEvent
     public static void onHurt(LivingHurtEvent event) {
+        // 4.5.0:配置开关(默认开启)
+        if (!RingConfig.styxWaterEnabled()) {
+            return;
+        }
         try {
             if (!(event.getEntity() instanceof Player player)) {
                 return;

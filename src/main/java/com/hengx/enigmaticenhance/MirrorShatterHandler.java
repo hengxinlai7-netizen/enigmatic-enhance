@@ -30,6 +30,10 @@ public final class MirrorShatterHandler {
 
     @SubscribeEvent
     public static void onHurt(LivingHurtEvent event) {
+        // 4.5.0:配置开关(默认开启)
+        if (!RingConfig.mirrorShatterEnabled()) {
+            return;
+        }
         try {
             LivingEntity entity = event.getEntity();
             var effect = ModEffects.mirrorShatterOrNull();

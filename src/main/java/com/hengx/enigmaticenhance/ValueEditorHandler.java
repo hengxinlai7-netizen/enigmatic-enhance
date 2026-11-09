@@ -15,6 +15,10 @@ public final class ValueEditorHandler {
     /** 左键:手持编辑器攻击实体 → 打开该实体的编辑界面(取消这次攻击)。 */
     @SubscribeEvent
     public static void onAttack(AttackEntityEvent event) {
+        // 4.5.0:配置开关(默认开启)
+        if (!RingConfig.valueEditorEnabled()) {
+            return;
+        }
         try {
             Player player = event.getEntity();
             if (player == null || player.level().isClientSide) {

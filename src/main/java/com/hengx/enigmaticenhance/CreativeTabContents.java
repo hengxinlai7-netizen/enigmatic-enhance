@@ -121,7 +121,10 @@ public final class CreativeTabContents {
         }
         if (editor != null) {
             items.add(editor);
-            items.add(sea);
+            // 4.5.0:瓶装意识之海是未完成内容,禁止获得时不出现在创造栏
+            if (UnfinishedContent.allowAcquisition()) {
+                items.add(sea);
+            }
         }
         // 4.1.0:贪食之书单独加,不跟上面的 editor 判空耦合
         if (gluttony != null) {
@@ -174,6 +177,10 @@ public final class CreativeTabContents {
             output.accept(new ItemStack(item), CreativeModeTab.TabVisibility.PARENT_AND_SEARCH_TABS);
         }
         // 2.9.0:「执行之手」—— 附魔书形式,只能靠创造模式取用
+        // 4.5.0:未完成内容,禁止获得时不投递
+        if (!UnfinishedContent.allowAcquisition()) {
+            return;
+        }
         try {
             HandOfExecutionEnchantment ench = ModEnchantments.handOfExecutionOrNull();
             if (ench != null) {

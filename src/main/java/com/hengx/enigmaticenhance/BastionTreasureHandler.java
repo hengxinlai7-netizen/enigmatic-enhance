@@ -62,6 +62,10 @@ public final class BastionTreasureHandler {
 
     @SubscribeEvent
     public static void onRightClickBlock(PlayerInteractEvent.RightClickBlock event) {
+        // 4.5.0:配置开关(默认开启)
+        if (!RingConfig.bastionTreasureEnabled()) {
+            return;
+        }
         try {
             Player player = event.getEntity();
             if (player == null || player.level().isClientSide) {

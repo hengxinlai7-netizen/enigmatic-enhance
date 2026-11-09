@@ -30,10 +30,21 @@ public final class ItemConfig {
     public static final ForgeConfigSpec.IntValue EARTH_AMULET_MAX_CAPTURED_ITEMS;
     public static final ForgeConfigSpec.ConfigValue<List<? extends String>> EARTH_AMULET_EFFECT_BLACKLIST;
 
+    /** 4.5.0:未完成内容的获得途径开关(默认 false)。 */
+    public static final ForgeConfigSpec.BooleanValue UNFINISHED_ALLOW_ACQUISITION;
+
     private static final Set<String> DISABLED_CACHE = new LinkedHashSet<>();
 
     static {
         ForgeConfigSpec.Builder builder = new ForgeConfigSpec.Builder();
+
+        // 4.5.0:未完成内容的获得途径。放在最外层,和 [items] 平级。
+        builder.comment("未完成内容:魔法剑气 / 虚空剑气 / 瓶装意识之海 / 执行之手。").push("unfinished");
+        UNFINISHED_ALLOW_ACQUISITION = builder
+            .comment("是否允许获得这些未完成内容(创造物品栏 / 合成 / 附魔台 / 战利品)。默认 false。",
+                     "关闭时只是【不再新产出】:已经拿到的物品不会回收,照常可用。")
+            .define("allowAcquisition", false);
+        builder.pop();
 
         builder.comment("物品级开关(2.5.0)。").push("items");
         DISABLED_ITEM_IDS = builder
@@ -99,6 +110,16 @@ public final class ItemConfig {
 
     public static boolean hideDisabledFromTab() {
         try { return HIDE_DISABLED_FROM_TAB.get(); } catch (Throwable t) { return true; }
+    }
+
+    /** 4.5.0:是否允许获得未完成内容(默认 false = 关闭获得途径)。 */
+    public static boolean unfinishedAllowAcquisition() {
+        try {
+            return UNFINISHED_ALLOW_ACQUISITION.get();
+        }
+        catch (RuntimeException | LinkageError e) {
+            return false;
+        }
     }
 
     public static final ForgeConfigSpec.BooleanValue ALLOW_INSTANT_EFFECTS;

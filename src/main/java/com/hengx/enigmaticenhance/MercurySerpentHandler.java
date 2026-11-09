@@ -84,6 +84,10 @@ public final class MercurySerpentHandler {
     }
 
     public static boolean has(LivingEntity entity) {
+        // 4.5.0:配置开关(默认开启;关闭后整条水银之蛇机制不再生效)
+        if (!RingConfig.mercurySerpentEnabled()) {
+            return false;
+        }
         MobEffect effect = effect();
         return effect != null && entity.hasEffect(effect);
     }

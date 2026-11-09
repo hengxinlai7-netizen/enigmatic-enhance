@@ -91,6 +91,10 @@ public final class ElementalSpellCastHandler {
      */
     @SubscribeEvent
     public static void onLeftClickBlock(net.minecraftforge.event.entity.player.PlayerInteractEvent.LeftClickBlock event) {
+        // 4.5.0:配置开关(默认开启)
+        if (!RingConfig.elementalSpellCastEnabled()) {
+            return;
+        }
         try {
             Player player = event.getEntity();
             if (player == null || player.level().isClientSide) {
@@ -122,6 +126,10 @@ public final class ElementalSpellCastHandler {
      */
     @SubscribeEvent(priority = net.minecraftforge.eventbus.api.EventPriority.LOWEST)
     public static void onChainSpellHurt(LivingHurtEvent event) {
+        // 4.5.0:配置开关(默认开启)
+        if (!RingConfig.elementalSpellCastEnabled()) {
+            return;
+        }
         try {
             if (!(event.getSource().getEntity() instanceof Player player)) {
                 return;
@@ -143,6 +151,10 @@ public final class ElementalSpellCastHandler {
 
     @SubscribeEvent
     public static void onArrowLoose(net.minecraftforge.event.entity.player.ArrowLooseEvent event) {
+        // 4.5.0:配置开关(默认开启)
+        if (!RingConfig.elementalSpellCastEnabled()) {
+            return;
+        }
         try {
             Player player = event.getEntity();
             if (player == null || player.level().isClientSide) {
@@ -172,6 +184,10 @@ public final class ElementalSpellCastHandler {
 
     @SubscribeEvent
     public static void onRightClick(net.minecraftforge.event.entity.player.PlayerInteractEvent.RightClickItem event) {
+        // 4.5.0:配置开关(默认开启)
+        if (!RingConfig.elementalSpellCastEnabled()) {
+            return;
+        }
         try {
             Player player = event.getEntity();
             if (player == null || player.level().isClientSide) {
@@ -233,6 +249,10 @@ public final class ElementalSpellCastHandler {
 
     @SubscribeEvent
     public static void onAttack(AttackEntityEvent event) {
+        // 4.5.0:配置开关(默认开启)
+        if (!RingConfig.elementalSpellCastEnabled()) {
+            return;
+        }
         try {
             // 1.2.21 诊断:攻击入口是否命中、附魔在不在、法术取没取到
             if (event.getEntity() != null && !event.getEntity().level().isClientSide) {
