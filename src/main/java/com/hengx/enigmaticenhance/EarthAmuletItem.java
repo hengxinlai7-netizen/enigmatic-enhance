@@ -5,6 +5,10 @@ import java.util.List;
 import javax.annotation.Nullable;
 
 import net.minecraft.ChatFormatting;
+import net.minecraft.locale.Language;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.ListTag;
+import net.minecraft.nbt.Tag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.effect.MobEffect;
 import net.minecraft.world.entity.player.Player;
@@ -116,36 +120,101 @@ public class EarthAmuletItem extends Item implements ICurioItem {
     @Override
     public void appendHoverText(ItemStack stack, @Nullable Level level, List<Component> tooltip, TooltipFlag flag) {
         tooltip.add(HEADER);
-
-        List<EarthAmuletData.StoredEffect> effects = EarthAmuletData.effects(stack);
-        List<String> heads = EarthAmuletData.heads(stack);
-        boolean empowered = EarthAmuletData.isEmpowered(stack);
         boolean any = false;
 
-        // 1.1.25d:只显示**当前真实状态**,最多 3 行(heads 每颗一行);没有任何状态时才显示"可合成"提示。
-        if (!effects.isEmpty()) {
-            StringBuilder text = new StringBuilder();
-            for (EarthAmuletData.StoredEffect stored : effects) {
-                if (text.length() > 0) {
-                    text.append(", ");
+        // 4.6.3(帧率):药水效果那一行按"NBT 内容指纹 + 语言实例"缓存。
+        // 本方法在鼠标悬停护符期间**每帧**被调用,而原来每帧都要:
+        //   effects()(new ArrayList + 每条一个 record)→ 每条 effectName().getString()
+        //   (翻译查找 + 建 String)→ StringBuilder → 新的 TranslatableComponent。
+        // 内容指纹只读 NBT(id/lvl/heads/empowered),没有分配,所以缓存命中时这一段近乎免费。
+        long key = contentKey(stack);
+        Language language = Language.getInstance();
+        if (key != cachedPotionKey || language != cachedPotionLanguage) {
+            cachedPotionLine = buildPotionLine(stack);
+            cachedPotionKey = key;
+            cachedPotionLanguage = language;
+        }
+        if (cachedPotionLine != null) {
+            tooltip.add(cachedPotionLine);
+            any = true;
+        }
+
+        // 头颅行:直接遍历 NBT(不再 new 一个 List<String>),每行按 lang path 缓存(见 headLine)。
+        CompoundTag tag = stack == null ? null : stack.getTag();
+        if (tag != null && tag.contains(EarthAmuletData.TAG_HEADS, Tag.TAG_LIST)) {
+            ListTag heads = tag.getList(EarthAmuletData.TAG_HEADS, Tag.TAG_STRING);
+            for (int i = 0; i < heads.size(); i++) {
+                String head = heads.getString(i);
+                if (head.isEmpty()) {
+                    continue;
                 }
-                text.append(effectName(stored.id()).getString()).append(' ').append(roman(stored.level()));
+                tooltip.add(headLine(head));
+                any = true;
             }
-            tooltip.add(Component.translatable("tooltip.enigmaticenhance.earth_amulet.potion", text.toString())
-                .withStyle(ChatFormatting.AQUA));
-            any = true;
         }
-        for (String head : heads) {
-            tooltip.add(headLine(head));
-            any = true;
-        }
-        if (empowered) {
+        if (EarthAmuletData.isEmpowered(stack)) {
             tooltip.add(EMPOWERED);
             any = true;
         }
         if (!any) {
             tooltip.add(EMPTY);
         }
+    }
+
+    // ------------------------------------------------------------------ 药水效果行的内容缓存(4.6.3)
+
+    /** 上次建"药水效果行"时的内容指纹。 */
+    private static long cachedPotionKey = Long.MIN_VALUE;
+
+    /** 上次建行时的语言实例(资源包/语言重载会换实例 ⇒ 自动重建)。 */
+    private static Language cachedPotionLanguage;
+
+    /** 缓存的"药水效果行";{@code null} = 这叠护符没有任何可显示的效果。 */
+    private static Component cachedPotionLine;
+
+    /** 与 tooltip 内容一一对应的 NBT 指纹(只读,不分配)。 */
+    private static long contentKey(ItemStack stack) {
+        CompoundTag tag = stack == null ? null : stack.getTag();
+        if (tag == null) {
+            return 0L;
+        }
+        long h = 1125899906842597L;
+        if (tag.getBoolean(EarthAmuletData.TAG_EMPOWERED)) {
+            h = h * 31L + 1L;
+        }
+        if (tag.contains(EarthAmuletData.TAG_POTION_EFFECTS, Tag.TAG_LIST)) {
+            ListTag effects = tag.getList(EarthAmuletData.TAG_POTION_EFFECTS, Tag.TAG_COMPOUND);
+            for (int i = 0; i < effects.size(); i++) {
+                CompoundTag one = effects.getCompound(i);
+                h = h * 31L + one.getString(EarthAmuletData.KEY_ID).hashCode();
+                h = h * 31L + one.getInt(EarthAmuletData.KEY_LVL);
+            }
+        }
+        h = h * 31L + 0x9E3779B97F4A7C15L;   // 分隔,避免 effects 与 heads 的序列混淆
+        if (tag.contains(EarthAmuletData.TAG_HEADS, Tag.TAG_LIST)) {
+            ListTag heads = tag.getList(EarthAmuletData.TAG_HEADS, Tag.TAG_STRING);
+            for (int i = 0; i < heads.size(); i++) {
+                h = h * 31L + heads.getString(i).hashCode();
+            }
+        }
+        return h;
+    }
+
+    /** 真正建"药水效果行"(只在内容/语言变化时调用一次);没有效果返回 {@code null}。 */
+    private static Component buildPotionLine(ItemStack stack) {
+        List<EarthAmuletData.StoredEffect> effects = EarthAmuletData.effects(stack);
+        if (effects.isEmpty()) {
+            return null;
+        }
+        StringBuilder text = new StringBuilder();
+        for (EarthAmuletData.StoredEffect stored : effects) {
+            if (text.length() > 0) {
+                text.append(", ");
+            }
+            text.append(effectName(stored.id()).getString()).append(' ').append(roman(stored.level()));
+        }
+        return Component.translatable("tooltip.enigmaticenhance.earth_amulet.potion", text.toString())
+            .withStyle(ChatFormatting.AQUA);
     }
 
     /** 药水效果显示名(本地化;取不到就退回注册表 id)。 */

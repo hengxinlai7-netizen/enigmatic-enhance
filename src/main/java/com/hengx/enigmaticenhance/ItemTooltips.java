@@ -239,6 +239,9 @@ public final class ItemTooltips {
     /** 建缓存时的"是否已同步"状态。 */
     private static boolean bagLinesSynced;
 
+    /** 建缓存时的语言实例(语言/资源包重载后必须重建)。 */
+    private static net.minecraft.locale.Language bagLinesLanguage;
+
     /**
      * 4.6.1(帧率):书袋 tooltip 行的缓存(按"内容实例 + 同步状态"失效)。
      *
@@ -256,8 +259,12 @@ public final class ItemTooltips {
     private static List<Component> bagTooltipLines() {
         List<BagHudEffects.Entry> source = BagHudSync.cache();
         boolean synced = BagHudSync.synced();
+        // 4.6.3:语言实例也进缓存键 —— 摘要行里有 "N%" 之类的文本、属性名是翻译键,
+        // 换语言/资源包重载后必须重建(否则 tooltip 会一直显示旧语言)。
+        net.minecraft.locale.Language language = net.minecraft.locale.Language.getInstance();
         List<Component> cached = bagLines;
-        if (cached != null && source == bagLinesSource && synced == bagLinesSynced) {
+        if (cached != null && source == bagLinesSource && synced == bagLinesSynced
+            && language == bagLinesLanguage) {
             return cached;
         }
         List<Component> out = new ArrayList<>(source.size() + 4);
@@ -283,6 +290,7 @@ public final class ItemTooltips {
         // 先写"这份行属于哪个数据源",最后写行本身:这样读到新行的线程一定也看到配对好的 source/synced。
         bagLinesSource = source;
         bagLinesSynced = synced;
+        bagLinesLanguage = language;
         bagLines = built;
         return built;
     }
@@ -323,8 +331,28 @@ public final class ItemTooltips {
     /** "这一行建出来是空的,不要加"的哨兵({@link java.util.concurrent.ConcurrentHashMap} 不收 null)。 */
     private static final Component SKIP_LINE = Component.empty();
 
+    /**
+     * 4.6.3:缓存也要跟着"语言/资源包重载"失效。
+     *
+     * <p>被缓存的 {@code Component} 本身是懒翻译的(渲染时才查语言表),所以多数情况下换语言不需要重建;
+     * 但 {@link #addFixed} 里做过一次 {@code getString()} 来判断"这行是不是空"(决定要不要加),
+     * 那一步的结果会被固化下来。这里用一个静态字段读 + 引用比较({@code Language.getInstance()} 就是读一个
+     * static 字段,纳秒级)保证换语言后重建,代价可以忽略。</p>
+     */
+    private static net.minecraft.locale.Language cachedLanguage;
+
+    private static void ensureLanguage() {
+        net.minecraft.locale.Language current = net.minecraft.locale.Language.getInstance();
+        if (current != cachedLanguage) {
+            cachedLanguage = current;
+            BODY_LINES.clear();
+            FIXED_LINES.clear();
+        }
+    }
+
     /** 一条"改了什么"的正文(不带前缀);常量 key ⇒ 只建一次。 */
     private static Component line(String key) {
+        ensureLanguage();
         Component cached = BODY_LINES.get(key);
         if (cached != null) {
             return cached;
@@ -336,6 +364,7 @@ public final class ItemTooltips {
 
     /** 追加一行**常量**说明(等价于 {@code add(lines, line(key))},但不每帧重建)。 */
     private static void addFixed(List<Component> lines, String key) {
+        ensureLanguage();
         Component fixed = FIXED_LINES.get(key);
         if (fixed == null) {
             Component body = line(key);

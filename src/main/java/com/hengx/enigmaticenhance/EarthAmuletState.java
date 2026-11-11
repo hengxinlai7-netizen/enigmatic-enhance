@@ -1,5 +1,8 @@
 package com.hengx.enigmaticenhance;
 
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.ListTag;
+import net.minecraft.nbt.Tag;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.ItemStack;
 
@@ -74,11 +77,22 @@ public final class EarthAmuletState {
         if (!EarthAmuletData.isAmulet(stack)) {
             return 0;
         }
-        // 4.6.1(帧率):没有 NBT ⇒ 不可能有头颅。省掉每帧一个 ArrayList(见 EarthAmuletData#hasHeads)。
+        // 4.6.1(帧率):没有 NBT ⇒ 不可能有头颅。
         if (!stack.hasTag()) {
             return 0;
         }
-        for (String id : EarthAmuletData.heads(stack)) {
+        // 4.6.3(帧率):直接遍历 NBT 列表,不再为"只是想问第一个头颅是谁"去 new 一个 List<String>。
+        // 本方法是 ItemProperties 谓词,每帧 × 每个在渲染的护符都要跑。判定与 heads() 的循环逐字一致。
+        CompoundTag tag = stack.getTag();
+        if (tag == null || !tag.contains(EarthAmuletData.TAG_HEADS, Tag.TAG_LIST)) {
+            return 0;
+        }
+        ListTag list = tag.getList(EarthAmuletData.TAG_HEADS, Tag.TAG_STRING);
+        for (int i = 0; i < list.size(); i++) {
+            String id = list.getString(i);
+            if (id.isEmpty()) {
+                continue;
+            }
             int idx = EarthAmuletData.HEADS.indexOf(id);
             if (idx >= 0 && idx < HEAD_FRAMES.size()) {
                 return idx + 1;

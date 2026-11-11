@@ -44,6 +44,19 @@ public final class NumericHealthHud {
     private static int cachedTick = Integer.MIN_VALUE;
     private static boolean cachedCarrying;
 
+    /**
+     * 4.6.3(帧率):血条文本 + 它的像素宽度缓存(只在数字变化 / 字体对象变化时重算)。
+     * <p>{@code font} 实例在资源包重载时会被换掉,所以把字体对象本身也放进缓存键里,
+     * 换字体/换语言后立刻能重算宽度。{@code %.0f} 对非负数就是四舍五入,
+     * 所以"取整后的三个整数相等"⇒ 格式化出来的字符串<b>逐字节相同</b>。</p>
+     */
+    private static Object cachedTextFont;
+    private static int cachedTextHealth = Integer.MIN_VALUE;
+    private static int cachedTextMax = Integer.MIN_VALUE;
+    private static int cachedTextAbsorption = Integer.MIN_VALUE;
+    private static String cachedText = "";
+    private static int cachedTextWidth;
+
     /** 客户端渲染入口(由 {@code LifeMeterHud} 在 RenderGuiEvent.Post 里调用)。 */
     public static void render(RenderGuiEvent.Post event) {
         Minecraft minecraft = Minecraft.getInstance();
@@ -77,12 +90,35 @@ public final class NumericHealthHud {
                 graphics.fill(x, y - 7, x + (int) (barWidth * ratio), y - 2, 0xFFFFC800);
             }
 
-            String text = String.format("%.0f / %.0f", player.getHealth(), max);
-            if (absorption > 0.0F) {
-                text = text + String.format(" (+%.0f)", absorption);
-            }
             var font = minecraft.font;
-            graphics.drawString(font, text, x + barWidth / 2 - font.width(text) / 2, y - 20, 0xFFFFFFFF);
+            // 4.6.3(帧率):文本与它测出来的宽度都只在"数字真的变了"时重算。
+            // 原来每帧 1~2 次 String.format + 1 次字符串拼接 + font.width(text):
+            // 其中 {code font.width()} 要逐字走字形表(十几~几十个字符),是这几行里最贵的一步,
+            // 而血量在绝大多数帧里根本没变(满血站着、跑图时都是同一个数)。
+            int healthKey = Math.round(player.getHealth());
+            int maxKey = Math.round(max);
+            int absorptionKey = Math.round(absorption);
+            String text;
+            int textWidth;
+            if (font == cachedTextFont && healthKey == cachedTextHealth && maxKey == cachedTextMax
+                && absorptionKey == cachedTextAbsorption) {
+                text = cachedText;
+                textWidth = cachedTextWidth;
+            }
+            else {
+                text = String.format("%.0f / %.0f", player.getHealth(), max);
+                if (absorption > 0.0F) {
+                    text = text + String.format(" (+%.0f)", absorption);
+                }
+                textWidth = font.width(text);
+                cachedTextFont = font;
+                cachedTextHealth = healthKey;
+                cachedTextMax = maxKey;
+                cachedTextAbsorption = absorptionKey;
+                cachedText = text;
+                cachedTextWidth = textWidth;
+            }
+            graphics.drawString(font, text, x + barWidth / 2 - textWidth / 2, y - 20, 0xFFFFFFFF);
         }
         catch (RuntimeException | LinkageError ignored) {
             // 纯表现层,绝不影响游戏

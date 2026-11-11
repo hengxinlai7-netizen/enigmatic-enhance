@@ -1,5 +1,8 @@
 package com.hengx.enigmaticenhance;
 
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.ListTag;
+import net.minecraft.nbt.Tag;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.effect.MobEffect;
 import net.minecraft.world.item.ItemStack;
@@ -43,20 +46,60 @@ public final class EarthAmuletTint {
     /**
      * 核心层颜色:取**第一条**保存的药水效果的颜色({@code MobEffect#getColor()});
      * 没有效果、或者 id 已经不存在(整合包被拆)⇒ 白色(显示为无色空芯)。
+     *
+     * <p>4.6.3(帧率):本方法是 {@code ItemColor} 回调,<b>每帧 × 每层 × 每个在渲染的护符</b>都要跑
+     * (背包/手上/物品展示框/创造物品栏都会走)。原来每次都:</p>
+     * <ol>
+     *   <li>调 {@code EarthAmuletData.effects(stack)} —— new 一个 ArrayList + 每条效果 new 一个 record;</li>
+     *   <li>调 {@code effect(id)} —— {@code ResourceLocation.tryParse} <b>新建对象</b> + 注册表查找。</li>
+     * </ol>
+     * <p>现在直接遍历 NBT 列表(不建 List、不建 record),并把"效果 id → 颜色"缓存起来
+     * ({@link #COLOR_CACHE},容量封顶 64 条,键就是 NBT 里原有的 String,不产生新对象)。
+     * 判定与原来逐字一致:按顺序找<b>第一条能解析出的效果</b>,取它的颜色;一条都没有 ⇒ 白。</p>
+     *
+     * <p>唯一的行为差别只在"运行中把某个效果从注册表里删掉"这种极端情况:缓存会让它继续显示旧颜色
+     * 直到重开游戏(纯外观、无逻辑影响)。</p>
      */
     public static int coreColor(ItemStack stack) {
-        // 4.6.1(帧率):这个方法由 ItemColor 回调在**每次渲染前**调用。没有 NBT 就一定没有效果,
-        // 直接返回"无色",省掉每帧一个 ArrayList + 每条记录一个 record(见 EarthAmuletData#hasEffects)。
         if (stack == null || stack.isEmpty() || !stack.hasTag()) {
             return WHITE;
         }
-        for (EarthAmuletData.StoredEffect stored : EarthAmuletData.effects(stack)) {
-            MobEffect effect = effect(stored.id());
-            if (effect != null) {
-                return effect.getColor() & 0xFFFFFF;
+        CompoundTag tag = stack.getTag();
+        if (tag == null || !tag.contains(EarthAmuletData.TAG_POTION_EFFECTS, Tag.TAG_LIST)) {
+            return WHITE;
+        }
+        ListTag list = tag.getList(EarthAmuletData.TAG_POTION_EFFECTS, Tag.TAG_COMPOUND);
+        for (int i = 0; i < list.size(); i++) {
+            String id = list.getCompound(i).getString(EarthAmuletData.KEY_ID);
+            if (id.isEmpty()) {
+                continue;
+            }
+            int color = colorOf(id);
+            if (color >= 0) {
+                return color;
             }
         }
         return WHITE;
+    }
+
+    /** 效果 id → 核心层颜色(解析不到 = -1)。热路径上只是一次 HashMap 查找。 */
+    private static final java.util.HashMap<String, Integer> COLOR_CACHE = new java.util.HashMap<>();
+
+    private static int colorOf(String id) {
+        Integer cached = COLOR_CACHE.get(id);
+        if (cached != null) {
+            return cached;
+        }
+        int color = -1;
+        MobEffect effect = effect(id);
+        if (effect != null) {
+            color = effect.getColor() & 0xFFFFFF;
+        }
+        // 只缓存有限条:效果 id 是封闭集合,正常到不了上限;上限只防异常 NBT 把内存撑爆。
+        if (COLOR_CACHE.size() < 64) {
+            COLOR_CACHE.put(id, color);
+        }
+        return color;
     }
 
     /** 该物品栈的核心是否真的是"无色"(没有可显示的效果)。 */

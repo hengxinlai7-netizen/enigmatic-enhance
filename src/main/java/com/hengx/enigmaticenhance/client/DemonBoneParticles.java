@@ -35,10 +35,15 @@ public final class DemonBoneParticles {
         if (minecraft == null || minecraft.player == null || minecraft.level == null) {
             return;
         }
-        if (!DemonBoneHandler.wearing(minecraft.player)) {
+        // 4.6.3(CPU):把"每 10 tick 一次"的计数器门控提到 wearing() 之前。
+        // 原来每 tick 都先问一次 wearing()(→ Curios capability 查询 + 遍历饰品槽),然后 10 次里有
+        // 9 次被计数器挡掉 —— 那 9 次查询是纯白做。现在只做一次 int 取模,10 tick 才查一次佩戴。
+        // 唯一可察觉的差别:计数器不再"只在佩戴时前进",所以戴上后第一缕烟可能早 0~9 tick 出现
+        // (之后仍是稳定的每 10 tick 一次),视觉上无感。
+        if (++counter % 10 != 0) {
             return;
         }
-        if (++counter % 10 != 0) {
+        if (!DemonBoneHandler.wearing(minecraft.player)) {
             return;
         }
         int count = 1 + minecraft.player.getRandom().nextInt(2);
