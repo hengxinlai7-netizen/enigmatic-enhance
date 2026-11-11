@@ -103,8 +103,8 @@ public final class TravelerHatHandler {
             Attribute headSlot = top.theillusivec4.curios.api.SlotAttribute.getOrCreate("head");
             AttributeInstance instance = player.getAttribute(headSlot);
             if (instance != null && instance.getValue() < 1.0D) {
-                set(player, headSlot, HEAD_SLOT_UUID, new AttributeModifier(HEAD_SLOT_UUID,
-                    "enigmaticenhance:traveler_hat_head_slot", 1.0D, AttributeModifier.Operation.ADDITION));
+                set(player, headSlot, HEAD_SLOT_UUID, "enigmaticenhance:traveler_hat_head_slot", 1.0D,
+                    AttributeModifier.Operation.ADDITION);
             }
             CuriosApi.getCuriosInventory(player).ifPresent(handler -> {
                 var existing = handler.getCurios().get("head");
@@ -133,14 +133,13 @@ public final class TravelerHatHandler {
         try {
             boolean percent = RingConfig.travelerHatSpeedIsPercent();
             double speed = RingConfig.travelerHatSpeedValue();
-            set(player, Attributes.MOVEMENT_SPEED, SPEED_UUID, new AttributeModifier(SPEED_UUID,
-                "enigmaticenhance:traveler_hat_speed", speed,
-                percent ? AttributeModifier.Operation.MULTIPLY_TOTAL : AttributeModifier.Operation.ADDITION));
+            set(player, Attributes.MOVEMENT_SPEED, SPEED_UUID, "enigmaticenhance:traveler_hat_speed", speed,
+                percent ? AttributeModifier.Operation.MULTIPLY_TOTAL : AttributeModifier.Operation.ADDITION);
 
             double health = Math.min(TravelerHatData.healthBonus(player), RingConfig.travelerHatMaxHealthBonus());
             if (health > 0.0D) {
-                set(player, Attributes.MAX_HEALTH, HEALTH_UUID, new AttributeModifier(HEALTH_UUID,
-                    "enigmaticenhance:traveler_hat_health", health, AttributeModifier.Operation.ADDITION));
+                set(player, Attributes.MAX_HEALTH, HEALTH_UUID, "enigmaticenhance:traveler_hat_health", health,
+                    AttributeModifier.Operation.ADDITION);
             }
             else {
                 remove(player, Attributes.MAX_HEALTH, HEALTH_UUID);
@@ -148,8 +147,8 @@ public final class TravelerHatHandler {
 
             double attack = TravelerHatData.attackBonus(player);
             if (attack > 0.0D) {
-                set(player, Attributes.ATTACK_DAMAGE, ATTACK_UUID, new AttributeModifier(ATTACK_UUID,
-                    "enigmaticenhance:traveler_hat_attack", attack, AttributeModifier.Operation.ADDITION));
+                set(player, Attributes.ATTACK_DAMAGE, ATTACK_UUID, "enigmaticenhance:traveler_hat_attack", attack,
+                    AttributeModifier.Operation.ADDITION);
             }
             else {
                 remove(player, Attributes.ATTACK_DAMAGE, ATTACK_UUID);
@@ -184,8 +183,8 @@ public final class TravelerHatHandler {
         }
         try {
             Attribute headSlot = top.theillusivec4.curios.api.SlotAttribute.getOrCreate("head");
-            set(player, headSlot, BONUS_SLOT_UUID, new AttributeModifier(BONUS_SLOT_UUID,
-                "enigmaticenhance:traveler_hat_bonus_head_slot", 1.0D, AttributeModifier.Operation.ADDITION));
+            set(player, headSlot, BONUS_SLOT_UUID, "enigmaticenhance:traveler_hat_bonus_head_slot", 1.0D,
+                AttributeModifier.Operation.ADDITION);
             // 1.2.13e:Curios 5.14 的槽位数不会每次属性变化都重建,这里再走一次运行时兜底:
             // 只要当前 head 槽不到 2 格,就直接 growSlotType 补 1 格(记在 GREW 里,取下时收回)。
             CuriosApi.getCuriosInventory(player).ifPresent(handler -> {
@@ -195,8 +194,10 @@ public final class TravelerHatHandler {
                     try {
                         handler.growSlotType("head", 1);
                         var after = handler.getCurios().get("head");
-                        DebugLog.once("hat:slot:" + player.getUUID(),
-                            "[TravelerHat] 头饰栏 +1: {} -> {}", slots, after == null ? -1 : after.getSlots());
+                        if (DebugLog.oncePending()) {
+                            DebugLog.once("hat:slot:" + player.getUUID(),
+                                "[TravelerHat] 头饰栏 +1: {} -> {}", slots, after == null ? -1 : after.getSlots());
+                        }
                     }
                     catch (Throwable ignored) {
                         GREW.remove(player.getUUID());
@@ -233,22 +234,34 @@ public final class TravelerHatHandler {
         }
     }
 
-    private static void set(Player player, Attribute attribute, UUID uuid, AttributeModifier modifier) {
+    /**
+     * 幂等地挂一个修饰符。
+     *
+     * <p>4.6.0(内存):参数从"现成的 {@link AttributeModifier}"改成"名字 + 数值 + 类型"，
+     * 只在**确实需要改**的时候才 {@code new AttributeModifier}。
+     * 原来每次调用都先建一个(即使数值没变、下面立刻 return 丢掉):{@link #applyBonuses} 每 tick
+     * 每人最高建 4 个,而它被 {@code curioTick} 和 {@code PlayerTickEvent} <b>各调一次</b>,
+     * 戴帽子的玩家每 tick 白建 8 个对象(≈160 个/秒)。改完是 0 个。</p>
+     */
+    private static void set(Player player, Attribute attribute, UUID uuid, String name, double amount,
+        AttributeModifier.Operation operation) {
         AttributeInstance instance = player.getAttribute(attribute);
         if (instance == null) {
             return;
         }
         AttributeModifier existing = instance.getModifier(uuid);
-        if (existing != null && existing.getAmount() == modifier.getAmount()
-            && existing.getOperation() == modifier.getOperation()) {
+        if (existing != null && existing.getAmount() == amount
+            && existing.getOperation() == operation) {
             return;
         }
         if (existing != null) {
             instance.removeModifier(uuid);
         }
-        instance.addTransientModifier(modifier);
-        DebugLog.info("{} {} 帽子加成 {} = {}", LOG_TAG, player.getName().getString(),
-            attribute.getDescriptionId(), modifier.getAmount());
+        instance.addTransientModifier(new AttributeModifier(uuid, name, amount, operation));
+        if (DebugLog.debugEnabled()) {
+            DebugLog.info("{} {} 帽子加成 {} = {}", LOG_TAG, player.getName().getString(),
+                attribute.getDescriptionId(), amount);
+        }
     }
 
     private static void remove(Player player, Attribute attribute, UUID uuid) {

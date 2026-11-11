@@ -59,15 +59,10 @@ public final class EngineGuard {
 
     /** 饰品栏 / 双手 / 背包 任一位置带着该物品。 */
     private static boolean wears(Player player, Item item) {
-        try {
-            Class<?> handler = Class.forName("com.aizistral.enigmaticlegacy.handlers.SuperpositionHandler");
-            Object result = handler.getMethod("hasCurio", LivingEntity.class, Item.class).invoke(null, player, item);
-            if (result instanceof Boolean && (Boolean) result) {
-                return true;
-            }
-        }
-        catch (Throwable ignored) {
-            // 落到手上/背包检查
+        // 4.6.0(内存):原来这里自己写了一遍 Class.forName + getMethod(和 Superposition 里的重复),
+        // 现在统一走 Superposition 的缓存入口 —— 行为一致(缺模组时同样落到下面手上/背包的检查)。
+        if (Superposition.hasCurio(player, item)) {
+            return true;
         }
         if (player.getMainHandItem().is(item) || player.getOffhandItem().is(item)) {
             return true;

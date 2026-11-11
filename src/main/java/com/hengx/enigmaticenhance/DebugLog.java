@@ -61,6 +61,19 @@ public final class DebugLog {
         }
     }
 
+    /**
+     * 4.6.0(内存):{@link #once} 的<b>廉价预检</b>,给"每 tick 都要拼 key"的热路径用。
+     *
+     * <p>{@code once(key, ...)} 的第一个参数常常是这样拼的:
+     * {@code "noclip:off:" + uuid + ":" + flying} —— 字符串在<b>调用前</b>就已经建好了,即使
+     * {@code once} 因为 key 已经记过而立刻返回,这个 String(几十字符 + UUID.toString 的 36 字符)
+     * 也已经白白分配了一次。这个预检只读一个 int,返回 false 时调用方可以整段跳过,
+     * 分配与 {@code once} 的语义完全一致(记录表满了 / key 已存在 ⇒ 本来也不会输出)。</p>
+     */
+    public static boolean oncePending() {
+        return ONCE.size() < 32;
+    }
+
     /** 真正的警告:不门控。 */
     public static void warn(String format, Object... args) {
         LOGGER.warn(format, args);

@@ -31,7 +31,15 @@ import net.minecraftforge.network.PacketDistributor;
 @Mod.EventBusSubscriber(modid = EnigmaticEnhance.MODID, bus = Mod.EventBusSubscriber.Bus.FORGE)
 public final class BagHudSync {
 
-    /** 每个玩家上一次已同步的签名(只在内存里,重登自然会重发一次)。 */
+    /**
+     * 每个玩家上一次已同步的签名(只在内存里,重登自然会重发一次)。
+     *
+     * <p>4.6.0(内存):这是一个 {@code Map<UUID, String>} —— 每条签名是一串按书袋内容拼出来的
+     * ASCII(空书袋也有几十字符,装满 3 本手册约 200~500 字符)。原来只在 {@link #resetCache()} 里
+     * 清空,而 {@code resetCache} 只有自检会调,<b>玩家下线时不会删</b> ⇒ 每个进过服的玩家都永久
+     * 留下一份签名(≈ UUID 32B + String 对象头 24B + 字符数组 2×长度),挂机一整天不涨,但换过
+     * 的号越多、内存里堆得越多。现在 {@link #onLoggedOut} 会按 UUID 删掉,签名数量 == 在线玩家数。</p>
+     */
     private static final Map<UUID, String> LAST_SIGNATURE = new HashMap<>();
 
     /** 客户端缓存(服务端只在内容变化时更新它);tooltip 与 HUD 共用同一份。 */
@@ -117,6 +125,21 @@ public final class BagHudSync {
             DebugLog.info("[书袋HUD] 同步 {} 条:{}", entries.size(), signature);
         }
         return true;
+    }
+
+    /**
+     * 4.6.0(内存):玩家下线时把该玩家的签名从内存里删掉。
+     *
+     * <p>只删这一个玩家的键,不动别的玩家、不动 {@code pushes/sent} 计数,也不发包 ——
+     * 重登后 {@code LAST_SIGNATURE.get(uuid) == null},下一次 tick 会比出"内容变了"并补发一次,
+     * 这正是类注释里写的"登录(缓存为空)都会让签名变化 → 恰好发一次"(客户端下线时
+     * {@link #resetClientCache()} 已经把缓存清空,原来服务端那份残留反而会让客户端一直显示"未同步")。</p>
+     */
+    @SubscribeEvent
+    public static void onLoggedOut(net.minecraftforge.event.entity.player.PlayerEvent.PlayerLoggedOutEvent event) {
+        if (event.getEntity() != null) {
+            LAST_SIGNATURE.remove(event.getEntity().getUUID());
+        }
     }
 
     public static int pushes() {

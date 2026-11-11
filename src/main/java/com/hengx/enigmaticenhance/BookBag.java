@@ -46,6 +46,61 @@ public final class BookBag {
         return found != null && !found.isEmpty();
     }
 
+    /**
+     * 4.6.0(内存/CPU):玩家身上有没有古旧书袋 —— 与扩展 {@code findBookInBag} 的<b>前置判定逐字对应</b>。
+     *
+     * <p>反编译 {@code SuperAddonHandler.findBookInBag(Player, Item)} 的头两句是:
+     * <pre>
+     * if (!SuperpositionHandler.hasItem(player, EnigmaticAddonItems.ANTIQUE_BAG)
+     *     &amp;&amp; !player.getEnderChestInventory().hasAnyOf(Set.of(ANTIQUE_BAG)))
+     *     return ItemStack.EMPTY;      // 书袋既不在身上也不在末影箱 ⇒ 一定找不到书
+     * </pre>
+     * 也就是说"书袋不在(身上 + 末影箱)"是"书一定不在袋里"的充分条件。</p>
+     *
+     * <p>为什么要这个:护符/书袋 HUD 每 tick 要按<b>16 个物品 id</b>各查一次 {@code findBook},
+     * 每次 {@code findBookInBag} 都会重新做一遍"扫背包 + 扫饰品栏 + 扫末影箱"。
+     * 书袋根本不在身上的玩家(绝大多数)这 16 次全部白扫。先问一次,判据相同 ⇒ 不改变行为。</p>
+     */
+    public static boolean hasBag(Player player) {
+        if (player == null) {
+            return false;
+        }
+        Item bag = bagItem();
+        if (bag == null) {
+            return false;
+        }
+        if (Superposition.legacyHasItem(player, bag)) {
+            return true;
+        }
+        // 末影箱那一路(与扩展同一判据)。集合只建一次:每 tick 每玩家都要问,别每次新建 Set。
+        java.util.Set<Item> singleton = bagSingleton;
+        return singleton != null && player.getEnderChestInventory().hasAnyOf(singleton);
+    }
+
+    /** 书袋物品 + 单元素 Set 的解析结果(懒解析一次;第一次 tick 时注册表早已冻结)。 */
+    private static Item bagItem;
+    private static java.util.Set<Item> bagSingleton;
+    private static boolean bagResolved;
+
+    private static Item bagItem() {
+        if (bagResolved) {
+            return bagItem;
+        }
+        bagResolved = true;
+        try {
+            Item found = ForgeRegistries.ITEMS.getValue(RingConfig.ANTIQUE_BAG_ID);
+            if (found != null && found != Items.AIR) {
+                bagItem = found;
+                bagSingleton = java.util.Set.of(found);
+            }
+        }
+        catch (RuntimeException | LinkageError ignored) {
+            bagItem = null;
+            bagSingleton = null;
+        }
+        return bagItem;
+    }
+
     /** 1.1.16:返回袋里那本书的 ItemStack(没有/书袋不在身上 → 空)。 */
     public static ItemStack findBook(net.minecraft.world.entity.player.Player player, ResourceLocation itemId) {
         if (player == null || itemId == null) {

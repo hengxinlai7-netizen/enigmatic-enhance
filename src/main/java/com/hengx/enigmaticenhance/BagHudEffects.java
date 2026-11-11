@@ -128,45 +128,86 @@ public final class BagHudEffects {
         return BOOKS;
     }
 
+    /**
+     * 4.6.0(内存):与 {@link #BOOKS} 逐项对应的 {@link ResourceLocation},<b>静态建好一次</b>。
+     *
+     * <p>原来 {@link #collect(Player)} 里写的是 {@code new ResourceLocation(id)},而这个方法在
+     * {@link BagHudSync#onServerTick} 里<b>每 tick、每个在线玩家</b>都要跑一遍全部 16 个 id:
+     * 20 tps × 16 = <b>每人每秒 320 次</b>字符串解析 + 校验 + 新对象(每个 ≈ 40~64B,含 String 里的
+     * path 段),一个 10 人服就是每秒 3200 个对象、约 150 KB/s 的纯垃圾,全部落在 Young 区。
+     * 预解析之后这条路径上这部分分配归零,而且 ResourceLocation 的构造校验也一次都不做了。</p>
+     */
+    private static final List<ResourceLocation> BOOK_LOCATIONS;
+
+    /** 历史迷雾 id 的预解析版本(见 {@link #HISTORY_MIST_ID})。 */
+    private static final ResourceLocation HISTORY_MIST_LOCATION = new ResourceLocation(HISTORY_MIST_ID);
+
+    static {
+        ResourceLocation[] locations = new ResourceLocation[BOOKS.size()];
+        for (int i = 0; i < BOOKS.size(); i++) {
+            locations[i] = new ResourceLocation(BOOKS.get(i));
+        }
+        BOOK_LOCATIONS = List.of(locations);
+    }
+
     private BagHudEffects() {}
+
+    /** 空结果(4.6.0:无书袋的玩家每个 tick 都走这里,不再每次 new 一个 ArrayList)。 */
+    private static final List<Entry> NO_ENTRIES = List.of();
 
     /** 服务端:算出这名玩家书袋里所有"会提供加成"的条目。 */
     public static List<Entry> collect(Player player) {
-        List<Entry> out = new ArrayList<>();
         if (player == null) {
-            return out;
+            return NO_ENTRIES;
         }
-        for (String id : BOOKS) {
-            if (BookBag.findBook(player, new ResourceLocation(id)).isEmpty()) {
-                continue;
-            }
-            switch (id) {
-                case "enigmaticlegacy:the_twist" -> out.add(new Entry(id, "baghud.effect.twist", "10%",
-                    flag(player, "isTheCursedOne")));
-                case "enigmaticlegacy:the_infinitum" -> {
-                    boolean worthy = flag(player, "isTheWorthyOne");
-                    out.add(new Entry(id, "baghud.effect.infinitum", "20%", worthy));
-                    out.add(new Entry(id, "baghud.effect.infinitumLifesteal", "10%", worthy));
+        // 4.6.0(内存):列表改成"第一次真的要加条目时才建",并预置容量。
+        // 绝大多数玩家书袋里没有这几本书 ⇒ 一次分配都不发生(原来恒定 1 个 ArrayList/人/tick)。
+        List<Entry> out = null;
+        // 4.6.0(CPU/内存):书袋不在身上时,下面 16 次 findBook 全部只会返回空,而每次 findBook 内部
+        // 都要扫一遍背包 + 饰品栏(扩展自己的前置判据就是 SuperpositionHandler.hasItem)。
+        // 先问一次,省掉这 16 遍扫描(以及每次 curios 查询产生的 Optional 对象)。
+        if (BookBag.hasBag(player)) {
+            for (int index = 0; index < BOOKS.size(); index++) {
+                String id = BOOKS.get(index);
+                if (BookBag.findBook(player, BOOK_LOCATIONS.get(index)).isEmpty()) {
+                    continue;
                 }
-                case "enigmaticaddons:the_bless" -> out.add(new Entry(id, "baghud.effect.bless",
-                    String.valueOf(blessInvulnerableTime()), true));
-                case FLOWER_ID -> out.addAll(artificialFlower(player));
-                case HISTORY_MIST_ID -> out.addAll(historyMist(player));
-                case SPIRIT_LIGHT_ID -> out.add(new Entry(id, "baghud.effect.spirit_light", "", true));
-                case STYX_WATER_ID -> out.add(new Entry(id, "baghud.effect.styx_water", "", true));
-                case WAR_FOG_ID -> out.add(new Entry(id, "baghud.effect.war_fog", "", true));
-                case SUN_BOTTLE_ID -> out.add(new Entry(id, "baghud.effect.bottled_sun", "", true));
-            case FISHING_HAUL_BOTTLE_ID -> out.add(new Entry(id, "baghud.effect.fishing_haul_bottle", "+2", true));
-                case "enigmaticenhance:bedtime_reading" -> out.add(new Entry(id,
-                    "baghud.effect.bedtime_reading", "", flag(player, "isTheCursedOne")));
-                default -> out.add(new Entry(id, "baghud.effect." + id.substring(id.indexOf(':') + 1), "", true));
+                if (out == null) {
+                    out = new ArrayList<>(6);
+                }
+                switch (id) {
+                    case "enigmaticlegacy:the_twist" -> out.add(new Entry(id, "baghud.effect.twist", "10%",
+                        flag(player, FLAG_CURSED_ONE)));
+                    case "enigmaticlegacy:the_infinitum" -> {
+                        boolean worthy = flag(player, FLAG_WORTHY_ONE);
+                        out.add(new Entry(id, "baghud.effect.infinitum", "20%", worthy));
+                        out.add(new Entry(id, "baghud.effect.infinitumLifesteal", "10%", worthy));
+                    }
+                    case "enigmaticaddons:the_bless" -> out.add(new Entry(id, "baghud.effect.bless",
+                        String.valueOf(blessInvulnerableTime()), true));
+                    case FLOWER_ID -> out.addAll(artificialFlower(player));
+                    case HISTORY_MIST_ID -> out.addAll(historyMist(player));
+                    case SPIRIT_LIGHT_ID -> out.add(new Entry(id, "baghud.effect.spirit_light", "", true));
+                    case STYX_WATER_ID -> out.add(new Entry(id, "baghud.effect.styx_water", "", true));
+                    case WAR_FOG_ID -> out.add(new Entry(id, "baghud.effect.war_fog", "", true));
+                    case SUN_BOTTLE_ID -> out.add(new Entry(id, "baghud.effect.bottled_sun", "", true));
+                    case FISHING_HAUL_BOTTLE_ID -> out.add(new Entry(id, "baghud.effect.fishing_haul_bottle",
+                        "+2", true));
+                    case "enigmaticenhance:bedtime_reading" -> out.add(new Entry(id,
+                        "baghud.effect.bedtime_reading", "", flag(player, FLAG_CURSED_ONE)));
+                    default -> out.add(new Entry(id, "baghud.effect." + id.substring(id.indexOf(':') + 1),
+                        "", true));
+                }
             }
         }
         // 本模组自己的"三书齐修正第四重咒":不属于任何物品,单独一条
         if (FourthCurseFix.active(player)) {
+            if (out == null) {
+                out = new ArrayList<>(4);
+            }
             out.add(new Entry("enigmaticenhance:fourth_curse", "baghud.effect.fourthCurse", "", true));
         }
-        return out;
+        return out == null ? NO_ENTRIES : out;
     }
 
     // ------------------------------------------------------------------ 瓶装历史迷雾(1.2.5d)
@@ -176,8 +217,7 @@ public final class BagHudEffects {
      * <p>没有记录时给一行"未记录"。只在服务端调用(由 {@link #collect(Player)} 触发)。</p>
      */
     public static List<Entry> historyMist(Player player) {
-        List<Entry> out = new ArrayList<>();
-        ItemStack stack = BookBag.findBook(player, new ResourceLocation(HISTORY_MIST_ID));
+        ItemStack stack = BookBag.findBook(player, HISTORY_MIST_LOCATION);
         if (stack.isEmpty()) {
             return List.of(new Entry(HISTORY_MIST_ID, MIST_EMPTY_KEY, "", false));
         }
@@ -316,10 +356,16 @@ public final class BagHudEffects {
         }
 
         if (FLOWER_ATTR_KEY.equals(entry.effectKey())) {
-            String[] parts = entry.detail().split("\\|", 3);
-            String amount = parts.length > 0 ? parts[0] : "";
-            String operation = parts.length > 1 ? parts[1] : "";
-            String remaining = parts.length > 2 ? parts[2] : "";
+            // 4.6.0(内存/CPU):原来是 split("\\|", 3) —— 带转义反斜杠会走正则编译,
+            // 而本方法是**客户端每帧渲染 tooltip**时调用的(悬停在物品上就一直跑)。
+            // 改成手写扫描:零 Pattern、零 String[],只在真的需要三段文本时 substring。
+            String detail = entry.detail();
+            int first = detail.indexOf('|');
+            int second = first < 0 ? -1 : detail.indexOf('|', first + 1);
+            String amount = first < 0 ? detail : detail.substring(0, first);
+            String operation = first < 0 ? ""
+                : (second < 0 ? detail.substring(first + 1) : detail.substring(first + 1, second));
+            String remaining = second < 0 ? "" : detail.substring(second + 1);
             return Component.translatable(FLOWER_ATTR_KEY, entry.value(), amount,
                 Component.translatable(FLOWER_OP_KEY + operation), remaining);
         }
@@ -381,7 +427,11 @@ public final class BagHudEffects {
      * 所以直接排除:属性不变时 100s→99s 的 20 tick 内签名恒定 ⇒ 零发包。
      */
     public static String signature(List<Entry> entries) {
-        StringBuilder sb = new StringBuilder();
+        // 4.6.0(内存):复用同一个 StringBuilder(ThreadLocal)。
+        // 原来每 tick × 每个玩家都新建一个 StringBuilder + 逐次扩容的 char[](签名通常 200~500 字符,
+        // 扩容到 512 意味着一次 1 KB 的 char[] 垃圾);现在只在第一次真正分配,之后 setLength(0) 复用。
+        StringBuilder sb = SIGNATURE_BUILDER.get();
+        sb.setLength(0);
         for (Entry e : entries) {
             sb.append(e.bookId()).append('|').append(e.effectKey()).append('|')
                 .append(e.value()).append('|').append(e.active());
@@ -390,42 +440,148 @@ public final class BagHudEffects {
             }
 
             if (FLOWER_ATTR_KEY.equals(e.effectKey())) {
-                String[] parts = e.detail().split("\\|", 3);
-                sb.append('|').append(parts.length > 0 ? parts[0] : "")   // amount
-                    .append('|').append(parts.length > 1 ? parts[1] : ""); // operation(不含 remaining)
+                // 4.6.0(内存/CPU):原来是 `e.detail().split("\\|", 3)` —— 带转义反斜杠的写法会走
+                // Pattern.compile(每 tick 每个石英花属性行编译一次正则),再加一个 String[] 和若干 substring。
+                // 这里手写扫描,只把前两段直接写进 StringBuilder,零中间对象。
+                appendFirstTwoDetailFields(sb, e.detail());
             }
             sb.append(';');
         }
         return sb.toString();
     }
 
+    /** {@link #signature(List)} 专用:把 {@code "a|b|rest"} 的 a、b 两段直接追加(不建 String[]、不用正则)。 */
+    private static void appendFirstTwoDetailFields(StringBuilder sb, String detail) {
+        int first = detail.indexOf('|');
+        sb.append('|');
+        if (first < 0) {
+            sb.append(detail);   // 没有分隔符:第一段是整串,第二段为空
+            sb.append('|');
+            return;
+        }
+        sb.append(detail, 0, first);
+        sb.append('|');
+        int second = detail.indexOf('|', first + 1);
+        if (second < 0) {
+            sb.append(detail, first + 1, detail.length());
+        }
+        else {
+            sb.append(detail, first + 1, second);
+        }
+    }
+
+    /** 签名用的 StringBuilder(服务端 tick 单线程;ThreadLocal 避免自检/其它线程互相干扰)。 */
+    private static final ThreadLocal<StringBuilder> SIGNATURE_BUILDER =
+        ThreadLocal.withInitial(() -> new StringBuilder(256));
+
     // ------------------------------------------------------------------ 读取本体/扩展的真实数值(反射,缺模组安全返回)
 
-    /** 本体/扩展的布尔判定,如 isTheCursedOne / isTheWorthyOne。 */
-    private static boolean flag(Player player, String method) {
-        for (String owner : new String[] {
-            "com.aizistral.enigmaticlegacy.handlers.SuperpositionHandler",
-            "auviotre.enigmatic.addon.handlers.SuperAddonHandler" }) {
+    /** {@link #flag(Player, int)} 的两种判定(用序号代替字符串,避免每次热路径拼查找键)。 */
+    private static final int FLAG_CURSED_ONE = 0;
+    private static final int FLAG_WORTHY_ONE = 1;
+
+    /** {@link #flag(Player, int)} 对应的扩展方法名,下标与 FLAG_* 一致。 */
+    private static final String[] FLAG_NAMES = { "isTheCursedOne", "isTheWorthyOne" };
+
+    /** 可能提供这两个判定的两个类(本体 / 扩展)。 */
+    private static final String[] FLAG_OWNERS = {
+        "com.aizistral.enigmaticlegacy.handlers.SuperpositionHandler",
+        "auviotre.enigmatic.addon.handlers.SuperAddonHandler" };
+
+    /**
+     * 4.6.0(内存/CPU):解析结果缓存 —— {@code [owner][flag]}。
+     *
+     * <p>原来 {@link #flag} 每次被调用都在循环里做两次 {@code Class.forName(...)} + {@code getMethod(...)}:
+     * 而它由 {@link #collect(Player)} 在服务端 tick 里按玩家调用(书袋里有《扭曲》《无限》时才走到,
+     * 但那正是这类玩家的常态),等于每 tick 每人次 2~4 次类加载器查找。缓存后只在第一次解析。</p>
+     */
+    private static final java.lang.reflect.Method[][] FLAG_METHODS =
+        new java.lang.reflect.Method[FLAG_OWNERS.length][FLAG_NAMES.length];
+    private static volatile boolean flagsResolved;
+
+    private static synchronized void resolveFlags() {
+        if (flagsResolved) {
+            return;
+        }
+        flagsResolved = true;
+        for (int owner = 0; owner < FLAG_OWNERS.length; owner++) {
             try {
-                Class<?> cls = Class.forName(owner);
-                Object value = cls.getMethod(method, Player.class).invoke(null, player);
+                Class<?> cls = Class.forName(FLAG_OWNERS[owner]);
+                for (int which = 0; which < FLAG_NAMES.length; which++) {
+                    try {
+                        FLAG_METHODS[owner][which] = cls.getMethod(FLAG_NAMES[which], Player.class);
+                    }
+                    catch (Throwable ignored) {
+                        // 该方法不在这个类里:保持 null,换下一个类
+                    }
+                }
+            }
+            catch (Throwable ignored) {
+                // 模组缺失:保持 null
+            }
+        }
+    }
+
+    /** 本体/扩展的布尔判定,如 isTheCursedOne / isTheWorthyOne。 */
+    private static boolean flag(Player player, int which) {
+        if (!flagsResolved) {
+            resolveFlags();
+        }
+        for (java.lang.reflect.Method[] methods : FLAG_METHODS) {
+            java.lang.reflect.Method method = methods[which];
+            if (method == null) {
+                continue;
+            }
+            try {
+                Object value = method.invoke(null, player);
                 if (value instanceof Boolean b) {
                     return b;
                 }
             }
             catch (Throwable ignored) {
-                // 该方法不在这个类里 / 模组缺失:试下一个
+                // 调用失败:试下一个类(与原来的顺序一致)
             }
         }
         return false;
     }
 
-    /** 恩惠之典在袋时的受击无敌帧(AI:取扩展真实配置值)。 */
+    /**
+     * 恩惠之典在袋时的受击无敌帧(AI:取扩展真实配置值)。
+     *
+     * <p>4.6.0(内存/CPU):字段与 {@code getValue()} 都缓存。原来每次调用(书袋里有《恩惠之典》时
+     * <b>每 tick 每玩家</b>一次)都做 {@code Class.forName} + {@code getField} + {@code getMethod},
+     * 三次反射解析。解析失败(缺扩展)时保持 null,返回 0 —— 与原来的 catch 分支一致。</p>
+     */
+    private static java.lang.reflect.Field blessField;
+    private static java.lang.reflect.Method blessGetValue;
+    private static Class<?> blessValueClass;
+    private static boolean blessResolved;
+
     private static int blessInvulnerableTime() {
         try {
-            Class<?> cls = Class.forName("auviotre.enigmatic.addon.contents.items.TheBless");
-            Object param = cls.getField("invulnerableTime").get(null);
-            Object value = param.getClass().getMethod("getValue").invoke(param);
+            if (!blessResolved) {
+                blessResolved = true;
+                try {
+                    blessField = Class.forName("auviotre.enigmatic.addon.contents.items.TheBless")
+                        .getField("invulnerableTime");
+                }
+                catch (Throwable t) {
+                    blessField = null;
+                }
+            }
+            if (blessField == null) {
+                return 0;
+            }
+            Object param = blessField.get(null);
+            if (param == null) {
+                return 0;
+            }
+            // getValue() 声明在 param 的运行时类型上:按类型缓存一次(类型变了就重解析,不会串)
+            if (blessGetValue == null || blessValueClass != param.getClass()) {
+                blessValueClass = param.getClass();
+                blessGetValue = blessValueClass.getMethod("getValue");
+            }
+            Object value = blessGetValue.invoke(param);
             return value instanceof Integer i ? i : parseInt(String.valueOf(value));
         }
         catch (Throwable t) {

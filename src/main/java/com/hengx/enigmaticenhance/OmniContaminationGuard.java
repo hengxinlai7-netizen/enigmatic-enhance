@@ -43,15 +43,23 @@ public final class OmniContaminationGuard {
             if (omni == null) {
                 return;
             }
-            java.util.List<UUID> remove = new java.util.ArrayList<>();
+            // 4.6.0(内存):只在真的发现了"要删的修饰符"时才建集合。
+            // 原来无条件 new ArrayList(每个非玩家生物每 40 tick 一个),而绝大多数生物身上
+            // 压根没有可删的修饰符 —— 那些 ArrayList 全是纯垃圾。
+            java.util.List<UUID> remove = null;
             java.util.Collection<net.minecraft.world.entity.ai.attributes.AttributeModifier> mods = omni.getModifiers();
             for (net.minecraft.world.entity.ai.attributes.AttributeModifier mod : mods) {
                 if (!mod.getName().startsWith("enigmaticenhance:fate")) {
+                    if (remove == null) {
+                        remove = new java.util.ArrayList<>(2);
+                    }
                     remove.add(mod.getId());
                 }
             }
-            for (UUID id : remove) {
-                omni.removeModifier(id);
+            if (remove != null) {
+                for (UUID id : remove) {
+                    omni.removeModifier(id);
+                }
             }
             // 基础值也不允许被抬高
             if (omni.getBaseValue() != 0.0D) {

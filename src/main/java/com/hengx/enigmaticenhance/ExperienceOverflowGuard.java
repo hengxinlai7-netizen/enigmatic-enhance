@@ -2,6 +2,7 @@ package com.hengx.enigmaticenhance;
 
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraftforge.event.entity.living.LivingEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
@@ -24,6 +25,59 @@ public final class ExperienceOverflowGuard {
     private static final String NBT_KEY = "XPStored";
 
     private ExperienceOverflowGuard() {
+    }
+
+    /**
+     * 4.6.0(内存/CPU):诅咒卷轴的 Item 只解析一次。
+     *
+     * <p>原来 {@link #clampScroll} 每个槽位都做
+     * {@code BuiltInRegistries.ITEM.getKey(stack.getItem()).toString()} 再和字符串比 —— 玩家背包 36 格
+     * + 副手 + 每个饰品槽,<b>每秒每玩家都会新建 40 个左右的 String</b>(≈ 2 KB/s/玩家),而且只是为了和
+     * 一个常量比较。改成拿注册表里的 {@link Item} 实例做 == 比较:零分配,语义相同
+     * (物品不在 ⇒ 谁都匹配不上 ⇒ 和原来一样直接返回)。</p>
+     */
+    private static Item scrollItem;
+    private static boolean scrollResolved;
+
+    private static Item scroll() {
+        if (scrollResolved) {
+            return scrollItem;
+        }
+        scrollResolved = true;
+        try {
+            net.minecraft.resources.ResourceLocation id = net.minecraft.resources.ResourceLocation.tryParse(SCROLL_ID);
+            Item found = id == null ? null : net.minecraft.core.registries.BuiltInRegistries.ITEM.get(id);
+            scrollItem = found == net.minecraft.world.item.Items.AIR ? null : found;
+        }
+        catch (RuntimeException | LinkageError ignored) {
+            scrollItem = null;
+        }
+        return scrollItem;
+    }
+
+    /**
+     * 4.6.0(内存/CPU):Curios 的反射入口只解析一次。
+     *
+     * <p>原来每秒(每玩家)都要 {@code Class.forName("...CuriosApi")} + {@code getMethod(...)};
+     * 类加载器查找虽然不分配堆,但每次都要走 JNI + 类名解析,20 tps × 玩家数 下来纯属浪费。
+     * 解析失败(没装 Curios)时保持 null,{@link #clampScrolls} 直接跳过 —— 与原来 catch 住一样。</p>
+     */
+    private static java.lang.reflect.Method curiosInventoryMethod;
+    private static boolean curiosResolved;
+
+    private static java.lang.reflect.Method curiosInventory() {
+        if (curiosResolved) {
+            return curiosInventoryMethod;
+        }
+        curiosResolved = true;
+        try {
+            Class<?> api = Class.forName("top.theillusivec4.curios.api.CuriosApi");
+            curiosInventoryMethod = api.getMethod("getCuriosInventory", net.minecraft.world.entity.LivingEntity.class);
+        }
+        catch (Throwable ignored) {
+            curiosInventoryMethod = null;
+        }
+        return curiosInventoryMethod;
     }
 
     @SubscribeEvent
@@ -57,22 +111,23 @@ public final class ExperienceOverflowGuard {
 
     private static void clampScrolls(Player player) {
         // 1.6.22:再用反射扫一遍 Curios 饰品槽(编译期不依赖 Curios 泛型签名)
-        try {
-            Class<?> api = Class.forName("top.theillusivec4.curios.api.CuriosApi");
-            Object inv = api.getMethod("getCuriosInventory", net.minecraft.world.entity.LivingEntity.class)
-                .invoke(null, player);
-            if (inv instanceof java.util.Optional<?> opt && opt.isPresent()) {
-                Object handler = opt.get();
-                Object curios = handler.getClass().getMethod("getCurios").invoke(handler);
-                if (curios instanceof java.util.Map<?, ?> map) {
-                    for (Object value : map.values()) {
-                        clampCurioStacks(value);
+        java.lang.reflect.Method inventoryOf = curiosInventory();
+        if (inventoryOf != null) {
+            try {
+                Object inv = inventoryOf.invoke(null, player);
+                if (inv instanceof java.util.Optional<?> opt && opt.isPresent()) {
+                    Object handler = opt.get();
+                    Object curios = handler.getClass().getMethod("getCurios").invoke(handler);
+                    if (curios instanceof java.util.Map<?, ?> map) {
+                        for (Object value : map.values()) {
+                            clampCurioStacks(value);
+                        }
                     }
                 }
             }
-        }
-        catch (Throwable ignored) {
-            // 没有 Curios 就跳过
+            catch (Throwable ignored) {
+                // 没有 Curios / 结构不一样就跳过
+            }
         }
         for (int i = 0; i < player.getInventory().getContainerSize(); i++) {
             clampScroll(player.getInventory().getItem(i));
@@ -99,8 +154,10 @@ public final class ExperienceOverflowGuard {
             if (stack == null || stack.isEmpty()) {
                 return;
             }
-            String id = net.minecraft.core.registries.BuiltInRegistries.ITEM.getKey(stack.getItem()).toString();
-            if (!SCROLL_ID.equals(id)) {
+            // 4.6.0(内存):原来是 `BuiltInRegistries.ITEM.getKey(stack.getItem()).toString()` 再比字符串,
+            // 每个槽位都会新建一个 String。改成拿缓存好的 Item 实例做身份比较,零分配。
+            Item scroll = scroll();
+            if (scroll == null || stack.getItem() != scroll) {
                 return;
             }
             CompoundTag tag = stack.getTag();

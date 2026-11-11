@@ -148,8 +148,11 @@ public class MagicSwordAuraEntity extends Projectile {
             if (crit) {
                 critFeedback(target);
             }
-            DebugLog.info("[Aura] 命中 {} 造成 {} 点魔法伤害(等级 {} 暴击 {} 虚空 {})",
-                target.getName().getString(), damage, enchantLevel, crit, voidAura);
+            // 4.6.0(内存):debugLog 关闭时不再先求值参数(每次命中省一个 Object[] + getName().getString())
+            if (DebugLog.debugEnabled()) {
+                DebugLog.info("[Aura] 命中 {} 造成 {} 点魔法伤害(等级 {} 暴击 {} 虚空 {})",
+                    target.getName().getString(), damage, enchantLevel, crit, voidAura);
+            }
             ++hits;
             if (hits >= maxHits()) {
                 discard();
@@ -294,25 +297,40 @@ public class MagicSwordAuraEntity extends Projectile {
         }
     }
 
-    /** 1.2.9h:把服务端血量写回同步字段(DATA_HEALTH_ID),客户端血条/血量才会跟着掉。 */
+    /**
+     * 1.2.9h:把服务端血量写回同步字段(DATA_HEALTH_ID),客户端血条/血量才会跟着掉。
+     *
+     * <p>4.6.0(内存/CPU):字段与 accessor 只查一次。原来每次命中都要
+     * {@code getDeclaredField}(带 {@code new String[]} 候选数组)+ {@code setAccessible} + 每次读静态字段,
+     * 而虚空剑气是一次范围命中(一个 AABB 里所有活体、每次命中都可能走到这里);
+     * 反射字段查找要复制/扫描 declared 字段数组,是这条路径上最贵的一次分配。
+     * 缓存后只在第一次命中时解析,之后只做 {@code getEntityData().set(...)}。</p>
+     */
+    private static java.lang.reflect.Field healthDataField;
+    private static Object healthDataAccessor;
+    private static boolean healthFieldResolved;
+
     private static void forceSyncHealth(LivingEntity target, float health) {
         try {
-            java.lang.reflect.Field field = null;
-            for (String name : new String[] { "DATA_HEALTH_ID", "f_20968_" }) {
-                try {
-                    field = LivingEntity.class.getDeclaredField(name);
-                    break;
-                }
-                catch (NoSuchFieldException ignored) {
-                    // 试下一个名字
+            if (!healthFieldResolved) {
+                healthFieldResolved = true;
+                for (String name : new String[] { "DATA_HEALTH_ID", "f_20968_" }) {
+                    try {
+                        java.lang.reflect.Field field = LivingEntity.class.getDeclaredField(name);
+                        field.setAccessible(true);
+                        healthDataField = field;
+                        healthDataAccessor = field.get(null);
+                        break;
+                    }
+                    catch (NoSuchFieldException ignored) {
+                        // 试下一个名字
+                    }
                 }
             }
-            if (field == null) {
+            if (healthDataField == null) {
                 return;
             }
-            field.setAccessible(true);
-            Object accessor = field.get(null);
-            if (accessor instanceof net.minecraft.network.syncher.EntityDataAccessor<?> raw) {
+            if (healthDataAccessor instanceof net.minecraft.network.syncher.EntityDataAccessor<?> raw) {
                 @SuppressWarnings("unchecked")
                 net.minecraft.network.syncher.EntityDataAccessor<Float> typed =
                     (net.minecraft.network.syncher.EntityDataAccessor<Float>) raw;

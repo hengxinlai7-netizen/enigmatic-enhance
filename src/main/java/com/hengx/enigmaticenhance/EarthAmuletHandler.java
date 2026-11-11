@@ -239,6 +239,13 @@ public final class EarthAmuletHandler {
             FLIGHT_GRANTED.remove(uuid);
             NOCLIP.remove(uuid);
             NOCLIP_SENT.remove(uuid);
+            // 4.6.0(内存):原来漏了这一张。LAST_FLYING_TICK 是 Map<UUID, Integer>(装箱值,
+            // 每条 ≈ UUID 32B + Integer 16B + Node 32B),每 tick 只要"戴龙首且在飞"就 put 一次,
+            // 玩家下线后永远没人删 ⇒ 每个飞过龙首的玩家永久留一条。
+            // 删掉还顺手修掉一个隐患:重登后 Player#tickCount 从 0 重新数,
+            // 而残留的旧 tickCount 是个大数 ⇒ `tickCount - lastFly <= 1` 恒成立,
+            // 相当于"一上线就被当成刚飞过"。
+            LAST_FLYING_TICK.remove(uuid);
         }
     }
 
@@ -286,7 +293,9 @@ public final class EarthAmuletHandler {
         boolean want = dragon && creativeFlight && noclipEnabled(player)
             && (flyingNow || recentlyFlew) && !player.isSpectator();
         // 判定只看:戴龙首 + (在飞 或 刚飞过) + 不是旁观(创造也允许,方便测试与创造玩法)。
-        if (dragon && !want) {
+        if (dragon && !want && DebugLog.oncePending()) {
+            // 4.6.0(内存):key 里带 UUID + flying,原来每 tick 都要拼一次(即使 once 早已记过),
+            // 戴龙首却不飞的玩家会稳定每 tick 产生一条临时 String。先问 oncePending() 再拼。
             DebugLog.once("noclip:off:" + id + ":" + player.getAbilities().flying,
                 "[EarthAmulet] 戴龙首但未开启穿方块: flying={} mayfly={} creative={} spectator={}",
                 player.getAbilities().flying, player.getAbilities().mayfly, player.isCreative(),
@@ -380,7 +389,20 @@ public final class EarthAmuletHandler {
         if (player == null || player.level().isClientSide) {
             return;
         }
+        // 4.6.0(内存):共享状态必须先无条件清干净。
+        // NoClipState.serverActive 是 Set<UUID>,原来只有 updateNoClip 转"关"那一支会 remove;
+        // 玩家在"穿墙中"下线时走的是本方法 ⇒ UUID 永久留在集合里(每换一个号 +1 条),
+        // 而且重登后 EntityMoveNoClipMixin 会把它当成"仍在穿墙",人在没飞的时候也穿过方块。
+        // 这里只是把"本模组给该玩家打开的那份状态"收回,别人/别的模组的状态一律不碰。
+        NoClipState.mark(player, false);
+        // 同理:EntityMoveNoClipMixin 记的"这个 noPhysics 是我们开的"是按实体 id 存的,
+        // 实体走了就没人再调 releaseForced ⇒ 集合只增不减。这里顺手清掉自己那一份。
+        boolean forced = NoClipState.releaseForced(player);
         if (!NOCLIP.remove(player.getUUID())) {
+            if (forced) {
+                // 状态是我们打开、但 NOCLIP 里已经没有了:照样把碰撞恢复(与 mixin 的还原分支一致)
+                player.noPhysics = false;
+            }
             return;
         }
         player.noPhysics = false;
@@ -561,9 +583,14 @@ public final class EarthAmuletHandler {
                 // 1.2.12b:不再只依赖 Curios 的 curioTick —— 每 tick 兜底授予(幂等),
                 // 这样即使某项 Curios 回调没触发,龙首飞行也一定能给上。
                 grantFlight(player);
-                DebugLog.once("dragon:" + player.getUUID(),
-                    "{} 龙首:授予飞行(mayfly={}, flying={}, 已记录={})", LOG_TAG,
-                    player.getAbilities().mayfly, player.getAbilities().flying, flightGranted(player));
+                // 4.6.0(内存):once 的 key 是 "dragon:" + UUID.toString()(≈ 45 字符),原来每 tick
+                // 都会先拼好再传进去,而 once 内部第一次之后就立刻 return —— 纯浪费。
+                // oncePending() 只看记录表有没有满,返回值与"once 还会不会输出"完全一致。
+                if (DebugLog.oncePending()) {
+                    DebugLog.once("dragon:" + player.getUUID(),
+                        "{} 龙首:授予飞行(mayfly={}, flying={}, 已记录={})", LOG_TAG,
+                        player.getAbilities().mayfly, player.getAbilities().flying, flightGranted(player));
+                }
             }
             else {
                 revokeFlight(player);
@@ -672,14 +699,26 @@ public final class EarthAmuletHandler {
     private static final java.util.Map<java.util.UUID, Double> APPLIED_HEALTH_BONUS =
         new java.util.concurrent.ConcurrentHashMap<>();
 
+    /**
+     * 4.6.0(内存/CPU):生命提升修饰符的固定 UUID,**算一次**。
+     *
+     * <p>原来是 {@code applyPermanentHealthBonus} 里的局部调用:
+     * {@code UUID.nameUUIDFromBytes("...".getBytes(UTF_8))} —— 每次都要
+     * {@code String.getBytes}(新建 byte[])、MD5 摘要、再新建两个 long 数组拼出一个 UUID,
+     * 而这个方法的**早退分支在算完 UUID 之后**,也就是"每 tick × 每个佩戴大地护符的玩家"都会白算一遍
+     * MD5。值本身只由这个固定字符串决定,提成常量后语义完全不变。</p>
+     */
+    private static final java.util.UUID HEALTH_BOOST_MODIFIER_ID =
+        java.util.UUID.nameUUIDFromBytes("enigmaticenhance:amulet_health_boost"
+            .getBytes(java.nio.charset.StandardCharsets.UTF_8));
+
     private static void applyPermanentHealthBonus(Player player, double bonus) {
         try {
             var inst = player.getAttribute(net.minecraft.world.entity.ai.attributes.Attributes.MAX_HEALTH);
             if (inst == null) {
                 return;
             }
-            java.util.UUID id = java.util.UUID.nameUUIDFromBytes(
-                "enigmaticenhance:amulet_health_boost".getBytes(java.nio.charset.StandardCharsets.UTF_8));
+            java.util.UUID id = HEALTH_BOOST_MODIFIER_ID;
             Double applied = APPLIED_HEALTH_BONUS.get(player.getUUID());
             if (applied != null && Math.abs(applied - bonus) < 1.0E-4D) {
                 return;   // 值没变,什么都不做

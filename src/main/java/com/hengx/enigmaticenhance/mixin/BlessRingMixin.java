@@ -36,19 +36,18 @@ import net.minecraft.world.item.ItemStack;
 @Mixin(targets = "auviotre.enigmatic.addon.contents.items.BlessRing")
 public class BlessRingMixin {
 
-    /** 玩家(curio 栏)是否带着某个物品;模组缺失时返回 false。 */
+    /**
+     * 玩家(curio 栏)是否带着某个物品;模组缺失时返回 false。
+     *
+     * <p>4.6.0(内存):原来在这里重复了一次 {@code Class.forName + getMethod},现在统一走
+     * {@link com.hengx.enigmaticenhance.Superposition#hasCurio} 的缓存 Method —— 语义相同
+     * (缺模组/调用失败都返回 false),但不再每次事件都解析一遍反射。</p>
+     */
     private static boolean enigmaticenhance$hasCurio(Player player, Item item) {
         if (item == null) {
             return false;
         }
-        try {
-            Class<?> handler = Class.forName("com.aizistral.enigmaticlegacy.handlers.SuperpositionHandler");
-            Object result = handler.getMethod("hasCurio", LivingEntity.class, Item.class).invoke(null, player, item);
-            return result instanceof Boolean b && b;
-        }
-        catch (Throwable t) {
-            return false;
-        }
+        return com.hengx.enigmaticenhance.Superposition.hasCurio(player, item);
     }
 
     @Inject(method = "canEquip", at = @At("HEAD"), cancellable = true, remap = false)

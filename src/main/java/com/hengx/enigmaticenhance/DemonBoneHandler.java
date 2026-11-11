@@ -73,6 +73,12 @@ public final class DemonBoneHandler {
     /**
      * 三件套:被手骨命中过的目标 → 到期 tick(禁止回复生命的窗口)。
      * 只在{@code fullSet}时写入;不写 NBT、不挂效果、不加属性。
+     *
+     * <p><b>4.6.0(内存)</b>:这张表的 key 是<b>任意 LivingEntity</b>(包括怪),原来唯一的清理点是
+     * {@link #onHeal} —— 目标在窗口内<b>没有触发过治疗事件</b>(被打死、被刷掉、区块卸载)就永远留在表里。
+     * 一个三件套玩家每打一只怪就写一条(UUID + Long,≈ 60B 键值 + Node 32B),挂机刷怪场一小时能积
+     * 上万条且永不回收。现在由 {@link #onTargetDeath}/{@link #onTargetLeaveLevel} 跟着实体生命周期删,
+     * 表的大小 == "最近 N 秒内被手骨打过的、且还活着的实体数"(通常 &lt; 20)。</p>
      */
     private static final Map<UUID, Long> HEAL_BLOCK = new HashMap<>();
 
@@ -144,6 +150,12 @@ public final class DemonBoneHandler {
 
     @SubscribeEvent(priority = EventPriority.NORMAL)
     public static void onHurt(LivingHurtEvent event) {
+        // 4.6.0(内存):每命中一次原本有 3~5 条 DebugLog.info 调用。info 内部会先查 debugLog 再输出,
+        // 但**参数是在调用前就求值的** —— 每条都要建一个 Object[](varargs),
+        // 还要算 player.getName().getString() / target.getName().getString() / effect.getDescriptionId()。
+        // 默认 debugLog=false 时这些全部是白花的分配(一次近战 ≈ 5 个 Object[] + 若干 String/Component),
+        // 战斗一密集就是稳定的垃圾来源。这里先取一次开关,关掉时整段跳过。
+        boolean log = DebugLog.debugEnabled();
         try {
             LivingEntity victim = event.getEntity();
             if (victim.level().isClientSide) {
@@ -152,8 +164,10 @@ public final class DemonBoneHandler {
             // 1) 佩戴者受到的伤害 +50%
             if (victim instanceof Player player && wearing(player)) {
                 event.setAmount(event.getAmount() * TAKEN_MULTIPLIER);
-                DebugLog.info("{} {} 承伤 x{} -> {}", LOG_TAG, player.getName().getString(),
-                    TAKEN_MULTIPLIER, event.getAmount());
+                if (log) {
+                    DebugLog.info("{} {} 承伤 x{} -> {}", LOG_TAG, player.getName().getString(),
+                        TAKEN_MULTIPLIER, event.getAmount());
+                }
             }
             // 2) 佩戴者造成的伤害
             if (!(event.getSource().getEntity() instanceof Player attacker) || attacker == victim) {
@@ -171,7 +185,9 @@ public final class DemonBoneHandler {
             double multiplier = attackMultiplier(attacker, target, biggerMax);
             event.setAmount((float) (event.getAmount() * multiplier));
             if (biggerMax) {
-                DebugLog.info("{} 目标最大生命更高:额外 +{}%", LOG_TAG, (int) (BIGGER_MAX_BONUS * 100));
+                if (log) {
+                    DebugLog.info("{} 目标最大生命更高:额外 +{}%", LOG_TAG, (int) (BIGGER_MAX_BONUS * 100));
+                }
             }
             if (richerHealth) {
                 float absorb = event.getAmount() * ABSORB_RATIO;
@@ -181,8 +197,10 @@ public final class DemonBoneHandler {
                 applyRandomDebuff(target);
             }
             else {
-                DebugLog.info("{} 目标已有 {} 个负面:本次 +{}%", LOG_TAG, harmfulBefore,
-                    (int) (CURSE_BONUS * harmfulBefore * 100.0D));
+                if (log) {
+                    DebugLog.info("{} 目标已有 {} 个负面:本次 +{}%", LOG_TAG, harmfulBefore,
+                        (int) (CURSE_BONUS * harmfulBefore * 100.0D));
+                }
             }
             // 三件套:被手骨命中的目标在 N 秒内不能回血
             if (fullSet(attacker)) {
@@ -191,8 +209,10 @@ public final class DemonBoneHandler {
             if (biggerMax && richerHealth && firstDebuff) {
                 trueDamage(target, target.getMaxHealth() * TRUE_DAMAGE_RATIO, event.getSource());
             }
-            DebugLog.info("{} {} 命中 {}:x{} -> {}", LOG_TAG, attacker.getName().getString(),
-                target.getName().getString(), multiplier, event.getAmount());
+            if (log) {
+                DebugLog.info("{} {} 命中 {}:x{} -> {}", LOG_TAG, attacker.getName().getString(),
+                    target.getName().getString(), multiplier, event.getAmount());
+            }
         }
         catch (Throwable t) {
             DebugLog.error(LOG_TAG + " 伤害结算异常", t);
@@ -223,7 +243,9 @@ public final class DemonBoneHandler {
             return;
         }
         HEAL_BLOCK.put(target.getUUID(), target.tickCount + (long) seconds * 20L);
-        DebugLog.info("{} 目标 {} 进入禁疗窗口 {} 秒", LOG_TAG, target.getName().getString(), seconds);
+        if (DebugLog.debugEnabled()) {
+            DebugLog.info("{} 目标 {} 进入禁疗窗口 {} 秒", LOG_TAG, target.getName().getString(), seconds);
+        }
     }
 
     /** 三件套:被手骨命中过的目标在窗口内不能回血。 */
@@ -252,7 +274,9 @@ public final class DemonBoneHandler {
         MobEffect effect = DEBUFFS.get(RNG.nextInt(DEBUFFS.size()));
         int duration = DEBUFF_MIN + RNG.nextInt(DEBUFF_MAX - DEBUFF_MIN + 1);
         target.addEffect(new MobEffectInstance(effect, duration, 0));
-        DebugLog.info("{} 给 {} 施加随机负面 {}", LOG_TAG, target.getName().getString(), effect.getDescriptionId());
+        if (DebugLog.debugEnabled()) {
+            DebugLog.info("{} 给 {} 施加随机负面 {}", LOG_TAG, target.getName().getString(), effect.getDescriptionId());
+        }
     }
 
     /**
@@ -299,7 +323,32 @@ public final class DemonBoneHandler {
     @SubscribeEvent
     public static void onLoggedOut(PlayerEvent.PlayerLoggedOutEvent event) {
         if (event.getEntity() != null) {
-            ABSORB.remove(event.getEntity().getUUID());
+            UUID id = event.getEntity().getUUID();
+            ABSORB.remove(id);
+            HEAL_BLOCK.remove(id);
+        }
+    }
+
+    /**
+     * 4.6.0(内存):目标死亡 ⇒ 它的禁疗窗口已经没有意义,立刻删掉。
+     * <p>死掉的实体不可能再收到 {@code LivingHealEvent}({@code heal()} 会先判 {@code isAlive()}),
+     * 所以删掉这条<b>不改变任何可观察行为</b>,只是不再把 UUID 永久留在表里。</p>
+     */
+    @SubscribeEvent
+    public static void onTargetDeath(net.minecraftforge.event.entity.living.LivingDeathEvent event) {
+        if (event.getEntity() != null) {
+            HEAL_BLOCK.remove(event.getEntity().getUUID());
+        }
+    }
+
+    /**
+     * 4.6.0(内存):目标离开当前 level(被刷掉 / 区块卸载后 discard / 换维度)⇒ 同样删掉。
+     * <p>同 {@link #onTargetDeath}:离开世界的实体收不到治疗事件,删掉是纯内存行为。</p>
+     */
+    @SubscribeEvent
+    public static void onTargetLeaveLevel(net.minecraftforge.event.entity.EntityLeaveLevelEvent event) {
+        if (event.getEntity() != null) {
+            HEAL_BLOCK.remove(event.getEntity().getUUID());
         }
     }
 
