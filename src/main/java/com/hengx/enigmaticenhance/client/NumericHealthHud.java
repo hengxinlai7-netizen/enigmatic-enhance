@@ -27,6 +27,23 @@ public final class NumericHealthHud {
     private NumericHealthHud() {
     }
 
+    /**
+     * 4.6.1(帧率):{@link #carrying(Player)} 的<b>按 tick 缓存</b>。
+     *
+     * <p>本方法由 {@code RenderGuiEvent.Post} 调用 —— <b>每帧一次</b>(60~200 次/秒)。
+     * 而 {@link #carrying(Player)} 要扫背包 36 格 + 副手,再走一遍 Curios 的
+     * {@code getCuriosInventory(...).map(...)} 与 {@code findFirstCurio(谓词)}(每次都会包一层
+     * {@code Optional}/lambda,并遍历全部饰品槽)。没带生命刻度的玩家(绝大多数)是<b>最坏情况</b>:
+     * 36 格全扫完、饰品栏也全查完才返回 false —— 60~200 次/秒的纯白工。
+     *
+     * <p>背包/饰品栏内容只会在 <b>tick</b> 里变化(拾取、拖拽落格、饰品换装都在 tick 内完成),
+     * 所以同一 tick 内的多次渲染用同一份结果,画面与原来完全一致(血条该出现的那一 tick 就出现)。
+     * 缓存键就是"玩家实例 + {@code tickCount}":不需要注册事件、也不会跨玩家串味。</p>
+     */
+    private static Player cachedPlayer;
+    private static int cachedTick = Integer.MIN_VALUE;
+    private static boolean cachedCarrying;
+
     /** 客户端渲染入口(由 {@code LifeMeterHud} 在 RenderGuiEvent.Post 里调用)。 */
     public static void render(RenderGuiEvent.Post event) {
         Minecraft minecraft = Minecraft.getInstance();
@@ -34,7 +51,7 @@ public final class NumericHealthHud {
             return;
         }
         Player player = minecraft.player;
-        if (!carrying(player)) {
+        if (!carryingCached(player)) {
             return;
         }
         float max = player.getMaxHealth();
@@ -70,6 +87,22 @@ public final class NumericHealthHud {
         catch (RuntimeException | LinkageError ignored) {
             // 纯表现层,绝不影响游戏
         }
+    }
+
+    /**
+     * {@link #carrying(Player)} 的按 tick 缓存版本(见 {@link #cachedPlayer} 的注释)。
+     * 只在客户端渲染线程调用,所以不需要同步。
+     */
+    private static boolean carryingCached(Player player) {
+        int tick = player.tickCount;
+        if (player == cachedPlayer && tick == cachedTick) {
+            return cachedCarrying;
+        }
+        boolean result = carrying(player);
+        cachedPlayer = player;
+        cachedTick = tick;
+        cachedCarrying = result;
+        return result;
     }
 
     /** 玩家是否携带生命刻度(背包 / 副手 / 饰品栏)。 */

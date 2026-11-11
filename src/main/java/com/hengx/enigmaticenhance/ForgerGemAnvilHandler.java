@@ -15,6 +15,7 @@ import net.minecraft.world.item.enchantment.EnchantmentHelper;
 import net.minecraftforge.event.AnvilUpdateEvent;
 import net.minecraftforge.event.entity.player.ItemTooltipEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
+import net.minecraftforge.registries.ForgeRegistries;
 
 /**
  * 1.6.33:「锻造者宝石」新增效果 —— 两本**同附魔**的书在铁砧里可以升到**合法最高等级**。
@@ -54,12 +55,48 @@ public final class ForgerGemAnvilHandler {
         return false;
     }
 
+    /** 4.6.1(帧率):两个宝石物品 id(构造期建好,不在热路径解析)。 */
+    private static final net.minecraft.resources.ResourceLocation FORGER_GEM_ID =
+        new net.minecraft.resources.ResourceLocation("enigmaticaddons", "forger_gem");
+    private static final net.minecraft.resources.ResourceLocation FORGER_CRYSTAL_ID =
+        new net.minecraft.resources.ResourceLocation("enigmaticaddons", "forger_crystal");
+
+    /** 4.6.1:解析出来的物品实例(解析到就缓存,避免每帧反查注册表)。 */
+    private static net.minecraft.world.item.Item gemItem;
+    private static net.minecraft.world.item.Item crystalItem;
+
+    /**
+     * 4.6.1(帧率):这叠物品是不是锻造者宝石/水晶。
+     *
+     * <p>原来是 {@code BuiltInRegistries.ITEM.getKey(stack.getItem()).toString()} 再和两个
+     * {@code "enigmaticaddons:forger_gem"} 字符串比较 —— {@code ResourceLocation#toString()} 每次都会
+     * <b>新建一个 String</b>(namespace + ':' + path)。本判定的调用点有两个热路径:</p>
+     * <ul>
+     *   <li>{@link #onTooltip}(鼠标悬停在任意物品上期间<b>每帧</b>触发);</li>
+     *   <li>{@code hasGem} 里的背包 36 格 + 副手 + Curios 扫描(每次都要对每格调一次)。</li>
+     * </ul>
+     * <p>现在:第一次解析出物品实例后只做引用比较,零分配、零注册表查找。物品缺失时保持 null
+     * 并<b>不缓存失败</b>(下次再试),与原来的"id 比不过 ⇒ 不算宝石"完全一致。</p>
+     */
     private static boolean isGem(ItemStack stack) {
         if (stack == null || stack.isEmpty()) {
             return false;
         }
-        String id = BuiltInRegistries.ITEM.getKey(stack.getItem()).toString();
-        return "enigmaticaddons:forger_gem".equals(id) || "enigmaticaddons:forger_crystal".equals(id);
+        net.minecraft.world.item.Item item = stack.getItem();
+        net.minecraft.world.item.Item gem = gemItem;
+        if (gem == null) {
+            gem = ForgeRegistries.ITEMS.getValue(FORGER_GEM_ID);
+            gemItem = gem;
+        }
+        if (gem != null && item == gem) {
+            return true;
+        }
+        net.minecraft.world.item.Item crystal = crystalItem;
+        if (crystal == null) {
+            crystal = ForgeRegistries.ITEMS.getValue(FORGER_CRYSTAL_ID);
+            crystalItem = crystal;
+        }
+        return crystal != null && item == crystal;
     }
 
     /** 1.7.3:神化(Apotheosis)会把锋利等附魔上限从 5 提到 9;用它的 EnchHooks.getMaxLevel 拿真实上限,没有神化就退回原版。 */

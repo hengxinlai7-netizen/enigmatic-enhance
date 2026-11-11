@@ -14,6 +14,7 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.ai.attributes.Attribute;
 import net.minecraft.world.entity.ai.attributes.AttributeModifier;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraftforge.registries.ForgeRegistries;
 
@@ -152,6 +153,39 @@ public final class BagHudEffects {
 
     private BagHudEffects() {}
 
+    /**
+     * 4.6.1(CPU):与 {@link #BOOKS} 逐项对应的物品实例,<b>懒解析一次就缓存</b>。
+     *
+     * <p>{@link #collect(Player)} 在 {@code BagHudSync#onServerTick} 里每 tick、每个在线玩家都要按
+     * 16 个 id 查一次书袋,而 {@code BookBag.findBook(player, ResourceLocation)} 每次都要先
+     * {@code ForgeRegistries.ITEMS.getValue(id)}:重算 {@code ResourceLocation} 的 hash + 查一次 map。
+     * 4.6.0 已经把 {@code new ResourceLocation(id)} 换成静态 {@link #BOOK_LOCATIONS},这里再把
+     * "id → Item"这一段也缓存掉,热路径上只剩反射进 {@code findBookInBag}(那一步没法绕开)。
+     * </p>
+     * <p>解析失败(注册表还没就绪 / 该模组缺失)时<b>不缓存失败</b>,下次调用重试 —— 与原来
+     * {@code getValue} 返回 null 的分支语义相同。</p>
+     */
+    private static final Item[] BOOK_ITEMS = new Item[BOOKS.size()];
+
+    /** 取清单里第 {@code index} 本书的物品实例(解析不到返回 null)。 */
+    private static Item bookItem(int index) {
+        Item cached = BOOK_ITEMS[index];
+        if (cached != null) {
+            return cached;
+        }
+        try {
+            Item found = ForgeRegistries.ITEMS.getValue(BOOK_LOCATIONS.get(index));
+            if (found != null && found != net.minecraft.world.item.Items.AIR) {
+                BOOK_ITEMS[index] = found;
+                return found;
+            }
+        }
+        catch (RuntimeException | LinkageError ignored) {
+            // 注册表没就绪:本 tick 跳过这一本(等价于原来 getValue 返回 null)
+        }
+        return null;
+    }
+
     /** 空结果(4.6.0:无书袋的玩家每个 tick 都走这里,不再每次 new 一个 ArrayList)。 */
     private static final List<Entry> NO_ENTRIES = List.of();
 
@@ -166,10 +200,16 @@ public final class BagHudEffects {
         // 4.6.0(CPU/内存):书袋不在身上时,下面 16 次 findBook 全部只会返回空,而每次 findBook 内部
         // 都要扫一遍背包 + 饰品栏(扩展自己的前置判据就是 SuperpositionHandler.hasItem)。
         // 先问一次,省掉这 16 遍扫描(以及每次 curios 查询产生的 Optional 对象)。
-        if (BookBag.hasBag(player)) {
+        //
+        // 4.6.1:这个结果下面"第四重咒修正"那条也要用(它要求三本书都在袋里 ⇒ 书袋必须在身上),
+        // 所以提到外面算一次、两处共用。
+        final boolean hasBag = BookBag.hasBag(player);
+        if (hasBag) {
             for (int index = 0; index < BOOKS.size(); index++) {
                 String id = BOOKS.get(index);
-                if (BookBag.findBook(player, BOOK_LOCATIONS.get(index)).isEmpty()) {
+                // 4.6.1:物品实例也缓存(见 BOOK_ITEMS):省掉每 tick 每人 16 次注册表查找。
+                Item bookItem = bookItem(index);
+                if (bookItem == null || BookBag.findBook(player, bookItem).isEmpty()) {
                     continue;
                 }
                 if (out == null) {
@@ -201,7 +241,12 @@ public final class BagHudEffects {
             }
         }
         // 本模组自己的"三书齐修正第四重咒":不属于任何物品,单独一条
-        if (FourthCurseFix.active(player)) {
+        //
+        // 4.6.1(CPU):原来这个判断**每 tick 每玩家**都跑,而它内部要做 1 次 curios 查询(七咒之戒)
+        // + 3 次 BookBag.hasBook —— 而 hasBook 走的是扩展的 findBookInBag,每一次都会完整扫一遍
+        // "背包 + 饰品栏 + 末影箱"。也就是说:**没有书袋的玩家**(绝大多数)每 tick 也白白被扫 3 遍。
+        // 但三本书必须在袋里,书袋不在身上时它必然不成立 ⇒ 直接用上面已经算过的 hasBag 短路。
+        if (hasBag && FourthCurseFix.active(player)) {
             if (out == null) {
                 out = new ArrayList<>(4);
             }

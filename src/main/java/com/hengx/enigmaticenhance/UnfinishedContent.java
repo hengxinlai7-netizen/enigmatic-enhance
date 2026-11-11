@@ -4,8 +4,12 @@ import java.util.List;
 import java.util.Set;
 
 import net.minecraft.ChatFormatting;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.ListTag;
+import net.minecraft.nbt.Tag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.enchantment.Enchantment;
 import net.minecraft.world.item.enchantment.EnchantmentHelper;
@@ -73,6 +77,14 @@ public final class UnfinishedContent {
     /** tooltip 提示行(灰)。 */
     public static final String HINT_KEY = "tooltip.enigmaticenhance.unfinished.hint";
 
+    /** 三个未完成附魔的 id 文本(与 {@link #UNFINISHED_ENCHANTMENTS} 一一对应,类初始化时算好一次)。 */
+    private static final String MAGIC_SWORD_AURA_TEXT = MAGIC_SWORD_AURA.toString();
+    private static final String VOID_AURA_TEXT = VOID_AURA.toString();
+    private static final String HAND_OF_EXECUTION_TEXT = HAND_OF_EXECUTION.toString();
+
+    /** 瓶装意识之海的物品实例(懒解析;解析到就缓存,避免每帧反查注册表)。 */
+    private static Item seaItem;
+
     private UnfinishedContent() {
     }
 
@@ -104,18 +116,80 @@ public final class UnfinishedContent {
         }
     }
 
-    /** 这叠物品是不是瓶装意识之海。 */
+    /**
+     * 这叠物品是不是瓶装意识之海。
+     *
+     * <p>4.6.1(帧率):原来是每次都 {@code ForgeRegistries.ITEMS.getKey(stack.getItem())} 反查注册表 +
+     * {@link ResourceLocation#equals}{@code (id)}。本方法在 {@link #onTooltip} 里对<b>每一个</b>
+     * tooltip 都会被调用(= 悬停在任意物品上时每帧一次),反查注册表是纯浪费。现在物品实例懒解析一次并缓存,
+     * 之后只做一次引用比较;解析不到时退回原来的注册表反查(语义完全一致)。</p>
+     */
     public static boolean isUnfinishedItem(ItemStack stack) {
         if (stack == null || stack.isEmpty()) {
             return false;
         }
         try {
-            ResourceLocation id = ForgeRegistries.ITEMS.getKey(stack.getItem());
+            Item item = stack.getItem();
+            Item cached = seaItem;
+            if (cached != null) {
+                return item == cached;
+            }
+            cached = ModItems.seaOfConsciousnessOrNull();
+            if (cached != null) {
+                seaItem = cached;
+                return item == cached;
+            }
+            ResourceLocation id = ForgeRegistries.ITEMS.getKey(item);
             return SEA_OF_CONSCIOUSNESS.equals(id);
         }
         catch (RuntimeException | LinkageError ignored) {
             return false;
         }
+    }
+
+    /**
+     * 4.6.1(帧率):判断这叠物品是否带着三个"未完成"附魔之一 —— <b>不建 Map、不查注册表、零分配</b>。
+     *
+     * <p>原来 {@link #onTooltip} 对每个被悬停的物品都调 {@link #hasUnfinishedEnchant},而它内部的
+     * {@code EnchantmentHelper.getEnchantments(stack)} 会:读 NBT → 新建一个 {@code HashMap}
+     * → 逐条反查附魔注册表 → 再对每个附魔反查 id。物品一旦被悬停,这段代码就<b>每帧</b>跑一次
+     * (60~200 次/秒),绝大多数物品根本没有附魔,等于每秒几十~几百个纯垃圾对象。
+     *
+     * <p>这里直接读 {@code Enchantments} / {@code StoredEnchantments} 这两个原版键(与
+     * {@code EnchantmentHelper#getEnchantments} 读取的是同一对键),逐条把 {@code id} 字符串和
+     * 三个目标 id 直接比较:没有这两个键时是一次 {@code contains} 判断(不分配);有键时只做字符串比较。
+     * 判定结果与"反序列化后 {@code keySet()} 里是否有目标附魔"严格等价。</p>
+     */
+    public static boolean hasUnfinishedEnchantRaw(ItemStack stack) {
+        if (stack == null || stack.isEmpty()) {
+            return false;
+        }
+        CompoundTag tag = stack.getTag();
+        if (tag == null) {
+            return false;
+        }
+        // 与 ItemStack#getEnchantmentTags 的取值顺序一致:有 Enchantments 就只看它,
+        // 否则才看 StoredEnchantments(附魔书走后者)。
+        if (tag.contains("Enchantments", Tag.TAG_LIST)) {
+            return listHasUnfinished(tag, "Enchantments");
+        }
+        return listHasUnfinished(tag, "StoredEnchantments");
+    }
+
+    /** 读一个附魔列表键,看里面有没有三个目标 id 之一(不建中间集合)。 */
+    private static boolean listHasUnfinished(CompoundTag tag, String key) {
+        if (!tag.contains(key, Tag.TAG_LIST)) {
+            return false;
+        }
+        ListTag list = tag.getList(key, Tag.TAG_COMPOUND);
+        for (int i = 0; i < list.size(); i++) {
+            String id = list.getCompound(i).getString("id");
+            if (MAGIC_SWORD_AURA_TEXT.equals(id) || VOID_AURA_TEXT.equals(id)
+                || HAND_OF_EXECUTION_TEXT.equals(id)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     /** 这叠物品上是否带着任意一个未完成附魔(剑 / 附魔书 / 任意被塞进去的物品)。 */
@@ -150,7 +224,10 @@ public final class UnfinishedContent {
             if (stack == null || stack.isEmpty()) {
                 return;
             }
-            if (!isUnfinishedItem(stack) && !hasUnfinishedEnchant(stack)) {
+            // 4.6.1(帧率):先做两次**零分配**判断,再决定要不要往下走。
+            // 原来这里对任何被悬停的物品都会跑一遍 EnchantmentHelper.getEnchantments(stack)
+            // (新建 HashMap + 反查注册表),而本事件在悬停期间**每帧**触发。
+            if (!isUnfinishedItem(stack) && !hasUnfinishedEnchantRaw(stack)) {
                 return;
             }
             List<Component> lines = event.getToolTip();

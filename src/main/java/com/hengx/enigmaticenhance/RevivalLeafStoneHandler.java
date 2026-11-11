@@ -75,13 +75,33 @@ public final class RevivalLeafStoneHandler {
         }
     }
 
-    /** 这一叠是不是扩展的复苏之叶。 */
+    /** 4.6.1(帧率):解析出来的复苏之叶物品实例(解析到就缓存,避免每帧反查注册表)。 */
+    private static Item cachedLeaf;
+
+    /**
+     * 这一叠是不是扩展的复苏之叶。
+     *
+     * <p>4.6.1(帧率):原来每次都 {@code ForgeRegistries.ITEMS.getKey(stack.getItem())} 反查注册表
+     * ({@code ResourceLocation} hash 重算 + map 查找)。本方法在 {@code ItemTooltipEvent} 里
+     * **每帧**被调用(还经 {@link ItemToggleHandler.Target#matches} 在其它路径上调用),
+     * 所以改成物品实例懒解析一次、之后只做引用比较。物品缺失时保持 null 且不缓存失败,
+     * 语义与原来的"id 对不上 ⇒ 不是复苏之叶"一致。</p>
+     */
     public static boolean isStone(ItemStack stack) {
         if (stack == null || stack.isEmpty()) {
             return false;
         }
-        ResourceLocation id = ForgeRegistries.ITEMS.getKey(stack.getItem());
-        return id != null && ADDON_LEAF_ID.equals(id);
+        Item item = stack.getItem();
+        Item cached = cachedLeaf;
+        if (cached != null) {
+            return item == cached;
+        }
+        cached = addonLeafOrNull();
+        if (cached == null) {
+            return false;
+        }
+        cachedLeaf = cached;
+        return item == cached;
     }
 
     public static boolean isDisabled(ItemStack stack) {

@@ -45,6 +45,11 @@ public final class EarthAmuletTint {
      * 没有效果、或者 id 已经不存在(整合包被拆)⇒ 白色(显示为无色空芯)。
      */
     public static int coreColor(ItemStack stack) {
+        // 4.6.1(帧率):这个方法由 ItemColor 回调在**每次渲染前**调用。没有 NBT 就一定没有效果,
+        // 直接返回"无色",省掉每帧一个 ArrayList + 每条记录一个 record(见 EarthAmuletData#hasEffects)。
+        if (stack == null || stack.isEmpty() || !stack.hasTag()) {
+            return WHITE;
+        }
         for (EarthAmuletData.StoredEffect stored : EarthAmuletData.effects(stack)) {
             MobEffect effect = effect(stored.id());
             if (effect != null) {

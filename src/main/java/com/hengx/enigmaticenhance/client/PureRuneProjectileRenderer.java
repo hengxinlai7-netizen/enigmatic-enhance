@@ -30,6 +30,15 @@ public class PureRuneProjectileRenderer extends EntityRenderer<PureRuneProjectil
     /** 全亮(和发光物品同一档)。 */
     private static final int FULL_BRIGHT = 15728880;
 
+    /**
+     * 4.6.1(帧率):把 {@code RenderType.entityTranslucentEmissive(TEXTURE)} 的结果缓存一次。
+     * <p>那个方法每次调用都会新建一个 {@code CompositeRenderType + CompositeState + TextureStateShard}
+     * (一堆 ImmutableList / Optional / lambda),而 {@link #render} 是<b>每个实体每帧</b>跑一次。
+     * 贴图是常量,渲染类型也就是常量;缓存后热路径只剩一次字段读取。</p>
+     * <p>首次渲染时懒建(保证在渲染线程上第一次构造)。</p>
+     */
+    private static RenderType runeRenderType;
+
     public PureRuneProjectileRenderer(EntityRendererProvider.Context context) {
         super(context);
     }
@@ -49,7 +58,12 @@ public class PureRuneProjectileRenderer extends EntityRenderer<PureRuneProjectil
         poseStack.mulPose(com.mojang.math.Axis.ZP.rotationDegrees((entity.tickCount + partialTick) * 18.0F));
         Matrix4f matrix = poseStack.last().pose();
         Matrix3f normal = poseStack.last().normal();
-        VertexConsumer consumer = bufferSource.getBuffer(RenderType.entityTranslucentEmissive(TEXTURE));
+        RenderType type = runeRenderType;
+        if (type == null) {
+            type = RenderType.entityTranslucentEmissive(TEXTURE);
+            runeRenderType = type;
+        }
+        VertexConsumer consumer = bufferSource.getBuffer(type);
         float size = 0.22F;
         vertex(consumer, matrix, normal, -size, -size, 0.0F, 0.0F);
         vertex(consumer, matrix, normal, size, -size, 1.0F, 0.0F);

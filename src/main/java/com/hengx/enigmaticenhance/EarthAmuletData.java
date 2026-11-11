@@ -313,8 +313,7 @@ return out;
     // ------------------------------------------------------------------ 头颅
 
     /** 已解锁头颅 id 列表(没有则空表)。 */
-    public static List<String> heads(ItemStack stack) {
-        List<String> out = new ArrayList<>();
+    public static List<String> heads(ItemStack stack) {        List<String> out = new ArrayList<>();
         if (stack == null || stack.isEmpty() || !stack.hasTag()) {
             return out;
         }
@@ -334,6 +333,53 @@ return out;
 
     public static boolean hasHead(ItemStack stack, String headId) {
         return heads(stack).contains(headId);
+    }
+
+    /**
+     * 4.6.1(帧率):"有没有记录过药水效果"的<b>零分配</b>版本(不建 List、不建 StoredEffect)。
+     *
+     * <p>大地护符的两个物品模型谓词({@code amulet_state} / {@code amulet_head})和染色回调
+     * {@link EarthAmuletTint#colorFor} 都是<b>每次渲染前</b>被调用的({@code ItemProperties} /
+     * {@code ItemColor});它们只需要"空/非空",却各自调用了一次 {@link #effects(ItemStack)} ——
+     * 每次都要 {@code new ArrayList} 并给每条记录建一个 {@link StoredEffect} record。
+     * 护符在背包/手上/物品展示框里时会持续产生这些短期垃圾(60~200 帧/秒 × 多个实例)。</p>
+     *
+     * <p>判定与 {@code !effects(stack).isEmpty()} 严格等价:读取同一个
+     * {@value #TAG_POTION_EFFECTS} 列表,只看"有没有一条 id 非空"。</p>
+     */
+    public static boolean hasEffects(ItemStack stack) {
+        if (stack == null || stack.isEmpty() || !stack.hasTag()) {
+            return false;
+        }
+        CompoundTag tag = stack.getTag();
+        if (tag == null || !tag.contains(TAG_POTION_EFFECTS, Tag.TAG_LIST)) {
+            return false;
+        }
+        ListTag list = tag.getList(TAG_POTION_EFFECTS, Tag.TAG_COMPOUND);
+        for (int i = 0; i < list.size(); i++) {
+            if (!list.getCompound(i).getString(KEY_ID).isEmpty()) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /** 4.6.1(帧率):"有没有解锁过头颅"的零分配版本(判定与 {@code !heads(stack).isEmpty()} 等价)。 */
+    public static boolean hasHeads(ItemStack stack) {
+        if (stack == null || stack.isEmpty() || !stack.hasTag()) {
+            return false;
+        }
+        CompoundTag tag = stack.getTag();
+        if (tag == null || !tag.contains(TAG_HEADS, Tag.TAG_LIST)) {
+            return false;
+        }
+        ListTag list = tag.getList(TAG_HEADS, Tag.TAG_STRING);
+        for (int i = 0; i < list.size(); i++) {
+            if (!list.getString(i).isEmpty()) {
+                return true;
+            }
+        }
+        return false;
     }
 
     /** 返回"加了这颗头颅"的副本(输入堆不动)。 */

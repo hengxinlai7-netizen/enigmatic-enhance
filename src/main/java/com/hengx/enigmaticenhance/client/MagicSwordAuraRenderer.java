@@ -38,6 +38,19 @@ public class MagicSwordAuraRenderer extends EntityRenderer<MagicSwordAuraEntity>
     /** 贴图半边长(格)。1.2.0 从 1.45 缩到 0.55。 */
     private static final float SIZE = 0.55F;
 
+    /**
+     * 4.6.1(帧率):{@link RenderType#entityTranslucentEmissive(ResourceLocation)} 的结果<b>缓存一次</b>。
+     *
+     * <p>那个方法并不是"按贴图取现成对象",而是 <b>每调用一次就新建</b>一个
+     * {@code CompositeRenderType} + {@code CompositeState} + {@code TextureStateShard}
+     * (里面是一堆 ImmutableList / Optional / lambda)。而 {@link #render} 对<b>每一个</b>剑气实体、
+     * <b>每一帧</b>都会执行,剑气一多就是每秒几百个这种大对象 —— 全是纯垃圾,直接推高 Young GC 频率。
+     * 贴图是常量,渲染类型自然也是常量,缓存下来调用点就只剩一次字段读取。</p>
+     *
+     * <p>用"首次渲染时懒建"而不是静态初始化:确保对象一定是在渲染线程上第一次被构造的。</p>
+     */
+    private static RenderType auraRenderType;
+
     public MagicSwordAuraRenderer(EntityRendererProvider.Context context) {
         super(context);
     }
@@ -58,7 +71,11 @@ public class MagicSwordAuraRenderer extends EntityRenderer<MagicSwordAuraEntity>
 
             Matrix4f matrix = poseStack.last().pose();
             Matrix3f normal = poseStack.last().normal();
-            RenderType type = RenderType.entityTranslucentEmissive(TEXTURE);
+            RenderType type = auraRenderType;
+            if (type == null) {
+                type = RenderType.entityTranslucentEmissive(TEXTURE);
+                auraRenderType = type;
+            }
             VertexConsumer consumer = bufferSource.getBuffer(type);
             vertex(consumer, matrix, normal, -SIZE, -SIZE, 0.0F, 1.0F);
             vertex(consumer, matrix, normal, SIZE, -SIZE, 1.0F, 1.0F);

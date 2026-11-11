@@ -45,6 +45,28 @@ public final class NoClipState {
         return clientActive || serverActive.contains(player.getUUID());
     }
 
+    /**
+     * 4.6.1(性能):{@link EntityMoveNoClipMixin} 用的<b>极廉价前置判断</b>。
+     *
+     * <p>{@code Entity#move} 是<b>每个实体每 tick</b>都要走的最热方法(几百个实体 × 20 tps,
+     * 整合包刷怪塔场景下轻松上万次/秒),而穿墙功能在 99.99% 的时间里是关闭的。
+     * 与其每次都做 {@code instanceof Player} + {@code ConcurrentHashMap#contains},不如先问一句
+     * "现在有没有任何人是开启状态":一次 volatile 读 + 一次 {@code isEmpty()}。</p>
+     *
+     * @return true 表示"至少有一个实体可能处于穿墙状态,需要继续往下判"
+     */
+    public static boolean anyActive() {
+        return clientActive || !serverActive.isEmpty();
+    }
+
+    /**
+     * 4.6.1(性能):是否还有"被我们强行打开 noPhysics"的实体需要回收。
+     * <p>没有的话,mixin 连 {@code releaseForced} 的 map 查找都可以跳过。</p>
+     */
+    public static boolean hasForced() {
+        return !FORCED.isEmpty();
+    }
+
     /** 服务端登记/注销。 */
     public static boolean mark(Player player, boolean active) {
         if (player == null) {
@@ -83,7 +105,12 @@ public final class NoClipState {
      */
     public static boolean releaseForced(net.minecraft.world.entity.Entity entity) {
         try {
-            return entity != null && FORCED.remove(entity.getId());
+            // 4.6.1(性能):没人被强行打开过时,连 id 都不必算(map 一定返回 null)。
+            java.util.Set<Integer> forced = FORCED;
+            if (forced.isEmpty()) {
+                return false;
+            }
+            return entity != null && forced.remove(entity.getId());
         }
         catch (RuntimeException | LinkageError ignored) {
             return false;

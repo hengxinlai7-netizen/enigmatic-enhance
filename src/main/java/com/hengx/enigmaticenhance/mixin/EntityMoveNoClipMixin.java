@@ -34,6 +34,13 @@ public class EntityMoveNoClipMixin {
         at = @At("HEAD"), remap = false, require = 0)
     private void enigmaticenhance$allowPhase(CallbackInfo ci) {
         try {
+            // 4.6.1(性能):Entity#move 是"每个实体每 tick"都会走的最热方法,而穿墙在正常游戏里
+            // 100% 是关闭的。这里先用一次 volatile 读 + 两次 isEmpty 把绝大多数调用挡在外面,
+            // 不再为每个实体做 instanceof Player + ConcurrentHashMap 查找。
+            // 语义不变:没人开启穿墙、也没有"我们强行打开过 noPhysics"的实体 ⇒ 什么都不用做。
+            if (!NoClipState.anyActive() && !NoClipState.hasForced()) {
+                return;
+            }
             Entity self = (Entity) (Object) this;
             if (NoClipState.isActive(self)) {
                 if (!self.noPhysics) {

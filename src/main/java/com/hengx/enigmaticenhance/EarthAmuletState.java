@@ -39,13 +39,19 @@ public final class EarthAmuletState {
         if (!EarthAmuletData.isAmulet(stack)) {
             return EMPTY;
         }
+        // 4.6.1(帧率):没有 NBT ⇒ 强化/头颅/效果必然全空。这是最便宜的一次短路,
+        // 挡掉的正是最常见的情况:刚做出来、什么都没加的护符(每次渲染都要问一遍模型状态)。
+        if (!stack.hasTag()) {
+            return EMPTY;
+        }
         if (EarthAmuletData.isEmpowered(stack)) {
             return EMPOWERED;
         }
-        if (!EarthAmuletData.heads(stack).isEmpty()) {
+        // 4.6.1(帧率):用零分配的存在性判断,不再为"只是想问空不空"去建 List/record。
+        if (EarthAmuletData.hasHeads(stack)) {
             return HEADS;
         }
-        if (!EarthAmuletData.effects(stack).isEmpty()) {
+        if (EarthAmuletData.hasEffects(stack)) {
             return POTION;
         }
         return EMPTY;
@@ -66,6 +72,10 @@ public final class EarthAmuletState {
      */
     public static int headIndex(ItemStack stack) {
         if (!EarthAmuletData.isAmulet(stack)) {
+            return 0;
+        }
+        // 4.6.1(帧率):没有 NBT ⇒ 不可能有头颅。省掉每帧一个 ArrayList(见 EarthAmuletData#hasHeads)。
+        if (!stack.hasTag()) {
             return 0;
         }
         for (String id : EarthAmuletData.heads(stack)) {
