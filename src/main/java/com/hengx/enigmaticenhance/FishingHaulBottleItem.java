@@ -28,11 +28,19 @@ public class FishingHaulBottleItem extends Item {
         super(new Item.Properties().stacksTo(STACK_SIZE));
     }
 
+    /**
+     * 4.6.2(内存):4 行 tooltip 全是常量 ⇒ 只建一次,不再每帧重建(理由见 {@link DemonHandBoneItem})。
+     */
+    private static final Component HEADER_LINE = Component.translatable(HEADER_KEY).withStyle(ChatFormatting.AQUA);
+    private static final Component LORE_LINE = Component.translatable(LORE_KEY).withStyle(ChatFormatting.GRAY);
+    private static final Component EFFECT_LINE = Component.translatable(EFFECT_KEY).withStyle(ChatFormatting.GRAY);
+    private static final Component STATE_LINE = Component.translatable(STATE_KEY).withStyle(ChatFormatting.GRAY);
+
     @Override
     public void appendHoverText(ItemStack stack, Level level, List<Component> tooltip, TooltipFlag flag) {
-        tooltip.add(Component.translatable(HEADER_KEY).withStyle(ChatFormatting.AQUA));
-        tooltip.add(Component.translatable(LORE_KEY).withStyle(ChatFormatting.GRAY));
-        tooltip.add(Component.translatable(EFFECT_KEY).withStyle(ChatFormatting.GRAY));
-        tooltip.add(Component.translatable(STATE_KEY).withStyle(ChatFormatting.GRAY));
+        tooltip.add(HEADER_LINE);
+        tooltip.add(LORE_LINE);
+        tooltip.add(EFFECT_LINE);
+        tooltip.add(STATE_LINE);
     }
 }

@@ -110,8 +110,12 @@ public final class PlayerCritHandler {
 
             player.level().playSound(null, target.blockPosition(), SoundEvents.PLAYER_ATTACK_CRIT,
                 SoundSource.PLAYERS, 0.7F, 1.0F);
-            DebugLog.once("crit:" + player.getUUID(),
-                "[Crit] {} 全伤暴击 ×{}", player.getName().getString(), mult);
+            // 4.6.2(内存):先问 oncePending() 再拼 key(每次暴击都要拼 "crit:"+UUID,
+            // 而 once() 在记录表满了之后本来就不输出)。
+            if (DebugLog.oncePending()) {
+                DebugLog.once("crit:" + player.getUUID(),
+                    "[Crit] {} 全伤暴击 ×{}", player.getName().getString(), mult);
+            }
         }
         catch (RuntimeException | LinkageError ignored) {
             // 暴击失败不影响原伤害

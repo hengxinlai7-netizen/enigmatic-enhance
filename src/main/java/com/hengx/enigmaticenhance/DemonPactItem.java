@@ -69,18 +69,26 @@ public class DemonPactItem extends Item implements ICurioItem {
         return map;
     }
 
+    /**
+     * 4.6.2(内存):5 行 tooltip 全是常量 ⇒ 只建一次,不再每帧重建(理由见 {@link DemonHandBoneItem})。
+     */
+    private static Component tip(String key, ChatFormatting style) {
+        return Component.translatable("tooltip.enigmaticenhance.demon_pact." + key).withStyle(style);
+    }
+
+    private static final Component HEADER = tip("header", ChatFormatting.DARK_RED);
+    private static final Component ABILITY = tip("ability", ChatFormatting.RED);
+    private static final Component COST = tip("cost", ChatFormatting.GRAY);
+    private static final Component SCROLL_SLOT_LINE = tip("scroll_slot", ChatFormatting.LIGHT_PURPLE);
+    private static final Component SET = tip("set", ChatFormatting.DARK_RED);
+
     @Override
     public void appendHoverText(ItemStack stack, @Nullable Level level, List<Component> tooltip, TooltipFlag flag) {
         // 1.1.28e:描述只留"基础作用",具体数值/开关状态不再写进 tooltip(见说明.txt)
-        tooltip.add(Component.translatable("tooltip.enigmaticenhance.demon_pact.header")
-            .withStyle(ChatFormatting.DARK_RED));
-        tooltip.add(Component.translatable("tooltip.enigmaticenhance.demon_pact.ability")
-            .withStyle(ChatFormatting.RED));
-        tooltip.add(Component.translatable("tooltip.enigmaticenhance.demon_pact.cost")
-            .withStyle(ChatFormatting.GRAY));
-        tooltip.add(Component.translatable("tooltip.enigmaticenhance.demon_pact.scroll_slot")
-            .withStyle(ChatFormatting.LIGHT_PURPLE));
-        tooltip.add(Component.translatable("tooltip.enigmaticenhance.demon_pact.set")
-            .withStyle(ChatFormatting.DARK_RED));
+        tooltip.add(HEADER);
+        tooltip.add(ABILITY);
+        tooltip.add(COST);
+        tooltip.add(SCROLL_SLOT_LINE);
+        tooltip.add(SET);
     }
 }

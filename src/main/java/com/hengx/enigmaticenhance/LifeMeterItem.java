@@ -28,13 +28,21 @@ public class LifeMeterItem extends Item {
         super(new Item.Properties().stacksTo(1).rarity(Rarity.UNCOMMON));
     }
 
+    /**
+     * 4.6.2(内存):3 行 tooltip 全是常量 ⇒ 只建一次,不再每帧重建(理由见 {@link DemonHandBoneItem})。
+     */
+    private static Component tip(String key, ChatFormatting style) {
+        return Component.translatable("tooltip.enigmaticenhance.life_meter." + key).withStyle(style);
+    }
+
+    private static final Component HEADER = tip("header", ChatFormatting.GOLD);
+    private static final Component EFFECT = tip("effect", ChatFormatting.AQUA);
+    private static final Component NOTE = tip("note", ChatFormatting.DARK_GRAY);
+
     @Override
     public void appendHoverText(ItemStack stack, @Nullable Level level, List<Component> tooltip, TooltipFlag flag) {
-        tooltip.add(Component.translatable("tooltip.enigmaticenhance.life_meter.header")
-            .withStyle(ChatFormatting.GOLD));
-        tooltip.add(Component.translatable("tooltip.enigmaticenhance.life_meter.effect")
-            .withStyle(ChatFormatting.AQUA));
-        tooltip.add(Component.translatable("tooltip.enigmaticenhance.life_meter.note")
-            .withStyle(ChatFormatting.DARK_GRAY));
+        tooltip.add(HEADER);
+        tooltip.add(EFFECT);
+        tooltip.add(NOTE);
     }
 }

@@ -81,7 +81,7 @@ public final class ItemTooltips {
             }
             case KIND_ENGINE -> {
                 if (RingConfig.disableEngineLightningItemClear()) {
-                    add(lines, line("add.engine.lightning"));
+                    addFixed(lines, "add.engine.lightning");
                 }
             }
             case KIND_GLUTTONY -> {
@@ -104,7 +104,7 @@ public final class ItemTooltips {
                 Component effects = join(parts, ";");
                 if (effects != null) {
                     add(lines, effects);
-                    add(lines, line("add.pearl.condition"));
+                    addFixed(lines, "add.pearl.condition");
                 }
             }
             case KIND_ADVENTURE_CHARM -> {
@@ -119,7 +119,7 @@ public final class ItemTooltips {
             }
             case KIND_DESPAIR_INSIGNIA -> {
                 if (RingConfig.despairInsigniaAllowMining() && RingConfig.miningTooltip()) {
-                    add(lines, line("add.mining"));
+                    addFixed(lines, "add.mining");
                 }
             }
             case KIND_THUNDER_SCROLL -> {
@@ -130,7 +130,7 @@ public final class ItemTooltips {
                     add(lines, body("add.thunder", percent(RingConfig.scaleAttackDamagePercent() / 100.0D),
                         state(!ScrollHandler.isLightningDisabled(stack))));
                     if (RingConfig.scaleChargeSpread()) {
-                        add(lines, line("add.thunder.spread"));
+                        addFixed(lines, "add.thunder.spread");
                     }
                 }
             }
@@ -150,11 +150,11 @@ public final class ItemTooltips {
                 if (BooksHandler.isTargetBook(stack)) {
                     if (RingConfig.booksEnabled()) {
                         if (BooksHandler.isDisabled(stack)) {
-                            add(lines, line("add.books.disabled"));
+                            addFixed(lines, "add.books.disabled");
                             lines.set(0, lines.get(0).copy().withStyle(BODY));
                         }
                         else if (RingConfig.booksToggleEnabled()) {
-                            add(lines, line("add.books.toggle"));
+                            addFixed(lines, "add.books.toggle");
                         }
                     }
                 }
@@ -162,7 +162,7 @@ public final class ItemTooltips {
                     // 1.2.2:深渊侵蚀态是叠在「大地之心」这个物品上的一个标记,所以说明也写在这个物品上
                     // (与本体「受污染的大地之心」只多一行说明的做法一致,不新增物品、不改名字)。
                     if (RingConfig.abyssalEarthHeartEnabled() && AbyssalEarthHeart.isAbyssalTainted(stack)) {
-                        add(lines, line("add.earthHeart.abyssal"));
+                        addFixed(lines, "add.earthHeart.abyssal");
                     }
                 }
             }
@@ -299,9 +299,56 @@ public final class ItemTooltips {
         lines.add(Component.translatable("tooltip.enigmaticenhance.added", body).withStyle(BODY));
     }
 
-    /** 一条"改了什么"的正文(不带前缀)。 */
+    // ------------------------------------------------------------------ 常量行缓存(4.6.2)
+
+    /**
+     * 4.6.2(内存):"key 是字面量"的 tooltip 行整行缓存。
+     *
+     * <p>{@code ItemTooltipEvent} 在鼠标悬停在物品上期间<b>每帧</b>触发(60~200 次/秒)。
+     * 原来每行都要现拼 {@code "tooltip.enigmaticenhance." + key} 的 String(拼接不驻留,每次都新建),
+     * 再 new {@code TranslatableComponent},然后 {@code add()} 里再
+     * {@code body.getString()}(StringBuilder + String)、{@code new Object[1]}(varargs)、
+     * 新的 {@code TranslatableComponent(added, body)}、{@code withStyle} 复制 —— 6 个短命对象/行/帧。
+     * 这些行的内容<b>只由 key 决定</b>,{@code Component} 又不可变,所以建一次就够。</p>
+     *
+     * <p>等价性:{@link #add} 里的空白检查("正文翻译非空才加")在建缓存的那一刻做同样一次判断,
+     * 结果存进 {@link #FIXED_LINES}(空 ⇒ 存 {@link #SKIP_LINE},以后同样跳过)。对同一份语言文件
+     * 行为逐字一致;唯一差别是"运行期把某个翻译热改成空串"的极端假设 —— 语言文件只在资源包重载时变化,
+     * 而那时客户端本来就会重建 tooltip。</p>
+     */
+    private static final java.util.Map<String, Component> BODY_LINES = new java.util.concurrent.ConcurrentHashMap<>();
+
+    private static final java.util.Map<String, Component> FIXED_LINES = new java.util.concurrent.ConcurrentHashMap<>();
+
+    /** "这一行建出来是空的,不要加"的哨兵({@link java.util.concurrent.ConcurrentHashMap} 不收 null)。 */
+    private static final Component SKIP_LINE = Component.empty();
+
+    /** 一条"改了什么"的正文(不带前缀);常量 key ⇒ 只建一次。 */
     private static Component line(String key) {
-        return Component.translatable("tooltip.enigmaticenhance." + key);
+        Component cached = BODY_LINES.get(key);
+        if (cached != null) {
+            return cached;
+        }
+        Component built = Component.translatable("tooltip.enigmaticenhance." + key);
+        BODY_LINES.putIfAbsent(key, built);
+        return built;
+    }
+
+    /** 追加一行**常量**说明(等价于 {@code add(lines, line(key))},但不每帧重建)。 */
+    private static void addFixed(List<Component> lines, String key) {
+        Component fixed = FIXED_LINES.get(key);
+        if (fixed == null) {
+            Component body = line(key);
+            String text = body.getString();
+            fixed = (text == null || text.isBlank())
+                ? SKIP_LINE
+                // 前缀 + 正文也是常量:整行一起缓存
+                : Component.translatable("tooltip.enigmaticenhance.added", body).withStyle(BODY);
+            FIXED_LINES.putIfAbsent(key, fixed);
+        }
+        if (fixed != SKIP_LINE) {
+            lines.add(fixed);
+        }
     }
 
     /** 带参数的正文。 */

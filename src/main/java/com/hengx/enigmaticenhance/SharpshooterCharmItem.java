@@ -31,19 +31,27 @@ public class SharpshooterCharmItem extends Item implements top.theillusivec4.cur
         super(new Item.Properties().stacksTo(1).rarity(Rarity.RARE));
     }
 
+    /**
+     * 4.6.2(内存):6 行 tooltip 全是常量 ⇒ 只建一次,不再每帧重建(理由见 {@link DemonHandBoneItem})。
+     */
+    private static Component tip(String key, ChatFormatting style) {
+        return Component.translatable("tooltip.enigmaticenhance.sharpshooter_charm." + key).withStyle(style);
+    }
+
+    private static final Component HEADER = tip("header", ChatFormatting.GOLD);
+    private static final Component LORE = tip("lore", ChatFormatting.GRAY);
+    private static final Component DAMAGE = tip("damage", ChatFormatting.AQUA);
+    private static final Component SPEED = tip("speed", ChatFormatting.AQUA);
+    private static final Component CRIT = tip("crit", ChatFormatting.AQUA);
+    private static final Component ACCURACY = tip("accuracy", ChatFormatting.AQUA);
+
     @Override
     public void appendHoverText(ItemStack stack, @Nullable Level level, List<Component> tooltip, TooltipFlag flag) {
-        tooltip.add(Component.translatable("tooltip.enigmaticenhance.sharpshooter_charm.header")
-            .withStyle(ChatFormatting.GOLD));
-        tooltip.add(Component.translatable("tooltip.enigmaticenhance.sharpshooter_charm.lore")
-            .withStyle(ChatFormatting.GRAY));
-        tooltip.add(Component.translatable("tooltip.enigmaticenhance.sharpshooter_charm.damage")
-            .withStyle(ChatFormatting.AQUA));
-        tooltip.add(Component.translatable("tooltip.enigmaticenhance.sharpshooter_charm.speed")
-            .withStyle(ChatFormatting.AQUA));
-        tooltip.add(Component.translatable("tooltip.enigmaticenhance.sharpshooter_charm.crit")
-            .withStyle(ChatFormatting.AQUA));
-        tooltip.add(Component.translatable("tooltip.enigmaticenhance.sharpshooter_charm.accuracy")
-            .withStyle(ChatFormatting.AQUA));
+        tooltip.add(HEADER);
+        tooltip.add(LORE);
+        tooltip.add(DAMAGE);
+        tooltip.add(SPEED);
+        tooltip.add(CRIT);
+        tooltip.add(ACCURACY);
     }
 }

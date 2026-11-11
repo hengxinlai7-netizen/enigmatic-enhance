@@ -99,9 +99,9 @@ public final class BloodCalamityHandler {
             return true;
         }
         try {
-            return top.theillusivec4.curios.api.CuriosApi.getCuriosInventory(player)
-                .map(handler -> handler.findFirstCurio(BloodCalamityHandler::isBerserk).isPresent())
-                .orElse(false);
+            // 4.6.2(内存):.map(...).orElse(...) ⇒ orElse(null) + 判空,不再每次新建 LazyOptional + lambda。
+            var handler = top.theillusivec4.curios.api.CuriosApi.getCuriosInventory(player).orElse(null);
+            return handler != null && handler.findFirstCurio(BloodCalamityHandler::isBerserk).isPresent();
         }
         catch (RuntimeException | LinkageError ignored) {
             return false;
@@ -189,8 +189,12 @@ public final class BloodCalamityHandler {
                 if (debuffs > 0) {
                     float taken = 1.0F + PER_DEBUFF * debuffs;
                     event.setAmount(event.getAmount() * taken);
-                    DebugLog.once("bcTaken:" + debuffs,
-                        "[BloodCalamity] 受伤 x{} ({} 个负面)", taken, debuffs);
+                    // 4.6.2(内存):先问 oncePending() 再拼 key —— 原来每次受伤都要拼
+                    // "bcTaken:"+debuffs 这个 String,而 once() 在记录表满了之后本来就不输出。
+                    if (DebugLog.oncePending()) {
+                        DebugLog.once("bcTaken:" + debuffs,
+                            "[BloodCalamity] 受伤 x{} ({} 个负面)", taken, debuffs);
+                    }
                 }
             }
             // ② 造成伤害:中血色之灾 + 佩戴沙场之证,每层负面 +10%
@@ -201,8 +205,11 @@ public final class BloodCalamityHandler {
                 if (debuffs > 0) {
                     float dealt = 1.0F + PER_DEBUFF * debuffs;
                     event.setAmount(event.getAmount() * dealt);
-                    DebugLog.once("bcDealt:" + debuffs,
-                        "[BloodCalamity] 造成伤害 x{} ({} 个负面)", dealt, debuffs);
+                    // 4.6.2(内存):同上,先问 oncePending() 再拼 key。
+                    if (DebugLog.oncePending()) {
+                        DebugLog.once("bcDealt:" + debuffs,
+                            "[BloodCalamity] 造成伤害 x{} ({} 个负面)", dealt, debuffs);
+                    }
                 }
             }
         }

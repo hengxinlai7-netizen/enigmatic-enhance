@@ -40,9 +40,9 @@ public final class PearlUtil {
             return true;
         }
         try {
-            return top.theillusivec4.curios.api.CuriosApi.getCuriosInventory(player)
-                .map(handler -> handler.findFirstCurio(PearlUtil::isPearl).isPresent())
-                .orElse(false);
+            // 4.6.2(内存):.map(...).orElse(...) ⇒ orElse(null) + 判空,不再每次新建 LazyOptional + lambda。
+            var handler = top.theillusivec4.curios.api.CuriosApi.getCuriosInventory(player).orElse(null);
+            return handler != null && handler.findFirstCurio(PearlUtil::isPearl).isPresent();
         }
         catch (RuntimeException | LinkageError ignored) {
             return false;

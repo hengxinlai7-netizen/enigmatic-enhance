@@ -27,11 +27,14 @@ public final class DemonPactData {
             return ItemStack.EMPTY;
         }
         try {
-            return CuriosApi.getCuriosInventory(player)
-                .map(handler -> handler.findFirstCurio(DemonPactData::isPact)
-                    .map(SlotResult::stack)
-                    .orElse(ItemStack.EMPTY))
-                .orElse(ItemStack.EMPTY);
+            // 4.6.2(内存):.map(...).orElse(...) ⇒ orElse(null) + 判空,不再每调一次新建
+            // 一个 LazyOptional / lambda / 内层 Optional(理由见 EarthAmuletData#equippedAmulet)。
+            var handler = CuriosApi.getCuriosInventory(player).orElse(null);
+            if (handler == null) {
+                return ItemStack.EMPTY;
+            }
+            SlotResult found = handler.findFirstCurio(DemonPactData::isPact).orElse(null);
+            return found == null ? ItemStack.EMPTY : found.stack();
         }
         catch (Throwable t) {
             return ItemStack.EMPTY;

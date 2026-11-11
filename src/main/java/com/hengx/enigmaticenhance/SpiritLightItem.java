@@ -31,11 +31,19 @@ public class SpiritLightItem extends Item {
         super(new Item.Properties().stacksTo(1));
     }
 
+    /**
+     * 4.6.2(内存):4 行 tooltip 全是常量 ⇒ 只建一次,不再每帧重建(理由见 {@link DemonHandBoneItem})。
+     */
+    private static final Component HEADER_LINE = Component.translatable(HEADER_KEY).withStyle(ChatFormatting.AQUA);
+    private static final Component LORE_LINE = Component.translatable(LORE_KEY).withStyle(ChatFormatting.GRAY);
+    private static final Component EXTRA_LINE = Component.translatable(EXTRA_KEY).withStyle(ChatFormatting.GRAY);
+    private static final Component XP_LINE = Component.translatable(XP_KEY).withStyle(ChatFormatting.GRAY);
+
     @Override
     public void appendHoverText(ItemStack stack, Level level, List<Component> tooltip, TooltipFlag flag) {
-        tooltip.add(Component.translatable(HEADER_KEY).withStyle(ChatFormatting.AQUA));
-        tooltip.add(Component.translatable(LORE_KEY).withStyle(ChatFormatting.GRAY));
-        tooltip.add(Component.translatable(EXTRA_KEY).withStyle(ChatFormatting.GRAY));
-        tooltip.add(Component.translatable(XP_KEY).withStyle(ChatFormatting.GRAY));
+        tooltip.add(HEADER_LINE);
+        tooltip.add(LORE_LINE);
+        tooltip.add(EXTRA_LINE);
+        tooltip.add(XP_LINE);
     }
 }

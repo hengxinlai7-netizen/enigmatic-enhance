@@ -141,16 +141,23 @@ public final class DemonBloodChaliceHandler {
 
     /** 佩戴中的恶魔血杯(没有/异常返回空堆)。 */
     public static ItemStack equippedChalice(Player player) {
-        if (player == null || ModItems.demonBloodChaliceOrNull() == null) {
+        if (player == null) {
+            return ItemStack.EMPTY;
+        }
+        var chalice = ModItems.demonBloodChaliceOrNull();
+        if (chalice == null) {
             return ItemStack.EMPTY;
         }
         try {
-            return CuriosApi.getCuriosInventory(player)
-                .map(handler -> handler.findFirstCurio(stack -> !stack.isEmpty()
-                        && stack.getItem() == ModItems.demonBloodChaliceOrNull())
-                    .map(SlotResult::stack)
-                    .orElse(ItemStack.EMPTY))
-                .orElse(ItemStack.EMPTY);
+            // 4.6.2(内存):.map(...).orElse(...) ⇒ orElse(null) + 判空,不再每调一次新建
+            // 一个 LazyOptional / lambda / 内层 Optional(理由见 EarthAmuletData#equippedAmulet)。
+            var handler = CuriosApi.getCuriosInventory(player).orElse(null);
+            if (handler == null) {
+                return ItemStack.EMPTY;
+            }
+            SlotResult found = handler.findFirstCurio(stack -> !stack.isEmpty()
+                && stack.getItem() == chalice).orElse(null);
+            return found == null ? ItemStack.EMPTY : found.stack();
         }
         catch (Throwable t) {
             return ItemStack.EMPTY;

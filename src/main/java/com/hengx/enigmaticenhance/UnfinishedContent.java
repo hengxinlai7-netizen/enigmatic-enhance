@@ -213,6 +213,14 @@ public final class UnfinishedContent {
     // ------------------------------------------------------------------ tooltip
 
     /**
+     * 4.6.2(内存):这一行是常量 ⇒ 只建一次(原来每帧 new 一个 TranslatableComponent + withStyle 复制)。
+     * 注意下面的 {@code getString()} 仍然每帧执行 —— 那是"防止多行叠加"的比对需要,不能用缓存结果
+     * 代替(缓存字符串会在切换语言后失效)。
+     */
+    private static final Component HINT_LINE =
+        Component.translatable(HINT_KEY).withStyle(ChatFormatting.GRAY);
+
+    /**
      * 给这四类内容追加一行灰色提示「· 该内容尚未完成，仅供测试」。
      * <p>只加在<b>这四项自己</b>的说明里:瓶装意识之海本体、以及带着这三个附魔的物品
      * (附魔书也走这条路径,因为附魔名字本来就在书自己的 tooltip 里)。</p>
@@ -231,7 +239,7 @@ public final class UnfinishedContent {
                 return;
             }
             List<Component> lines = event.getToolTip();
-            Component hint = Component.translatable(HINT_KEY).withStyle(ChatFormatting.GRAY);
+            Component hint = HINT_LINE;
             String text = hint.getString();
             for (Component line : lines) {
                 if (line != null && text.equals(line.getString())) {

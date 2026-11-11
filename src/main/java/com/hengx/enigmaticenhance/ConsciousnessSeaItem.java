@@ -21,15 +21,23 @@ public class ConsciousnessSeaItem extends Item {
         super(new Item.Properties().stacksTo(1).rarity(Rarity.EPIC));
     }
 
+    /**
+     * 4.6.2(内存):4 行 tooltip 全是常量 ⇒ 只建一次,不再每帧重建(理由见 {@link DemonHandBoneItem})。
+     */
+    private static Component tip(String key, net.minecraft.ChatFormatting style) {
+        return Component.translatable("tooltip.enigmaticenhance.sea_of_consciousness." + key).withStyle(style);
+    }
+
+    private static final Component HEADER = tip("header", net.minecraft.ChatFormatting.GRAY);
+    private static final Component LINE1 = tip("line1", net.minecraft.ChatFormatting.DARK_GRAY);
+    private static final Component LINE2 = tip("line2", net.minecraft.ChatFormatting.DARK_GRAY);
+    private static final Component NOTE = tip("note", net.minecraft.ChatFormatting.DARK_GRAY);
+
     @Override
     public void appendHoverText(ItemStack stack, Level level, List<Component> tooltip, TooltipFlag flag) {
-        tooltip.add(Component.translatable("tooltip.enigmaticenhance.sea_of_consciousness.header")
-            .withStyle(net.minecraft.ChatFormatting.GRAY));
-        tooltip.add(Component.translatable("tooltip.enigmaticenhance.sea_of_consciousness.line1")
-            .withStyle(net.minecraft.ChatFormatting.DARK_GRAY));
-        tooltip.add(Component.translatable("tooltip.enigmaticenhance.sea_of_consciousness.line2")
-            .withStyle(net.minecraft.ChatFormatting.DARK_GRAY));
-        tooltip.add(Component.translatable("tooltip.enigmaticenhance.sea_of_consciousness.note")
-            .withStyle(net.minecraft.ChatFormatting.DARK_GRAY));
+        tooltip.add(HEADER);
+        tooltip.add(LINE1);
+        tooltip.add(LINE2);
+        tooltip.add(NOTE);
     }
 }

@@ -123,9 +123,9 @@ public final class NumericHealthHud {
                     return true;
                 }
             }
-            return CuriosApi.getCuriosInventory(player)
-                .map(handler -> handler.findFirstCurio(stack -> stack.is(meter)).isPresent())
-                .orElse(false);
+            // 4.6.2(内存):.map(...).orElse(...) ⇒ orElse(null) + 判空,不再每次新建 LazyOptional + lambda。
+            var handler = CuriosApi.getCuriosInventory(player).orElse(null);
+            return handler != null && handler.findFirstCurio(stack -> stack.is(meter)).isPresent();
         }
         catch (RuntimeException | LinkageError ignored) {
             return false;

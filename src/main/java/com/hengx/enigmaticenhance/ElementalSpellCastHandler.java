@@ -141,8 +141,12 @@ public final class ElementalSpellCastHandler {
             }
             float ratio = chainRatio(lastSpell);
             event.setAmount(event.getAmount() * ratio);
-            com.hengx.enigmaticenhance.DebugLog.once("ratiox" + ratio,
-                "[ElementalMagic] 连携伤害 x{} : {} -> {}", ratio, event.getAmount() / ratio, event.getAmount());
+            // 4.6.2(内存):先问 oncePending() 再拼 key —— 原来每次伤害结算都要拼
+            // "ratiox"+ratio 这个 String,而 once() 在记录表满了之后本来就不输出。
+            if (com.hengx.enigmaticenhance.DebugLog.oncePending()) {
+                com.hengx.enigmaticenhance.DebugLog.once("ratiox" + ratio,
+                    "[ElementalMagic] 连携伤害 x{} : {} -> {}", ratio, event.getAmount() / ratio, event.getAmount());
+            }
         }
         catch (RuntimeException | LinkageError ignored) {
             // 忽略

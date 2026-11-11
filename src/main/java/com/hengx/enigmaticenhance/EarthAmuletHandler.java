@@ -82,8 +82,14 @@ public final class EarthAmuletHandler {
      * <p>原来 {@code want} 要求"当前正在 flying"，一落地、一被别的模组清掉飞行能力，
      * 穿方块就立刻关闭 —— 玩家体感是"飞着飞着突然撞墙、横向过不去"。
      * 现在改成"最近 {@link #NOCLIP_GRACE_TICKS} tick 内飞过"也算，起落瞬间不再中断。</p>
+     *
+     * <p>4.6.2(装箱):值原来是 {@code Integer} —— {@code player.tickCount} 早就超出
+     * {@code Integer} 缓存区(-128..127),所以"戴龙首且在飞"的玩家<b>每 tick</b> 都要新建一个
+     * {@code Integer} 才能 put。现在用长度 1 的 {@code int[]} 当可变格子:第一次出现时建一次数组,
+     * 之后只写下标 0,热路径零分配。读的一方拿到的是同一个数组,只读下标 0,
+     * 语义与原 {@code Integer} 逐位相同(比较的仍然是 tickCount 的整数值)。</p>
      */
-    private static final java.util.Map<UUID, Integer> LAST_FLYING_TICK = new ConcurrentHashMap<>();
+    private static final java.util.Map<UUID, int[]> LAST_FLYING_TICK = new ConcurrentHashMap<>();
     /** 停飞后仍然保留穿墙的宽限 tick 数(=1 秒)。 */
     private static final int NOCLIP_GRACE_TICKS = 1;
 
@@ -280,10 +286,11 @@ public final class EarthAmuletHandler {
         // 2.1.1:改成"当前在飞 或 最近 1 秒内飞过",避免瞬停就断掉穿墙。
         boolean flyingNow = player.getAbilities().flying;
         if (dragon && flyingNow) {
-            LAST_FLYING_TICK.put(id, player.tickCount);
+            // 4.6.2(装箱):复用同一个 int[1],不再每 tick 装箱一个 Integer
+            LAST_FLYING_TICK.computeIfAbsent(id, k -> new int[1])[0] = player.tickCount;
         }
-        Integer lastFly = LAST_FLYING_TICK.get(id);
-        boolean recentlyFlew = lastFly != null && (player.tickCount - lastFly) <= NOCLIP_GRACE_TICKS;
+        int[] lastFly = LAST_FLYING_TICK.get(id);
+        boolean recentlyFlew = lastFly != null && (player.tickCount - lastFly[0]) <= NOCLIP_GRACE_TICKS;
         // 2.7.6:只有「创造模式飞行」或「本模组(龙首)授予的创造飞行」才允许穿方块。
         // 之前只看 abilities.flying —— 别的模组给的飞行(喷气背包/鞘翅等)也会穿墙。
         boolean creativeFlight = player.isCreative() || flightGranted(player);

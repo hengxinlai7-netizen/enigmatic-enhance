@@ -69,21 +69,30 @@ public class MirrorShadowItem extends Item {
         return stack;
     }
 
+    /**
+     * 4.6.2(内存):4 行固定 tooltip 只建一次(理由见 {@link DemonHandBoneItem})。
+     * 只有 {@code recorded} 那行带动态参数(记录的位置文本),按原样每帧重建。
+     */
+    private static Component tip(String key, ChatFormatting style) {
+        return Component.translatable("tooltip.enigmaticenhance.mirror_shadow." + key).withStyle(style);
+    }
+
+    private static final Component LORE = tip("lore", ChatFormatting.GRAY);
+    private static final Component USE_LINE = tip("use", ChatFormatting.GRAY);
+    private static final Component COST = tip("cost", ChatFormatting.RED);
+    private static final Component EMPTY = tip("empty", ChatFormatting.DARK_GRAY);
+
     @Override
     public void appendHoverText(ItemStack stack, Level level, List<Component> tooltip, TooltipFlag flag) {
-        tooltip.add(Component.translatable("tooltip.enigmaticenhance.mirror_shadow.lore")
-            .withStyle(ChatFormatting.GRAY));
-        tooltip.add(Component.translatable("tooltip.enigmaticenhance.mirror_shadow.use")
-            .withStyle(ChatFormatting.GRAY));
-        tooltip.add(Component.translatable("tooltip.enigmaticenhance.mirror_shadow.cost")
-            .withStyle(ChatFormatting.RED));
+        tooltip.add(LORE);
+        tooltip.add(USE_LINE);
+        tooltip.add(COST);
         if (MirrorShadowHandler.hasRecord(stack)) {
             tooltip.add(Component.translatable("tooltip.enigmaticenhance.mirror_shadow.recorded",
                 MirrorShadowHandler.recordedText(stack)).withStyle(ChatFormatting.DARK_AQUA));
         }
         else {
-            tooltip.add(Component.translatable("tooltip.enigmaticenhance.mirror_shadow.empty")
-                .withStyle(ChatFormatting.DARK_GRAY));
+            tooltip.add(EMPTY);
         }
     }
 }

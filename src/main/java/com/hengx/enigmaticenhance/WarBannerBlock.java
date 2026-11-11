@@ -29,16 +29,22 @@ import net.minecraft.world.phys.shapes.VoxelShape;
  */
 public class WarBannerBlock extends Block {
 
+    /**
+     * 4.6.2(内存):2 行 tooltip 全是常量 ⇒ 只建一次,不再每帧重建(理由见 {@link DemonHandBoneItem})。
+     */
+    private static final net.minecraft.network.chat.Component TOOLTIP_LORE =
+        net.minecraft.network.chat.Component.translatable("tooltip.enigmaticenhance.war_banner.lore")
+            .withStyle(net.minecraft.ChatFormatting.GRAY);
+    private static final net.minecraft.network.chat.Component TOOLTIP_EFFECT =
+        net.minecraft.network.chat.Component.translatable("tooltip.enigmaticenhance.war_banner.effect")
+            .withStyle(net.minecraft.ChatFormatting.YELLOW);
+
     /** 4.3.3:物品栏里的说明(用户要求加在物品描述里)。 */
     @Override
     public void appendHoverText(net.minecraft.world.item.ItemStack stack, net.minecraft.world.level.BlockGetter level,
         java.util.List<net.minecraft.network.chat.Component> tooltip, net.minecraft.world.item.TooltipFlag flag) {
-        tooltip.add(net.minecraft.network.chat.Component
-            .translatable("tooltip.enigmaticenhance.war_banner.lore")
-            .withStyle(net.minecraft.ChatFormatting.GRAY));
-        tooltip.add(net.minecraft.network.chat.Component
-            .translatable("tooltip.enigmaticenhance.war_banner.effect")
-            .withStyle(net.minecraft.ChatFormatting.YELLOW));
+        tooltip.add(TOOLTIP_LORE);
+        tooltip.add(TOOLTIP_EFFECT);
     }
 
     public static final double RADIUS = 12.0D;

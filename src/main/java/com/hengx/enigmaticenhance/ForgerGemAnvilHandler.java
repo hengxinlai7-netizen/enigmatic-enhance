@@ -43,9 +43,11 @@ public final class ForgerGemAnvilHandler {
         }
         // 1.6.43:锻造者宝石是 Curios 饰品,用编译期 API 扫所有槽位
         try {
-            if (top.theillusivec4.curios.api.CuriosApi.getCuriosInventory(player)
-                .map(handler -> handler.findFirstCurio(ForgerGemAnvilHandler::isGem).isPresent())
-                .orElse(false)) {
+            // 4.6.2(内存):原来走 .map(...).orElse(false) —— LazyOptional#map 每次都要新建一个
+            // LazyOptional + 一个 lambda 实例。orElse(null) 直接取内部引用(没有值就是 null),不分配。
+            // 注意不能用 resolve():它返回 java.util.Optional(反而多建一个对象)。
+            var handler = top.theillusivec4.curios.api.CuriosApi.getCuriosInventory(player).orElse(null);
+            if (handler != null && handler.findFirstCurio(ForgerGemAnvilHandler::isGem).isPresent()) {
                 return true;
             }
         }
@@ -64,6 +66,17 @@ public final class ForgerGemAnvilHandler {
     /** 4.6.1:解析出来的物品实例(解析到就缓存,避免每帧反查注册表)。 */
     private static net.minecraft.world.item.Item gemItem;
     private static net.minecraft.world.item.Item crystalItem;
+
+    /**
+     * 4.6.2(内存):这行 tooltip 是纯常量(§7§o + GRAY)⇒ 只建一次。
+     *
+     * <p>{@link #onTooltip} 在鼠标悬停任意物品期间<b>每帧</b>触发,而这里原来每帧都
+     * {@code new} 一个 {@code TextComponent} 再 {@code withStyle} 复制一份 —— 2 个短命对象/帧,
+     * 只在悬停宝石时走到。{@code Component} 不可变,复用安全。</p>
+     */
+    private static final Component GEM_TOOLTIP_LINE =
+        Component.literal("§7§o手持时:铁砧中两本同附魔同级书可直接升到合法最高等级")
+            .withStyle(net.minecraft.ChatFormatting.GRAY);
 
     /**
      * 4.6.1(帧率):这叠物品是不是锻造者宝石/水晶。
@@ -128,7 +141,7 @@ public final class ForgerGemAnvilHandler {
             if (stack == null || stack.isEmpty() || !isGem(stack)) {
                 return;
             }
-            event.getToolTip().add(Component.literal("§7§o手持时:铁砧中两本同附魔同级书可直接升到合法最高等级").withStyle(net.minecraft.ChatFormatting.GRAY));
+            event.getToolTip().add(GEM_TOOLTIP_LINE);
         }
         catch (RuntimeException | LinkageError ignored) {
             // 忽略

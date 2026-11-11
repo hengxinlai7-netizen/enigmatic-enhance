@@ -424,11 +424,15 @@ return out;
             return ItemStack.EMPTY;
         }
         try {
-            return CuriosApi.getCuriosInventory(player)
-                .map(handler -> handler.findFirstCurio(EarthAmuletData::isAmulet)
-                    .map(SlotResult::stack)
-                    .orElse(ItemStack.EMPTY))
-                .orElse(ItemStack.EMPTY);
+            // 4.6.2(内存):原来走 .map(...).orElse(...) —— LazyOptional#map 每次都要新建一个
+            // LazyOptional + 一个 lambda 实例(这条路径被伤害结算/效果判定/每帧 tooltip 调用)。
+            // orElse(null) 直接取内部引用(没有就是 null),不分配;内层 Optional 也一次取空。
+            var handler = CuriosApi.getCuriosInventory(player).orElse(null);
+            if (handler == null) {
+                return ItemStack.EMPTY;
+            }
+            SlotResult found = handler.findFirstCurio(EarthAmuletData::isAmulet).orElse(null);
+            return found == null ? ItemStack.EMPTY : found.stack();
         }
         catch (Throwable t) {
             return ItemStack.EMPTY;

@@ -52,13 +52,27 @@ public class HistoryMistItem extends Item {
         return HistoryMistHandler.record(player, target, stack) ? InteractionResult.CONSUME : InteractionResult.PASS;
     }
 
+    /**
+     * 4.6.2(内存):4 行"纯常量"tooltip 只建一次(理由见 {@link DemonHandBoneItem})。
+     * <p>{@code recorded} 行带记录条数、每条记录行带属性名与数值,都是动态内容,保持每帧重建
+     * (记录数据是原地改 NBT 的,没有版本号可以拿来失效缓存)。</p>
+     */
+    private static final Component HEADER =
+        Component.translatable(HEADER_KEY).withStyle(ChatFormatting.LIGHT_PURPLE);
+    private static final Component LORE =
+        Component.translatable(LORE_KEY).withStyle(ChatFormatting.GRAY);
+    private static final Component EMPTY_LINE =
+        Component.translatable(EMPTY_KEY).withStyle(ChatFormatting.DARK_GRAY);
+    private static final Component ACTIVE =
+        Component.translatable(ACTIVE_KEY).withStyle(ChatFormatting.DARK_GRAY);
+
     @Override
     public void appendHoverText(ItemStack stack, Level level, List<Component> tooltip, TooltipFlag flag) {
-        tooltip.add(Component.translatable(HEADER_KEY).withStyle(ChatFormatting.LIGHT_PURPLE));
-        tooltip.add(Component.translatable(LORE_KEY).withStyle(ChatFormatting.GRAY));
+        tooltip.add(HEADER);
+        tooltip.add(LORE);
         Map<ResourceLocation, Double> records = HistoryMistHandler.readRecords(stack);
         if (records.isEmpty()) {
-            tooltip.add(Component.translatable(EMPTY_KEY).withStyle(ChatFormatting.DARK_GRAY));
+            tooltip.add(EMPTY_LINE);
             return;
         }
         tooltip.add(Component.translatable(RECORDED_KEY, records.size()).withStyle(ChatFormatting.AQUA));
@@ -75,7 +89,7 @@ public class HistoryMistItem extends Item {
                 .append(name.copy().withStyle(ChatFormatting.GRAY))
                 .append(Component.literal(" +" + format(entry.getValue())).withStyle(ChatFormatting.GREEN)));
         }
-        tooltip.add(Component.translatable(ACTIVE_KEY).withStyle(ChatFormatting.DARK_GRAY));
+        tooltip.add(ACTIVE);
     }
 
     /** 数值显示:去掉多余的 0(1.20 → 1.2,7.0 → 7)。 */

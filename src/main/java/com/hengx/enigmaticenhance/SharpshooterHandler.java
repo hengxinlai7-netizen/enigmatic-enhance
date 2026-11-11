@@ -38,9 +38,9 @@ public final class SharpshooterHandler {
             return false;
         }
         try {
-            return CuriosApi.getCuriosInventory(player)
-                .map(handler -> handler.findFirstCurio((ItemStack stack) -> stack.is(charm)).isPresent())
-                .orElse(false);
+            // 4.6.2(内存):.map(...).orElse(...) ⇒ orElse(null) + 判空,不再每次新建 LazyOptional + lambda。
+            var handler = CuriosApi.getCuriosInventory(player).orElse(null);
+            return handler != null && handler.findFirstCurio((ItemStack stack) -> stack.is(charm)).isPresent();
         }
         catch (RuntimeException | LinkageError ignored) {
             return false;

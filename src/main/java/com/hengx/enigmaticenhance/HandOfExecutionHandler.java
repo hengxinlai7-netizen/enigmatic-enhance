@@ -17,8 +17,20 @@ import net.minecraftforge.eventbus.api.SubscribeEvent;
  */
 public final class HandOfExecutionHandler {
 
-    /** 同一 tick 内已经处理过的目标,避免 attack/hurt 双入口重复扣血。 */
-    private static final java.util.Map<java.util.UUID, Integer> LAST_TICK = new java.util.concurrent.ConcurrentHashMap<>();
+    /**
+     * 同一 tick 内已经处理过的目标,避免 attack/hurt 双入口重复扣血。
+     *
+     * <p>4.6.2(装箱):值从 {@code Integer} 改成复用同一个 {@code int[]}(长度 1)。
+     * 原来<b>每次伤害结算</b>都要 {@code Integer.valueOf(target.tickCount)} —— 实体 tickCount
+     * 基本都在 Integer 缓存区(-128..127)之外 ⇒ 每一击一个短命 Integer,tick 与 put 都白花。
+     * 现在用 {@code computeIfAbsent} 拿到格子后只写下标 0,热路径零分配。
+     * 仍然用 {@link java.util.concurrent.ConcurrentHashMap}(与原来一致,不引入新的线程风险);
+     * 语义不变:比较的仍是"这一次的 tickCount 与前一次是否相同"。</p>
+     */
+    private static final java.util.Map<java.util.UUID, int[]> LAST_TICK = new java.util.concurrent.ConcurrentHashMap<>();
+
+    /** "还没记录过"的哨兵(实体 tickCount 不会是它)。 */
+    private static final int NO_TICK = Integer.MIN_VALUE;
 
     /** 2.10.6:这次伤害的攻击者是否带着「执行之手」(给针对性 Mixin 用)。 */
     public static boolean shouldBypass(net.minecraft.world.damagesource.DamageSource source) {
@@ -45,9 +57,13 @@ public final class HandOfExecutionHandler {
             Integer mainLevel = main.get(enchant);
             Integer offLevel = off.get(enchant);
             if ((mainLevel != null && mainLevel > 0) || (offLevel != null && offLevel > 0)) {
-                DebugLog.once("exec:bypass:" + attacker.getUUID(),
-                    "[Execution] 破防已启用:主手等级={} 副手等级={}",
-                    mainLevel == null ? 0 : mainLevel, offLevel == null ? 0 : offLevel);
+                // 4.6.2(内存):先问 oncePending() 再拼 key。once() 在记录表满了之后本来就不输出,
+                // 但 "exec:bypass:" + UUID 这个 String 在调用前就已经建好了(每击一次白花)。
+                if (DebugLog.oncePending()) {
+                    DebugLog.once("exec:bypass:" + attacker.getUUID(),
+                        "[Execution] 破防已启用:主手等级={} 副手等级={}",
+                        mainLevel == null ? 0 : mainLevel, offLevel == null ? 0 : offLevel);
+                }
                 return true;
             }
             return false;
@@ -85,7 +101,8 @@ public final class HandOfExecutionHandler {
             ItemStack weapon = attacker.getMainHandItem();
             int lvl = EnchantmentHelper.getItemEnchantmentLevel(enchant, weapon);
             // 2.9.8 诊断:只要玩家出手就记一次(每种物品一条),看清入口到底收到什么。
-            if (attacker instanceof Player p) {
+            // 4.6.2(内存):每击都要拼 key + 反查物品注册表,先问 oncePending() 再拼。
+            if (attacker instanceof Player p && DebugLog.oncePending()) {
                 DebugLog.once("exec:atk:" + net.minecraftforge.registries.ForgeRegistries.ITEMS.getKey(weapon.getItem()),
                     "[Execution] 入口命中: 主手={} 附魔等级={} 目标={}",
                     weapon.getItem(), lvl, target.getName().getString());
@@ -96,14 +113,19 @@ public final class HandOfExecutionHandler {
             }
             if (lvl <= 0) {
                 // 2.9.5 诊断:主手没有附魔时,每个物品只提醒一次(方便确认是不是拿错手/拿错物品)
-                DebugLog.once("exec:noench:" + net.minecraftforge.registries.ForgeRegistries.ITEMS.getKey(
-                    attacker.getMainHandItem().getItem()) + ":" + (attacker instanceof Player ? "p" : "m"),
-                    "[Execution] 主/副手 {} 上没有 执行之手,跳过", attacker.getMainHandItem().getItem());
+                // 4.6.2(内存):同上,key 是现拼的 + 两次注册表反查,先问 oncePending()。
+                if (DebugLog.oncePending()) {
+                    DebugLog.once("exec:noench:" + net.minecraftforge.registries.ForgeRegistries.ITEMS.getKey(
+                        attacker.getMainHandItem().getItem()) + ":" + (attacker instanceof Player ? "p" : "m"),
+                        "[Execution] 主/副手 {} 上没有 执行之手,跳过", attacker.getMainHandItem().getItem());
+                }
                 return;
             }
             int tick = target.tickCount;
-            Integer prev = LAST_TICK.put(target.getUUID(), tick);
-            if (prev != null && prev == tick) {
+            int[] prev = LAST_TICK.computeIfAbsent(target.getUUID(), k -> new int[] { NO_TICK });
+            boolean sameTick = prev[0] == tick;
+            prev[0] = tick;
+            if (sameTick) {
                 // 这一击已经在 LivingAttackEvent 里算过真实伤害 → 只把普通伤害清零
                 if (event instanceof LivingHurtEvent hurt) {
                     hurt.setAmount(0.0F);
@@ -144,7 +166,7 @@ public final class HandOfExecutionHandler {
 
     /** 同 tick 已经把伤害记在真实伤害里了 → 现在把普通伤害清零(不取消,保留受击登记)。 */
     private static boolean alreadyApplied(LivingEntity target) {
-        Integer prev = LAST_TICK.get(target.getUUID());
-        return prev != null && prev == target.tickCount;
+        int[] prev = LAST_TICK.get(target.getUUID());
+        return prev != null && prev[0] == target.tickCount;
     }
 }

@@ -34,16 +34,24 @@ public class BedtimeReadingItem extends Item {
         super(new Item.Properties().stacksTo(1).rarity(Rarity.RARE));
     }
 
+    /**
+     * 4.6.2(内存):4 行 tooltip 全是常量 ⇒ 只建一次,不再每帧重建(理由见 {@link DemonHandBoneItem})。
+     */
+    private static Component tip(String key, ChatFormatting style) {
+        return Component.translatable("tooltip.enigmaticenhance.bedtime_reading." + key).withStyle(style);
+    }
+
+    private static final Component HEADER = tip("header", ChatFormatting.DARK_BLUE);
+    private static final Component LORE = tip("lore", ChatFormatting.GRAY);
+    private static final Component ABILITY = tip("ability", ChatFormatting.AQUA);
+    private static final Component OTHERS = tip("others", ChatFormatting.DARK_GRAY);
+
     @Override
     public void appendHoverText(ItemStack stack, @Nullable Level level, List<Component> tooltip, TooltipFlag flag) {
-        tooltip.add(Component.translatable("tooltip.enigmaticenhance.bedtime_reading.header")
-            .withStyle(ChatFormatting.DARK_BLUE));
-        tooltip.add(Component.translatable("tooltip.enigmaticenhance.bedtime_reading.lore")
-            .withStyle(ChatFormatting.GRAY));
-        tooltip.add(Component.translatable("tooltip.enigmaticenhance.bedtime_reading.ability")
-            .withStyle(ChatFormatting.AQUA));
-        tooltip.add(Component.translatable("tooltip.enigmaticenhance.bedtime_reading.others")
-            .withStyle(ChatFormatting.DARK_GRAY));
+        tooltip.add(HEADER);
+        tooltip.add(LORE);
+        tooltip.add(ABILITY);
+        tooltip.add(OTHERS);
     }
 
     /** Patchouli 书 id(见 data/enigmaticenhance/patchouli_books/bedtime_reading)。 */

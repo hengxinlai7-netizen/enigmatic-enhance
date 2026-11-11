@@ -62,10 +62,20 @@ public class TravelerHatItem extends Item implements ICurioItem {
         return true;
     }
 
+    /**
+     * 4.6.2(内存):两行"纯常量"tooltip 只建一次(理由见 {@link DemonHandBoneItem})。
+     * <p>另外两行(每群系生命 / 每维度攻击)的数值来自 {@code RingConfig},配置可在游戏内改,
+     * 所以保持每帧重建 —— 缓存它们会让"改了配置但 tooltip 不变"。</p>
+     */
+    private static final Component HEADER =
+        Component.translatable("tooltip.enigmaticenhance.traveler_hat.header").withStyle(ChatFormatting.GOLD);
+    private static final Component HEAD_SLOT =
+        Component.translatable("tooltip.enigmaticenhance.traveler_hat.head_slot")
+            .withStyle(ChatFormatting.LIGHT_PURPLE);
+
     @Override
     public void appendHoverText(ItemStack stack, @Nullable Level level, List<Component> tooltip, TooltipFlag flag) {
-        tooltip.add(Component.translatable("tooltip.enigmaticenhance.traveler_hat.header")
-            .withStyle(ChatFormatting.GOLD));
+        tooltip.add(HEADER);
         double speed = RingConfig.travelerHatSpeedValue();
         if (RingConfig.travelerHatSpeedIsPercent()) {
             tooltip.add(Component.translatable("tooltip.enigmaticenhance.traveler_hat.speed_percent",
@@ -79,8 +89,7 @@ public class TravelerHatItem extends Item implements ICurioItem {
             format(RingConfig.travelerHatHealthPerBiome())).withStyle(ChatFormatting.GREEN));
         tooltip.add(Component.translatable("tooltip.enigmaticenhance.traveler_hat.dimension",
             format(RingConfig.travelerHatAttackPerDimension())).withStyle(ChatFormatting.RED));
-        tooltip.add(Component.translatable("tooltip.enigmaticenhance.traveler_hat.head_slot")
-            .withStyle(ChatFormatting.LIGHT_PURPLE));
+        tooltip.add(HEAD_SLOT);
     }
     private static String percent(double value) {
         return format(value * 100.0D);

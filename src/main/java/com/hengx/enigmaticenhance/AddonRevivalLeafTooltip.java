@@ -25,6 +25,21 @@ public final class AddonRevivalLeafTooltip {
     private AddonRevivalLeafTooltip() {
     }
 
+    /**
+     * 4.6.2(内存):这 5 行全是常量(开关状态只有两种,各建一份)⇒ 只建一次。
+     *
+     * <p>{@link #onTooltip} 在鼠标悬停该物品期间<b>每帧</b>触发(60~200 次/秒),原来每帧要新建
+     * 4 个 {@code TranslatableComponent} 再各 {@code withStyle} 复制一份。
+     * {@code Component} 不可变,复用安全(理由同 {@link DemonHandBoneItem})。</p>
+     */
+    private static final Component HEADER_LINE = Component.translatable(HEADER_KEY).withStyle(ChatFormatting.GREEN);
+    private static final Component EFFECT_LINE = Component.translatable(EFFECT_KEY).withStyle(ChatFormatting.GRAY);
+    private static final Component STATE_LINE = Component.translatable(STATE_KEY).withStyle(ChatFormatting.GRAY);
+    private static final Component FLIGHT_ON_LINE =
+        Component.translatable(FLIGHT_ON_KEY).withStyle(ChatFormatting.GREEN);
+    private static final Component FLIGHT_OFF_LINE =
+        Component.translatable(FLIGHT_OFF_KEY).withStyle(ChatFormatting.RED);
+
     @SubscribeEvent
     public static void onTooltip(ItemTooltipEvent event) {
         try {
@@ -33,12 +48,11 @@ public final class AddonRevivalLeafTooltip {
                 return;
             }
             List<Component> lines = event.getToolTip();
-            lines.add(Component.translatable(HEADER_KEY).withStyle(ChatFormatting.GREEN));
-            lines.add(Component.translatable(EFFECT_KEY).withStyle(ChatFormatting.GRAY));
-            lines.add(Component.translatable(STATE_KEY).withStyle(ChatFormatting.GRAY));
+            lines.add(HEADER_LINE);
+            lines.add(EFFECT_LINE);
+            lines.add(STATE_LINE);
             boolean flightOff = RevivalLeafStoneHandler.isDisabled(stack);
-            lines.add(Component.translatable(flightOff ? FLIGHT_OFF_KEY : FLIGHT_ON_KEY)
-                .withStyle(flightOff ? ChatFormatting.RED : ChatFormatting.GREEN));
+            lines.add(flightOff ? FLIGHT_OFF_LINE : FLIGHT_ON_LINE);
         }
         catch (RuntimeException | LinkageError ignored) {
             // 工具提示失败不影响物品

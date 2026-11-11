@@ -83,10 +83,39 @@ public class EarthAmuletItem extends Item implements ICurioItem {
 
     // ------------------------------------------------------------------ tooltip
 
+    /**
+     * 4.6.2(内存):"纯常量"的 tooltip 行只建一次(理由见 {@link DemonHandBoneItem})。
+     *
+     * <p>头颅行虽然 key 带参数,但可能出现的 lang path 只有有限几个,所以按 path 缓存
+     * ({@link #HEAD_LINES});{@code potion} 行的内容是 NBT 里所有效果拼出来的,保持每帧重建。</p>
+     */
+    private static final Component HEADER =
+        Component.translatable("tooltip.enigmaticenhance.earth_amulet.header").withStyle(ChatFormatting.GOLD);
+    private static final Component EMPOWERED =
+        Component.translatable("tooltip.enigmaticenhance.earth_amulet.empowered")
+            .withStyle(ChatFormatting.LIGHT_PURPLE);
+    private static final Component EMPTY =
+        Component.translatable("tooltip.enigmaticenhance.earth_amulet.empty")
+            .withStyle(ChatFormatting.DARK_GRAY);
+
+    /** 头颅 id → 已建好的头颅行(lang path 是有限集合,缓存不会无限长)。 */
+    private static final java.util.Map<String, Component> HEAD_LINES = new java.util.concurrent.ConcurrentHashMap<>();
+
+    private static Component headLine(String head) {
+        String path = EarthAmuletData.headLangPath(head);
+        Component cached = HEAD_LINES.get(path);
+        if (cached != null) {
+            return cached;
+        }
+        Component built = Component.translatable("tooltip.enigmaticenhance.earth_amulet.head." + path)
+            .withStyle(ChatFormatting.YELLOW);
+        HEAD_LINES.put(path, built);
+        return built;
+    }
+
     @Override
     public void appendHoverText(ItemStack stack, @Nullable Level level, List<Component> tooltip, TooltipFlag flag) {
-        tooltip.add(Component.translatable("tooltip.enigmaticenhance.earth_amulet.header")
-            .withStyle(ChatFormatting.GOLD));
+        tooltip.add(HEADER);
 
         List<EarthAmuletData.StoredEffect> effects = EarthAmuletData.effects(stack);
         List<String> heads = EarthAmuletData.heads(stack);
@@ -107,19 +136,15 @@ public class EarthAmuletItem extends Item implements ICurioItem {
             any = true;
         }
         for (String head : heads) {
-            tooltip.add(Component.translatable(
-                "tooltip.enigmaticenhance.earth_amulet.head." + EarthAmuletData.headLangPath(head))
-                .withStyle(ChatFormatting.YELLOW));
+            tooltip.add(headLine(head));
             any = true;
         }
         if (empowered) {
-            tooltip.add(Component.translatable("tooltip.enigmaticenhance.earth_amulet.empowered")
-                .withStyle(ChatFormatting.LIGHT_PURPLE));
+            tooltip.add(EMPOWERED);
             any = true;
         }
         if (!any) {
-            tooltip.add(Component.translatable("tooltip.enigmaticenhance.earth_amulet.empty")
-                .withStyle(ChatFormatting.DARK_GRAY));
+            tooltip.add(EMPTY);
         }
     }
 

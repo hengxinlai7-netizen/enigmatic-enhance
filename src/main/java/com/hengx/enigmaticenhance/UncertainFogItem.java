@@ -22,11 +22,17 @@ public class UncertainFogItem extends Item {
         super(new Item.Properties().stacksTo(1));
     }
 
+    /**
+     * 4.6.2(内存):2 行 tooltip 全是常量 ⇒ 只建一次,不再每帧重建(理由见 {@link DemonHandBoneItem})。
+     */
+    private static final Component LORE =
+        Component.translatable("tooltip.enigmaticenhance.uncertain_fog.lore").withStyle(ChatFormatting.GRAY);
+    private static final Component EFFECT =
+        Component.translatable("tooltip.enigmaticenhance.uncertain_fog.effect").withStyle(ChatFormatting.GRAY);
+
     @Override
     public void appendHoverText(ItemStack stack, Level level, List<Component> tooltip, TooltipFlag flag) {
-        tooltip.add(Component.translatable("tooltip.enigmaticenhance.uncertain_fog.lore")
-            .withStyle(ChatFormatting.GRAY));
-        tooltip.add(Component.translatable("tooltip.enigmaticenhance.uncertain_fog.effect")
-            .withStyle(ChatFormatting.GRAY));
+        tooltip.add(LORE);
+        tooltip.add(EFFECT);
     }
 }

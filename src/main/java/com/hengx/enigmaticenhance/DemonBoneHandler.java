@@ -6,6 +6,8 @@ import java.util.Map;
 import java.util.Random;
 import java.util.UUID;
 
+import it.unimi.dsi.fastutil.objects.Object2LongOpenHashMap;
+
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.effect.MobEffect;
 import net.minecraft.world.effect.MobEffectInstance;
@@ -70,6 +72,9 @@ public final class DemonBoneHandler {
     /** 我们自己给出的伤害吸收额度与到期 tick(每玩家一份,内存里)。 */
     private static final Map<UUID, float[]> ABSORB = new HashMap<>();
 
+    /** 表里没有记录时 {@link Object2LongOpenHashMap#getLong} 的返回值(与任何真实到期 tick 都不同)。 */
+    private static final long NO_BLOCK = Long.MIN_VALUE;
+
     /**
      * 三件套:被手骨命中过的目标 → 到期 tick(禁止回复生命的窗口)。
      * 只在{@code fullSet}时写入;不写 NBT、不挂效果、不加属性。
@@ -79,8 +84,21 @@ public final class DemonBoneHandler {
      * 一个三件套玩家每打一只怪就写一条(UUID + Long,≈ 60B 键值 + Node 32B),挂机刷怪场一小时能积
      * 上万条且永不回收。现在由 {@link #onTargetDeath}/{@link #onTargetLeaveLevel} 跟着实体生命周期删,
      * 表的大小 == "最近 N 秒内被手骨打过的、且还活着的实体数"(通常 &lt; 20)。</p>
+     *
+     * <p><b>4.6.2(装箱)</b>:值从 {@code Long} 换成原始 {@code long} 的
+     * {@link Object2LongOpenHashMap}(FastUtil,MC 自带)。每次命中 {@code put} 都会
+     * {@code Long.valueOf(target.tickCount + N)} —— 实体 tickCount 基本都超出 Integer 缓存区,
+     * 也就是<b>每一次命中一个 Long</b>;读取时还要拆箱。换成原始类型表后 put/get 全程零装箱,
+     * 也没有每 tick 新建数组的代价。它原来就是<b>非并发</b>的 {@code HashMap}(写入/读取全在服务端
+     * 线程:受击、治疗、死亡、离开世界),所以并发语义没有变化。</p>
      */
-    private static final Map<UUID, Long> HEAL_BLOCK = new HashMap<>();
+    private static final Object2LongOpenHashMap<UUID> HEAL_BLOCK = makeHealBlock();
+
+    private static Object2LongOpenHashMap<UUID> makeHealBlock() {
+        Object2LongOpenHashMap<UUID> map = new Object2LongOpenHashMap<>();
+        map.defaultReturnValue(NO_BLOCK);
+        return map;
+    }
 
     private static final Random RNG = new Random();
 
@@ -98,12 +116,15 @@ public final class DemonBoneHandler {
             return ItemStack.EMPTY;
         }
         try {
-            return CuriosApi.getCuriosInventory(player)
-                .map(handler -> handler.findFirstCurio(stack -> !stack.isEmpty()
-                        && stack.getItem() == bone)
-                    .map(SlotResult::stack)
-                    .orElse(ItemStack.EMPTY))
-                .orElse(ItemStack.EMPTY);
+            // 4.6.2(内存):.map(...).orElse(...) ⇒ orElse(null) + 判空,不再每调一次新建
+            // 一个 LazyOptional / lambda / 内层 Optional(理由见 EarthAmuletData#equippedAmulet)。
+            var handler = CuriosApi.getCuriosInventory(player).orElse(null);
+            if (handler == null) {
+                return ItemStack.EMPTY;
+            }
+            SlotResult found = handler.findFirstCurio(stack -> !stack.isEmpty()
+                && stack.getItem() == bone).orElse(null);
+            return found == null ? ItemStack.EMPTY : found.stack();
         }
         catch (Throwable t) {
             return ItemStack.EMPTY;
@@ -253,8 +274,8 @@ public final class DemonBoneHandler {
     public static void onHeal(net.minecraftforge.event.entity.living.LivingHealEvent event) {
         try {
             LivingEntity entity = event.getEntity();
-            Long expiry = HEAL_BLOCK.get(entity.getUUID());
-            if (expiry == null) {
+            long expiry = HEAL_BLOCK.getLong(entity.getUUID());
+            if (expiry == NO_BLOCK) {
                 return;
             }
             if (entity.tickCount > expiry) {
@@ -356,8 +377,11 @@ public final class DemonBoneHandler {
 
     /** 自检:目标是否处于我们记下的"禁疗窗口"里。 */
     public static boolean noHealWindow(LivingEntity entity) {
-        Long expiry = entity.getUUID() == null ? null : HEAL_BLOCK.get(entity.getUUID());
-        return expiry != null && entity.tickCount <= expiry;
+        if (entity.getUUID() == null) {
+            return false;
+        }
+        long expiry = HEAL_BLOCK.getLong(entity.getUUID());
+        return expiry != NO_BLOCK && entity.tickCount <= expiry;
     }
 
     /** 自检:把某个目标的禁疗窗口设成"已经过期"。 */

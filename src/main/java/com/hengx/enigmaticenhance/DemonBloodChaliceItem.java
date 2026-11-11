@@ -57,17 +57,25 @@ public class DemonBloodChaliceItem extends Item implements ICurioItem {
         return true;
     }
 
+    /**
+     * 4.6.2(内存):5 行 tooltip 全是常量 ⇒ 只建一次,不再每帧重建(理由见 {@link DemonHandBoneItem})。
+     */
+    private static Component tip(String key, ChatFormatting style) {
+        return Component.translatable("tooltip.enigmaticenhance.demon_blood_chalice." + key).withStyle(style);
+    }
+
+    private static final Component HEADER = tip("header", ChatFormatting.DARK_RED);
+    private static final Component LORE = tip("lore", ChatFormatting.GRAY);
+    private static final Component DETAIL = tip("detail", ChatFormatting.GRAY);
+    private static final Component ABILITY = tip("ability", ChatFormatting.RED);
+    private static final Component RESTORE = tip("restore", ChatFormatting.DARK_GRAY);
+
     @Override
     public void appendHoverText(ItemStack stack, @Nullable Level level, List<Component> tooltip, TooltipFlag flag) {
-        tooltip.add(Component.translatable("tooltip.enigmaticenhance.demon_blood_chalice.header")
-            .withStyle(ChatFormatting.DARK_RED));
-        tooltip.add(Component.translatable("tooltip.enigmaticenhance.demon_blood_chalice.lore")
-            .withStyle(ChatFormatting.GRAY));
-        tooltip.add(Component.translatable("tooltip.enigmaticenhance.demon_blood_chalice.detail")
-            .withStyle(ChatFormatting.GRAY));
-        tooltip.add(Component.translatable("tooltip.enigmaticenhance.demon_blood_chalice.ability")
-            .withStyle(ChatFormatting.RED));
-        tooltip.add(Component.translatable("tooltip.enigmaticenhance.demon_blood_chalice.restore")
-            .withStyle(ChatFormatting.DARK_GRAY));
+        tooltip.add(HEADER);
+        tooltip.add(LORE);
+        tooltip.add(DETAIL);
+        tooltip.add(ABILITY);
+        tooltip.add(RESTORE);
     }
 }
