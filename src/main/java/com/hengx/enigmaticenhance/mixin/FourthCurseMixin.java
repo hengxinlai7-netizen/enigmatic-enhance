@@ -11,7 +11,6 @@ import org.objectweb.asm.Opcodes;
 
 import com.aizistral.enigmaticlegacy.items.CursedRing;
 import com.aizistral.omniconfig.wrappers.Omniconfig;
-import com.hengx.enigmaticenhance.EnigmaticEnhance;
 import com.hengx.enigmaticenhance.FourthCurseFix;
 import com.hengx.enigmaticenhance.FourthCurseNeutral;
 import com.hengx.enigmaticenhance.RingConfig;

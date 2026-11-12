@@ -111,6 +111,25 @@ tasks.named('processResources', ProcessResources).configure {
     filesMatching(resourceTargets) {
         expand replaceProperties
     }
+
+    // 4.6.6:数据自检的资源清单(Forge 的 mod 文件系统不支持目录枚举,
+    // 所以构建期把 data 下所有 json 的相对路径写成一个索引文件,运行时按索引读)。
+    doLast {
+        def outDir = destinationDir
+        def dataRoot = new File(outDir, 'data')
+        def lines = []
+        if (dataRoot.isDirectory()) {
+            dataRoot.eachFileRecurse { f ->
+                if (f.isFile() && f.name.endsWith('.json')) {
+                    lines << outDir.toPath().relativize(f.toPath()).toString().replace('\\', '/')
+                }
+            }
+        }
+        lines.sort()
+        def indexFile = new File(outDir, 'enigmaticenhance/datacheck/index.txt')
+        indexFile.parentFile.mkdirs()
+        indexFile.setText(lines.join('\n') + (lines.isEmpty() ? '' : '\n'), 'UTF-8')
+    }
 }
 
 tasks.named('jar', Jar).configure {

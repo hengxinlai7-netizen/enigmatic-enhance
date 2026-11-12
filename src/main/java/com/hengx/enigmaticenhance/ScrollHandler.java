@@ -3,7 +3,6 @@ package com.hengx.enigmaticenhance;
 import java.util.Random;
 import java.util.UUID;
 
-import net.minecraft.nbt.CompoundTag;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.util.RandomSource;
@@ -12,8 +11,6 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.entity.ai.attributes.AttributeInstance;
 import net.minecraft.world.entity.ai.attributes.AttributeModifier;
 import net.minecraft.world.entity.ai.attributes.Attributes;
-import net.minecraft.world.inventory.AbstractContainerMenu;
-import net.minecraft.world.inventory.Slot;
 import net.minecraft.world.item.ItemStack;
 import net.minecraftforge.server.ServerLifecycleHooks;
 
@@ -89,11 +86,6 @@ public final class ScrollHandler {
     /** 写入/清除"雷击已关闭"标记(清除时若 NBT 空了就一并清掉,和书籍开关同一风格)。 */
     public static void setLightningDisabled(ItemStack stack, boolean disabled) {
         ItemToggleHandler.setDisabled(stack, NBT_LIGHTNING_DISABLED, disabled);
-    }
-
-    /** 切换雷击开关,返回切换后"雷击是否开启"。 */
-    public static boolean toggleLightning(ItemStack stack) {
-        return ItemToggleHandler.toggle(TOGGLE_TARGET, stack);
     }
 
     // ------------------------------------------------------------------ 服务端:处理 Ctrl+左键 请求

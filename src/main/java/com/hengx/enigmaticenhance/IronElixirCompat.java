@@ -48,7 +48,7 @@ public final class IronElixirCompat {
             collect(stack.getItem(), out);
         }
         catch (RuntimeException | LinkageError e) {
-            DebugLog.warn("[IronElixir] 扫描 {} 的效果字段失败: {}", stack.getItem(), e.toString());
+            DebugLog.debug("[IronElixir] 扫描 {} 的效果字段失败: {}", stack.getItem(), e.toString());
         }
         int added = out.size() - before;
         DebugLog.once("ironelixir:" + stack.getItem(), "[IronElixir] {} 解析出 {} 个效果", stack.getItem(), added);
@@ -70,7 +70,15 @@ public final class IronElixirCompat {
         }
         // 1) 扫字段(静态/实例),并解包 Supplier
         for (Class<?> c = item.getClass(); c != null && c != Item.class; c = c.getSuperclass()) {
-            for (Field f : c.getDeclaredFields()) {
+            Field[] fields;
+            try {
+                fields = c.getDeclaredFields();
+            }
+            catch (Throwable ignored) {
+                // 字段签名里引用了不存在的类 → 跳过这个类
+                continue;
+            }
+            for (Field f : fields) {
                 try {
                     f.setAccessible(true);
                     Object v = Modifier.isStatic(f.getModifiers()) ? f.get(null) : f.get(item);

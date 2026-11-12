@@ -2,15 +2,12 @@ package com.hengx.enigmaticenhance;
 
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
-import net.minecraft.world.InteractionHand;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.phys.AABB;
-import net.minecraftforge.event.entity.living.LivingHurtEvent;
 import net.minecraftforge.event.entity.player.PlayerInteractEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
@@ -259,8 +256,4 @@ public final class MirrorShadowHandler {
         }
     }
 
-    /** 兼容:让外部能直接对目标施加减伤(当前未使用)。 */
-    public static void noop(LivingHurtEvent event) {
-        // 占位,避免误删 import
-    }
 }

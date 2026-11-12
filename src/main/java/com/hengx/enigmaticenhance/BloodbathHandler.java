@@ -87,11 +87,6 @@ public final class BloodbathHandler {
         ItemToggleHandler.setDisabled(stack, NBT_LOCK_DISABLED, disabled);
     }
 
-    /** 切换锁血开关,返回切换后"锁血是否开启"。 */
-    public static boolean toggleLock(ItemStack stack) {
-        return ItemToggleHandler.toggle(TOGGLE_TARGET, stack);
-    }
-
     public static int healthWrites() {
         return healthWrites;
     }
@@ -229,8 +224,4 @@ public final class BloodbathHandler {
         return false;
     }
 
-    /** 自检用:清空写入计数。 */
-    public static void resetWrites() {
-        healthWrites = 0;
-    }
 }

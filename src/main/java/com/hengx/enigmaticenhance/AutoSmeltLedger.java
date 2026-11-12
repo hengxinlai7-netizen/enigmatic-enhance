@@ -40,11 +40,6 @@ public final class AutoSmeltLedger {
         return SESSIONS.computeIfAbsent(key, ignored -> new Session(tick));
     }
 
-    /** 自检用:当前还挂着的会话数(正常情况下 &lt;= 一个 tick 内被破坏的方块数)。 */
-    public static int sessionCount() {
-        return SESSIONS.size();
-    }
-
     /** 自检用:清空(测完不留下状态)。 */
     public static void reset() {
         SESSIONS.clear();
@@ -95,11 +90,6 @@ public final class AutoSmeltLedger {
             }
             this.producedInstances.add(produced);
             this.producedKeys.add(keyOf(produced));
-        }
-
-        /** 自检用。 */
-        public int producedKeyCount() {
-            return this.producedKeys.size();
         }
 
         private static String keyOf(ItemStack stack) {

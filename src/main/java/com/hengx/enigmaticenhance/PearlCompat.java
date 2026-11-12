@@ -92,8 +92,4 @@ public final class PearlCompat {
         }
     }
 
-    /** 反射是否已经失败过(自检/诊断用)。 */
-    public static boolean reflectionFailed() {
-        return isPresentFailed || helperFailed;
-    }
 }

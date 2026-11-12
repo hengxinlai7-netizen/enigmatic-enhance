@@ -1,13 +1,13 @@
 {
     "replace": false,
     "values": [
-        "enigmaticenhance:bedtime_reading",
-        "enigmaticenhance:history_mist",
-        "enigmaticenhance:spirit_light",
-        "enigmaticenhance:styx_water",
-        "enigmaticenhance:war_fog",
-        "enigmaticenhance:bottled_sun",
-        "enigmaticenhance:uncertain_fog",
-        "enigmaticenhance:mirror_shadow"
+        { "id": "enigmaticenhance:bedtime_reading", "required": false },
+        { "id": "enigmaticenhance:history_mist", "required": false },
+        { "id": "enigmaticenhance:spirit_light", "required": false },
+        { "id": "enigmaticenhance:styx_water", "required": false },
+        { "id": "enigmaticenhance:war_fog", "required": false },
+        { "id": "enigmaticenhance:bottled_sun", "required": false },
+        { "id": "enigmaticenhance:uncertain_fog", "required": false },
+        { "id": "enigmaticenhance:mirror_shadow", "required": false }
     ]
 }

@@ -1,7 +1,6 @@
 package com.hengx.enigmaticenhance;
 
 import java.lang.reflect.Method;
-import java.util.Optional;
 
 import net.minecraft.world.entity.Entity;
 import net.minecraftforge.event.entity.living.LivingHurtEvent;
@@ -58,17 +57,15 @@ public final class ElementalSpellCastHandler {
         };
     }
 
-    /** 反射读法术品质(SpellRarity 枚举名)。 */
+    /** 反射读法术品质(SpellRarity 枚举名)。精确查找,不做 getMethods() 批量扫描。 */
     private static String rarityOf(Object spell) {
+        if (spell == null) {
+            return "COMMON";
+        }
         try {
-            for (java.lang.reflect.Method m : spell.getClass().getMethods()) {
-                if (!"getRarity".equals(m.getName()) || m.getParameterCount() != 1) {
-                    continue;
-                }
-                Object value = m.invoke(spell, lastSpellLevel);
-                if (value != null) {
-                    return String.valueOf(value);
-                }
+            Object value = spell.getClass().getMethod("getRarity", int.class).invoke(spell, lastSpellLevel);
+            if (value != null) {
+                return String.valueOf(value);
             }
         }
         catch (Throwable ignored) {
@@ -376,30 +373,6 @@ public final class ElementalSpellCastHandler {
         }
     }
 
-    /** 通过 capability 取 ISpellContainer(类名/字段名各试几种写法)。 */
-    private static Object capsule(ItemStack stack) {
-        // 候选 1:静态 helper
-        for (String cls : new String[] {
-            "io.redspace.ironsspellbooks.api.spells.SpellContainerHelper",
-            "io.redspace.ironsspellbooks.capabilities.magic.SpellContainerHelper" }) {
-            try {
-                Class<?> helper = Class.forName(cls);
-                for (Method method : helper.getMethods()) {
-                    if (java.lang.reflect.Modifier.isStatic(method.getModifiers())
-                        && method.getParameterCount() == 1
-                        && method.getParameterTypes()[0] == ItemStack.class
-                        && method.getReturnType().getName().endsWith("ISpellContainer")) {
-                        return method.invoke(null, stack);
-                    }
-                }
-            }
-            catch (Throwable ignored) {
-                // 试下一个
-            }
-        }
-        return null;
-    }
-
     /** 玩家魔法书里第一个可用法术(近似"选中的魔法")。 */
     private static Object spellInSpellbook(Player player) {
         resolve();
@@ -412,26 +385,6 @@ public final class ElementalSpellCastHandler {
                 return null;
             }
             return spellOnItem(stack);
-        }
-        catch (Throwable ignored) {
-            return null;
-        }
-    }
-
-    private static Object firstSpell(Object container) {
-        if (container == null || getActiveSpells == null) {
-            return null;
-        }
-        try {
-            Object list = getActiveSpells.invoke(container);
-            if (!(list instanceof java.util.List<?> spells) || spells.isEmpty()) {
-                return null;
-            }
-            Object slot = spells.get(0);
-            if (slot != null && slotGetSpell != null) {
-                return slotGetSpell.invoke(slot);
-            }
-            return null;
         }
         catch (Throwable ignored) {
             return null;
@@ -638,21 +591,28 @@ public final class ElementalSpellCastHandler {
     }
 
     private static Method pickCast(Class<?> spellClass, Class<?> magicData) {
-        for (Method method : spellClass.getMethods()) {
-            if (!"castSpell".equals(method.getName()) && !"cast".equals(method.getName())) {
-                continue;
-            }
-            Class<?>[] types = method.getParameterTypes();
-            boolean hasMagicData = false;
-            for (Class<?> type : types) {
-                if (type == magicData) {
-                    hasMagicData = true;
-                    break;
+        // 唯一保留的批量扫描:castSpell 的重载参数组合无法预知;整个循环吞掉 Throwable,
+        // 铁魔法自身缺类(如缺 lodestone)时只会返回 null,不会把异常抛给调用方。
+        try {
+            for (Method method : spellClass.getMethods()) {
+                if (!"castSpell".equals(method.getName()) && !"cast".equals(method.getName())) {
+                    continue;
+                }
+                Class<?>[] types = method.getParameterTypes();
+                boolean hasMagicData = false;
+                for (Class<?> type : types) {
+                    if (type == magicData) {
+                        hasMagicData = true;
+                        break;
+                    }
+                }
+                if (hasMagicData) {
+                    return method;
                 }
             }
-            if (hasMagicData) {
-                return method;
-            }
+        }
+        catch (Throwable ignored) {
+            // 签名里有缺失的类 → 当作没找到
         }
         return null;
     }
@@ -663,8 +623,4 @@ public final class ElementalSpellCastHandler {
         return containerGet != null && spellCast != null && magicDataOf != null;
     }
 
-    /** 供自检/调试:某个物品上是否有可用法术。 */
-    public static Optional<Object> spellOn(ItemStack stack) {
-        return Optional.ofNullable(spellOnItem(stack));
-    }
 }

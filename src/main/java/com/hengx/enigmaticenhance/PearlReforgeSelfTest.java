@@ -141,10 +141,15 @@ final class PearlReforgeSelfTest {
 
             // 诊断:可选配置里的 mixin 是否真的合进了这个类;以及它能看到的 player 是不是我们这一个
             boolean injected = false;
-            for (Method method : menu.getClass().getDeclaredMethods()) {
-                if (method.getName().contains("freeAncientSigilReforge")) {
-                    injected = true;
+            try {
+                for (Method method : menu.getClass().getDeclaredMethods()) {
+                    if (method.getName().contains("freeAncientSigilReforge")) {
+                        injected = true;
+                    }
                 }
+            }
+            catch (Throwable ignored) {
+                // 签名里有缺失的类(远古重铸台没装)→ 当作未注入
             }
             Object menuPlayer = null;
             try {
@@ -264,10 +269,15 @@ final class PearlReforgeSelfTest {
 
     /** {@code slotsChanged}(SRG {@code m_6199_})在运行时/开发环境名字不同,按签名找。 */
     private static Method findSlotsChanged(Class<?> menuClass) {
-        for (Method method : menuClass.getMethods()) {
-            if (method.getParameterCount() == 1 && method.getParameterTypes()[0] == Container.class) {
-                return method;
+        try {
+            for (Method method : menuClass.getMethods()) {
+                if (method.getParameterCount() == 1 && method.getParameterTypes()[0] == Container.class) {
+                    return method;
+                }
             }
+        }
+        catch (Throwable ignored) {
+            // 签名里有缺失的类 → 当作没找到
         }
         return null;
     }

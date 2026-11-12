@@ -6,10 +6,7 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 import com.hengx.enigmaticenhance.EnigmaticDragonGate;
-import com.hengx.enigmaticenhance.EnigmaticEnhance;
 import net.minecraft.world.entity.Entity;
-import net.minecraft.world.entity.boss.enderdragon.EnderDragon;
-import net.minecraft.world.level.Level;
 
 /**
  * 1.5.14:末影龙存活时,**末地维度内所有底层传送**全部失效。

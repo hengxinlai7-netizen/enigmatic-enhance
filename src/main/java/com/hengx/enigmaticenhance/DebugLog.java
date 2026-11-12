@@ -5,14 +5,16 @@ import org.apache.logging.log4j.Logger;
 /**
  * 本模组<b>所有自定义日志</b>的唯一出口(1.1.23)。
  * <p>
- * 规则:
+ * 规则(4.7.0 起:正式版正常游玩时只留数据自检那一行):
  * <ul>
- *   <li>{@link #info}/ {@link #debug} —— 全部受 {@code debugLog} 门控,默认 false ⇒ <b>零输出</b>。
- *       任何"正常运行时会刷屏"的判定日志都必须走这里;</li>
+ *   <li>{@link #info}/ {@link #debug}/ {@link #once}/ <b>{@link #warn}</b> —— 全部受 {@code debugLog} 门控,
+ *       默认 false ⇒ <b>零输出</b>。任何"正常运行时会刷屏"的日志都必须走这里
+ *       (4.7.0 把原先不门控的 {@code warn}/{@code once} 一并收进开关下:它们的量太大,正常游玩时会写进
+ *       latest.log,想让它们出现只要 {@code debug.logging.debugLog = true});</li>
  *   <li>{@link #startup} —— 单独受 {@code logStartupLine} 门控,<b>默认 false</b>(用户要求日志彻底关闭);
  *       想保留"已加载"那一行的人把它设 true 即可;</li>
- *   <li>{@link #warn}/{@link #error} —— <b>不门控</b>,只在真正出错时触发(配置非法 id、反射失败、
- *       注入失败、管线异常等)。这类信息如果被门控掉,出问题时就彻底看不见了。</li>
+ *   <li>{@link #error} —— <b>不门控</b>,只在真正出错时触发(异常被兜住的那种:
+ *       掉管线异常、反射失败、网络包处理失败等)。正常游玩时不会产生任何一条。</li>
  * </ul>
  * 读配置时全部带 try/catch:配置还没加载(构造期/极早期)时按"关"处理,绝不因为读日志开关而抛异常。
  */
@@ -44,14 +46,15 @@ public final class DebugLog {
     }
 
     /**
-     * 1.2.12b:关键诊断,**每次都输出**,但每类只打前 8 次(不需要开 debugLog)。
-     * 用于"功能不生效"这种只能靠日志定位的问题。
+     * 1.2.12b:关键诊断,每类只打前 8 次。
+     * <p>4.7.0:同样受 {@code debugLog} 门控 —— 这类"看一眼就够"的日志在正常游玩时也是噪音
+     * (挖方块、开枪、破盾都会触发),定位问题时把 {@code debugLog} 打开即可。</p>
      */
     private static final java.util.Set<String> ONCE = java.util.concurrent.ConcurrentHashMap.newKeySet();
 
     public static void once(String key, String format, Object... args) {
         try {
-            if (ONCE.size() >= 32 || !ONCE.add(key)) {
+            if (!debugEnabled() || ONCE.size() >= 32 || !ONCE.add(key)) {
                 return;
             }
             LOGGER.info(format, args);
@@ -71,11 +74,18 @@ public final class DebugLog {
      * 分配与 {@code once} 的语义完全一致(记录表满了 / key 已存在 ⇒ 本来也不会输出)。</p>
      */
     public static boolean oncePending() {
-        return ONCE.size() < 32;
+        return debugEnabled() && ONCE.size() < 32;
     }
 
-    /** 真正的警告:不门控。 */
+    /**
+     * 4.7.0:原先的"不门控警告"现在也走 {@code debugLog}。
+     * <p>保持 WARN 级别(而不是降级成 INFO):打开 {@code debugLog} 时,这类行仍然以 WARN 出现在日志里,
+     * 便于和真正的 {@link #error} 区分;关着的时候一条都不输出。</p>
+     */
     public static void warn(String format, Object... args) {
+        if (!debugEnabled()) {
+            return;
+        }
         LOGGER.warn(format, args);
     }
 

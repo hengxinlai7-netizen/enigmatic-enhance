@@ -1,6 +1,5 @@
 package com.hengx.enigmaticenhance;
 
-import net.minecraft.core.BlockPos;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.InteractionHand;
@@ -15,7 +14,6 @@ import net.minecraft.world.item.Items;
 import net.minecraftforge.event.entity.living.LivingDeathEvent;
 import net.minecraftforge.event.entity.living.LivingHurtEvent;
 import net.minecraftforge.event.entity.living.LivingUseTotemEvent;
-import net.minecraftforge.registries.ForgeRegistries;
 
 /**
  * 1.2.6 的四个瓶子自检(T44–T47)。

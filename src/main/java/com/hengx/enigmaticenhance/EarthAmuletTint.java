@@ -102,11 +102,6 @@ public final class EarthAmuletTint {
         return color;
     }
 
-    /** 该物品栈的核心是否真的是"无色"(没有可显示的效果)。 */
-    public static boolean isColorless(ItemStack stack) {
-        return coreColor(stack) == WHITE;
-    }
-
     private static MobEffect effect(String id) {
         try {
             ResourceLocation key = ResourceLocation.tryParse(id);

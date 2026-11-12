@@ -164,9 +164,4 @@ public final class HandOfExecutionHandler {
         apply(event.getEntity(), event.getSource(), event.getAmount(), event);
     }
 
-    /** 同 tick 已经把伤害记在真实伤害里了 → 现在把普通伤害清零(不取消,保留受击登记)。 */
-    private static boolean alreadyApplied(LivingEntity target) {
-        int[] prev = LAST_TICK.get(target.getUUID());
-        return prev != null && prev[0] == target.tickCount;
-    }
 }

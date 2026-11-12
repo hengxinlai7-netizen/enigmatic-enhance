@@ -1,6 +1,5 @@
 package com.hengx.enigmaticenhance;
 
-import javax.annotation.Nullable;
 
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.sounds.SoundEvents;
@@ -10,7 +9,6 @@ import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.Items;
 import net.minecraftforge.event.entity.living.LivingHurtEvent;
 import net.minecraftforge.event.entity.living.LivingUseTotemEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
@@ -135,14 +133,6 @@ public final class StyxWaterHandler {
         }
     }
 
-    /** 免死状态文本(给 tooltip/调试)。 */
-    public static String stateText(Player player) {
-        if (player == null) {
-            return "unknown";
-        }
-        return (canSaveToday(player) ? "ready" : "used") + "@day" + currentDay(player);
-    }
-
     /** 玩家身上(背包/副手/古旧书袋)是否有瓶装冥河之水。 */
     public static boolean hasStyxWater(Player player) {
         Item styx = ModItems.styxWaterOrNull();
@@ -163,8 +153,4 @@ public final class StyxWaterHandler {
         return !inBag.isEmpty() && inBag.getItem() == styx;
     }
 
-    /** 便捷判定:这瓶水能不能用在不死图腾上(给自检/调试)。 */
-    public static boolean isTotem(ItemStack stack) {
-        return stack != null && !stack.isEmpty() && stack.is(Items.TOTEM_OF_UNDYING);
-    }
 }

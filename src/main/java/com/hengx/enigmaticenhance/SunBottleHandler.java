@@ -1,7 +1,6 @@
 package com.hengx.enigmaticenhance;
 
 import net.minecraft.resources.ResourceLocation;
-import net.minecraft.world.InteractionHand;
 import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.entity.MobType;
@@ -9,7 +8,6 @@ import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.Items;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraftforge.event.TickEvent;
 import net.minecraftforge.event.entity.living.LivingHurtEvent;
@@ -177,18 +175,4 @@ public final class SunBottleHandler {
         return !inBag.isEmpty() && inBag.getItem() == sun;
     }
 
-    /** 手持的是不是大地之瓶(给自检用)。 */
-    public static boolean heldIsBottle(Player player, InteractionHand hand) {
-        Item bottle = ModItems.earthBottleOrNull();
-        if (bottle == null || player == null) {
-            return false;
-        }
-        ItemStack stack = player.getItemInHand(hand);
-        return !stack.isEmpty() && stack.getItem() == bottle;
-    }
-
-    /** 是不是金块(给自检用)。 */
-    public static boolean isGoldBlock(net.minecraft.world.item.ItemStack stack) {
-        return stack != null && !stack.isEmpty() && stack.is(Items.GOLD_BLOCK);
-    }
 }

@@ -10,7 +10,6 @@ import net.minecraft.world.item.ItemStack;
 
 import com.google.common.collect.Multimap;
 
-import org.apache.commons.lang3.tuple.Pair;
 import top.theillusivec4.curios.api.CuriosApi;
 import top.theillusivec4.curios.api.SlotContext;
 import top.theillusivec4.curios.api.type.capability.ICurio;

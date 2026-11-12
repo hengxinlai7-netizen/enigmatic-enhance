@@ -1,6 +1,6 @@
 {
     "replace": false,
     "values": [
-        "enigmaticenhance:traveler_hat"
+        { "id": "enigmaticenhance:traveler_hat", "required": false }
     ]
 }

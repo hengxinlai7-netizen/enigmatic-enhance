@@ -3,14 +3,11 @@ package com.hengx.enigmaticenhance;
 import java.util.ArrayList;
 import java.util.List;
 
-import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
-import net.minecraft.world.effect.MobEffect;
 import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 
-import net.minecraftforge.registries.ForgeRegistries;
 
 /**
  * 1.1.28j 自检 T32:大地护符的**动态染色 + 分头颅边框**。

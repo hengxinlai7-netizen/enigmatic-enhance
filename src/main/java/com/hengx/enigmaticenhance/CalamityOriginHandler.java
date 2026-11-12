@@ -1,6 +1,5 @@
 package com.hengx.enigmaticenhance;
 
-import net.minecraft.tags.DamageTypeTags;
 import net.minecraft.world.effect.MobEffect;
 import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.entity.LivingEntity;

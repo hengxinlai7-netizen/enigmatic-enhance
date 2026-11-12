@@ -1,8 +1,6 @@
 package com.hengx.enigmaticenhance;
 
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 import net.minecraft.core.BlockPos;
@@ -547,11 +545,5 @@ public final class EarthHeartLootHandler {
             return left;
         }
 
-        /** 自检/调试用。 */
-        public List<String> dump() {
-            List<String> out = new ArrayList<>();
-            records.forEach((k, v) -> out.add(k + " -> " + v + " (" + tables.get(k) + ")"));
-            return out;
-        }
     }
 }

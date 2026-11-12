@@ -62,91 +62,93 @@ public class EnigmaticEnhance {
         // 1.2.26:药水注册(让 JEI 效果页能查到我们的两个效果)
         ModPotions.POTIONS.register(modBus);
         // 1.1.25a:把本模组物品挂进创造模式物品栏(TOOLS_AND_UTILITIES);这是 mod 总线事件
-        modBus.register(CreativeTabContents.class);
-        MinecraftForge.EVENT_BUS.register(EarthAmuletHandler.class);
+        safeRegisterOn(modBus, CreativeTabContents.class);
+        safeRegister(EarthAmuletHandler.class);
         // 1.1.25:恶魔契约 enigmaticenhance:demon_pact(伤害数值 = 当前生命值)
-        MinecraftForge.EVENT_BUS.register(DemonPactHandler.class);
+        safeRegister(DemonPactHandler.class);
         // 1.1.25c:旅行家帽子 enigmaticenhance:traveler_hat(速度/生命上限/攻击力 + 探索数据)
-        MinecraftForge.EVENT_BUS.register(TravelerHatHandler.class);
+        safeRegister(TravelerHatHandler.class);
         // 1.1.28a:恶魔血杯 enigmaticenhance:demon_blood_chalice(效果保留但不生效 + 两条联动)
-        MinecraftForge.EVENT_BUS.register(DemonBloodChaliceHandler.class);
+        safeRegister(DemonBloodChaliceHandler.class);
         // 1.1.28c:纯净符文的投掷物与落点白光实体 enigmaticenhance:pure_rune / pure_rune_flash
         ModEntities.ENTITY_TYPES.register(modBus);
         // 1.1.28e:恶魔的手骨(hands 槽)的伤害结算与三件套
-        MinecraftForge.EVENT_BUS.register(DemonBoneHandler.class);
-        MinecraftForge.EVENT_BUS.register(AutoSmeltLoot.class);
+        safeRegister(DemonBoneHandler.class);
+        safeRegister(AutoSmeltLoot.class);
         // 1.1.22:启动时一条 ASCII 自检日志(附魔是否注册 / mixin 注入是否 PRESENT / 对方模组状态)
-        MinecraftForge.EVENT_BUS.register(AutoSmeltDiagnostics.class);
+        safeRegister(AutoSmeltDiagnostics.class);
         // 1.1.22:兜底注入点 —— 掉落物实体真正出现的时刻(任何工具/任何模组算出来的掉落最终都要 spawn ItemEntity)
-        MinecraftForge.EVENT_BUS.register(AutoSmeltBreakTracker.class);
-        MinecraftForge.EVENT_BUS.register(AutoSmeltItemWatcher.class);
+        safeRegister(AutoSmeltBreakTracker.class);
+        safeRegister(AutoSmeltItemWatcher.class);
         // 1.2.2:深渊侵蚀的大地之心 —— 身上带着深渊之心(或它的产物)时,背包里的大地之心被侵蚀
-        MinecraftForge.EVENT_BUS.register(AbyssalEarthHeartHandler.class);
+        safeRegister(AbyssalEarthHeartHandler.class);
 
         // 1.2.5c:瓶装历史迷雾(大地之瓶计时转化 + 记录属性生效)
-        MinecraftForge.EVENT_BUS.register(HistoryMistHandler.class);
+        safeRegister(HistoryMistHandler.class);
         // 救赎之戒的 +20% 全属性(需要 Curios)
         // 1.2.6a:瓶装灵界之光(副手移动转化 + 额外掉落 + 强制战利品大爆发)
-        MinecraftForge.EVENT_BUS.register(SpiritLightHandler.class);
+        safeRegister(SpiritLightHandler.class);
         boolean curios = ModList.get().isLoaded("curios");
         // 1.2.6b:瓶装冥河之水(图腾转化 + 免死一次/每天刷新)
-        MinecraftForge.EVENT_BUS.register(StyxWaterHandler.class);
+        safeRegister(StyxWaterHandler.class);
         if (curios) {
         // 1.2.6c:瓶装战争迷雾(击杀 50 只转化 + 无差别仇恨)
-        MinecraftForge.EVENT_BUS.register(WarFogHandler.class);
-            MinecraftForge.EVENT_BUS.register(new CurioCompat());
+        safeRegister(WarFogHandler.class);
+            safeRegister(new CurioCompat());
         // 1.2.6d:瓶装太阳(金块+正午转化 / 亡灵增伤 / 饱和与生命回复)
-        MinecraftForge.EVENT_BUS.register(SunBottleHandler.class);
+        safeRegister(SunBottleHandler.class);
         }
         // 1.2.9a:元素魔法(有铁魔法才生效;附魔本身也只在装了铁魔法时注册)
-        MinecraftForge.EVENT_BUS.register(ElementalMagicHandler.class);
+        safeRegister(ElementalMagicHandler.class);
 
         // 1.2.9e:无法破坏(附魔生效即写入 Unbreakable 并自清除)
-        MinecraftForge.EVENT_BUS.register(UnbreakableHandler.class);
+        safeRegister(UnbreakableHandler.class);
         // 书籍 Ctrl+左键 开关:需要一条 C2S 通道(客户端拿不到 Ctrl 状态的反向需求)
         // 1.2.11a:镜碎(受伤 +100%)与镜中之影
-        MinecraftForge.EVENT_BUS.register(MirrorShatterHandler.class);
+        safeRegister(MirrorShatterHandler.class);
         // 1.2.15:元素魔法 —— 攻击时顺手释放武器注入/魔法书选中的法术
-        MinecraftForge.EVENT_BUS.register(ElementalSpellCastHandler.class);
+        safeRegister(ElementalSpellCastHandler.class);
         // 1.2.17:神射手护符 —— 弹射物 +20%(箭矢初速/暴击/偏移由 mixin 处理)
-        MinecraftForge.EVENT_BUS.register(SharpshooterHandler.class);
+        safeRegister(SharpshooterHandler.class);
         // 1.2.19:冥河之水 × Goety 灵魂联动(每秒 +10 灵魂、可吸魂)
-        MinecraftForge.EVENT_BUS.register(StyxSoulHandler.class);
+        safeRegister(StyxSoulHandler.class);
         // 1.2.23:血色之灾 —— 每层负面 +10% 受伤
-        MinecraftForge.EVENT_BUS.register(BloodCalamityHandler.class);
-        MinecraftForge.EVENT_BUS.register(ValueEditorHandler.class);   // 1.3.1:数值编辑器
-        MinecraftForge.EVENT_BUS.register(EvilEssenceBonusHandler.class);   // 1.3.2:邪恶精髓复制
-        MinecraftForge.EVENT_BUS.register(MercurySerpentHandler.class);   // 1.3.3:水银之蛇
+        safeRegister(BloodCalamityHandler.class);
+        safeRegister(ValueEditorHandler.class);   // 1.3.1:数值编辑器
+        safeRegister(EvilEssenceBonusHandler.class);   // 1.3.2:邪恶精髓复制
+        safeRegister(MercurySerpentHandler.class);   // 1.3.3:水银之蛇
         // 2.6.0:Boss 增强(凋零/监守者/末影龙)已拆分为独立模组,本模组不再注册。
-        MinecraftForge.EVENT_BUS.register(CalamityOriginHandler.class);   // 1.5.1:根源之祸
-        MinecraftForge.EVENT_BUS.register(EternalSilenceHandler.class);   // 1.5.2:永暗之寂
+        safeRegister(CalamityOriginHandler.class);   // 1.5.1:根源之祸
+        safeRegister(EternalSilenceHandler.class);   // 1.5.2:永暗之寂
         ModGameRules.bootstrap();   // 1.6.4:宿命的修正 世界规则
-        MinecraftForge.EVENT_BUS.register(FateCorrectionHandler.class);   // 1.6.4:宿命的修正
+        safeRegister(FateCorrectionHandler.class);   // 1.6.4:宿命的修正
         // 2.6.0:宿命的试炼已拆分为独立模组(enhancetrial),本模组不再注册。
-        MinecraftForge.EVENT_BUS.register(FateWorldApplier.class);   // 1.6.6:创建世界选项写入 gamerule
-        MinecraftForge.EVENT_BUS.register(ConsciousnessSeaHandler.class);   // 1.6.15:瓶装意识之海
-        MinecraftForge.EVENT_BUS.register(AddonRevivalLeafTooltip.class);   // 4.5.0:复苏之叶说明(从 enigmaticcurio 取回)
-        MinecraftForge.EVENT_BUS.register(UnfinishedContent.class);   // 4.5.0:四项未完成内容的 tooltip 标记
-        MinecraftForge.EVENT_BUS.register(EarthHeartLootHandler.class);
-        MinecraftForge.EVENT_BUS.register(PlayerCritHandler.class);
-        MinecraftForge.EVENT_BUS.register(GluttonyBookCleanup.class);   // 4.1.0:贪食之书复活清理
-        MinecraftForge.EVENT_BUS.register(MagnetRangeHandler.class);   // 4.5.0:磁吸戒指范围(从 enigmaticcurio 取回)
+        safeRegister(FateWorldApplier.class);   // 1.6.6:创建世界选项写入 gamerule
+        safeRegister(ConsciousnessSeaHandler.class);   // 1.6.15:瓶装意识之海
+        safeRegister(AddonRevivalLeafTooltip.class);   // 4.5.0:复苏之叶说明(从 enigmaticcurio 取回)
+        safeRegister(UnfinishedContent.class);   // 4.5.0:四项未完成内容的 tooltip 标记
+        safeRegister(EarthHeartLootHandler.class);
+        safeRegister(PlayerCritHandler.class);
+        safeRegister(GluttonyBookCleanup.class);   // 4.1.0:贪食之书复活清理
+        safeRegister(MagnetRangeHandler.class);   // 4.5.0:磁吸戒指范围(从 enigmaticcurio 取回)
         MagnetRangeHandler.apply();
         modBus.addListener(MagnetRangeHandler::onCommonSetup);
-        MinecraftForge.EVENT_BUS.register(HellBladeLootHandler.class);
-        MinecraftForge.EVENT_BUS.register(SpellstoneLootBoostHandler.class);   // 3.1.0:术石战利品加权   // 2.7.0:地狱刃片保底
-        MinecraftForge.EVENT_BUS.register(HandOfExecutionHandler.class);
-        MinecraftForge.EVENT_BUS.register(BeaconEnhanceHandler.class);
-        MinecraftForge.EVENT_BUS.register(BastionTreasureHandler.class);   // 3.0.0:扭曲之心堡垒遗迹抽取   // 2.11.15:信标增强   // 2.9.6:执行之手
-        MinecraftForge.EVENT_BUS.register(ItemUseGuard.class);   // 2.5.0:禁用物品统一拦截   // 2.3.0:大地之心记录战利品表
-        MinecraftForge.EVENT_BUS.register(ExperienceOverflowGuard.class);   // 1.6.17:经验溢出保护
-        MinecraftForge.EVENT_BUS.register(OmniContaminationGuard.class);   // 1.6.23:清除生物身上的全属性污染
-        MinecraftForge.EVENT_BUS.register(ForgerGemAnvilHandler.class);   // 1.6.33:锻造者宝石铁砧升级
-        MinecraftForge.EVENT_BUS.register(FishingHaulBottleHandler.class);   // 1.7.2:渔获瓶
-        MinecraftForge.EVENT_BUS.register(CombatInvulnHandler.class);   // 1.8.0:战斗无敌帧(正常游戏)
-        // 1.2.27:TACZ 开枪连携施法(装了 TACZ 才注册,不装不加载这个类)
+        // 4.6.6:启动期数据自检(tag 悬空引用 + 配方形状冲突),默认开,只在启动跑一次
+        safeRegisterOn(modBus, DataSelfCheck.class);
+        safeRegister(HellBladeLootHandler.class);
+        safeRegister(SpellstoneLootBoostHandler.class);   // 3.1.0:术石战利品加权   // 2.7.0:地狱刃片保底
+        safeRegister(HandOfExecutionHandler.class);
+        safeRegister(BeaconEnhanceHandler.class);
+        safeRegister(BastionTreasureHandler.class);   // 3.0.0:扭曲之心堡垒遗迹抽取   // 2.11.15:信标增强   // 2.9.6:执行之手
+        safeRegister(ItemUseGuard.class);   // 2.5.0:禁用物品统一拦截   // 2.3.0:大地之心记录战利品表
+        safeRegister(ExperienceOverflowGuard.class);   // 1.6.17:经验溢出保护
+        safeRegister(OmniContaminationGuard.class);   // 1.6.23:清除生物身上的全属性污染
+        safeRegister(ForgerGemAnvilHandler.class);   // 1.6.33:锻造者宝石铁砧升级
+        safeRegister(FishingHaulBottleHandler.class);   // 1.7.2:渔获瓶
+        safeRegister(CombatInvulnHandler.class);   // 1.8.0:战斗无敌帧(正常游戏)
+        // 1.2.27:TACZ 开枪连携施法(联动;装了才注册,没装彻底静默)
         if (net.minecraftforge.fml.ModList.get().isLoaded("tacz")) {
-            MinecraftForge.EVENT_BUS.register(TaczCompat.class);
+            TaczCompat.register(MinecraftForge.EVENT_BUS);
         }
         EnigmaticNetwork.register();
 
@@ -181,5 +183,26 @@ public class EnigmaticEnhance {
         DebugLog.startup("神秘遗物增强 已加载 (modId={}, 属性 {}:omni, Curios={}, 神秘遗物扩展={})",
             MODID, MODID, curios ? "存在" : "缺失",
             ModList.get().isLoaded("enigmaticaddons") ? "存在" : "缺失");
+    }
+    /** 注册 Forge 事件处理器;任何 Throwable(含 NoClassDefFoundError)都不会让模组加载失败。 */
+    private static void safeRegister(Object handler) {
+        safeRegisterOn(MinecraftForge.EVENT_BUS, handler);
+    }
+
+    /** 同上,但指定总线(模组总线的事件处理器也走同一层保护)。 */
+    public static void safeRegisterOn(IEventBus bus, Object handler) {
+        try {
+            bus.register(handler);
+        }
+        catch (Throwable t) {
+            LOGGER.warn("[神秘遗物增强] 跳过事件处理器 {}: {}", handlerName(handler), t.toString());
+        }
+    }
+
+    private static String handlerName(Object handler) {
+        if (handler instanceof Class<?> c) {
+            return c.getSimpleName();
+        }
+        return handler == null ? "null" : handler.getClass().getSimpleName();
     }
 }

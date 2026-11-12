@@ -27,11 +27,7 @@ public final class MercurySerpentHandler {
     public static final ThreadLocal<Boolean> ALLOW_WRITE = ThreadLocal.withInitial(() -> Boolean.FALSE);
 
     private static final String TAG_CHARGES = "mercury_charges";
-    private static final String TAG_LEVEL = "mercury_level";
-    private static final String TAG_NEXT_TRIGGER = "mercury_next_trigger";
 
-    /** 两次"回满触发"之间的最小间隔(tick),防止反复刷盾。 */
-    public static final int TRIGGER_COOLDOWN = 200;
     private static final String TAG_INVULN = "mercury_invuln_until";
 
     /** 每次破盾给的无敌帧。 */
@@ -101,15 +97,6 @@ public final class MercurySerpentHandler {
         long now = entity.level().getGameTime();
         long until = tag.getLong(TAG_INVULN);
         return now >= 0 && until > 0 && now < until && until - now <= INVULN_TICKS;
-    }
-
-    /** 1.3.6:外部增加次数盾层数(凋零吞噬亡灵时用)。 */
-    public static void addCharges(LivingEntity entity, int amount) {
-        if (entity == null || amount <= 0) {
-            return;
-        }
-        CompoundTag tag = entity.getPersistentData();
-        tag.putInt(TAG_CHARGES, tag.getInt(TAG_CHARGES) + amount);
     }
 
     public static int charges(LivingEntity entity) {

@@ -247,8 +247,4 @@ public final class SpellstoneLootBoostHandler {
         }
     }
 
-    /** 供自检:该表是否被我们覆盖。 */
-    public static boolean covers(ResourceLocation table) {
-        return table != null && TABLE_MAP.containsKey(table.toString());
-    }
 }

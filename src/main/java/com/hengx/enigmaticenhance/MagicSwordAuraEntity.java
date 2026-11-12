@@ -71,18 +71,6 @@ public class MagicSwordAuraEntity extends Projectile {
         this.setXRot((float) (-Math.asin(look.y) * 180.0D / Math.PI));
     }
 
-    public boolean isCrit() {
-        return crit;
-    }
-
-    public int getEnchantLevel() {
-        return enchantLevel;
-    }
-
-    public void setEnchantLevel(int level) {
-        this.enchantLevel = Math.max(1, Math.min(3, level));
-    }
-
     /** 1.2.9a:虚空剑气把飞行距离拉长 50%(范围 +50%)。 */
     private int maxLife() {
         return this.voidAura ? (int) (MAX_LIFE * VoidAuraEnchantment.RANGE_MULTIPLIER) : MAX_LIFE;
@@ -186,20 +174,6 @@ public class MagicSwordAuraEntity extends Projectile {
 
 
     /**
-    /** 1.2.9a:元素魔法 —— 主人手上那把剑带附魔时,剑气也吃"学派强度 ×1%"加成。 */
-    private float elementalMultiplier() {
-        try {
-            Entity owner = getOwner();
-            if (owner instanceof net.minecraft.world.entity.player.Player player
-                && ElementalMagicHandler.hasEnchantment(player, player.getMainHandItem())) {
-                return ElementalMagicHandler.damageMultiplier(player);
-            }
-        }
-        catch (RuntimeException | LinkageError ignored) {
-            // 缺铁魔法等情况:不加成
-        }
-        return 1.0F;
-    }
 
     /**
      * 1.2.9a:命中结算。普通剑气走原版 hurt;虚空剑气额外做到:

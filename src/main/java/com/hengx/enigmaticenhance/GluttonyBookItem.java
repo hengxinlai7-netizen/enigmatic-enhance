@@ -16,7 +16,6 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.TooltipFlag;
 import net.minecraft.world.level.Level;
 import net.minecraftforge.event.entity.player.PlayerEvent;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
 
 /**
  * 4.1.0:贪食之书。
@@ -278,39 +277,6 @@ public class GluttonyBookItem extends Item {
             player.getHealth(), player.deathTime, deathMessage.getString());
     }
 
-    /** 摘掉不死图腾、清空吸收伤害。 */
-    private static void stripDeathProtection(ServerPlayer player) {
-        try {
-            player.setAbsorptionAmount(0.0F);
-        }
-        catch (RuntimeException | LinkageError ignored) {
-            // 继续
-        }
-        try {
-            var inv = player.getInventory();
-            int removed = 0;
-            for (int i = 0; i < inv.items.size(); i++) {
-                ItemStack stack = inv.items.get(i);
-                if (!stack.isEmpty() && stack.is(net.minecraft.world.item.Items.TOTEM_OF_UNDYING)) {
-                    removed += stack.getCount();
-                    inv.items.set(i, ItemStack.EMPTY);
-                }
-            }
-            for (int i = 0; i < inv.offhand.size(); i++) {
-                ItemStack stack = inv.offhand.get(i);
-                if (!stack.isEmpty() && stack.is(net.minecraft.world.item.Items.TOTEM_OF_UNDYING)) {
-                    removed += stack.getCount();
-                    inv.offhand.set(i, ItemStack.EMPTY);
-                }
-            }
-            if (removed > 0) {
-                DebugLog.warn("[GluttonyBook] 已摘除 {} 个不死图腾,确保死亡结算生效", removed);
-            }
-        }
-        catch (RuntimeException | LinkageError ignored) {
-            // 忽略
-        }
-    }
     /** 该玩家是否正处在「贪食之书致死」流程中。 */
     public static boolean isMarked(Player player) {
         try {

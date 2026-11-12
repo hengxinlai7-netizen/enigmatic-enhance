@@ -21,11 +21,6 @@ import net.minecraftforge.fml.common.Mod;
     bus = Mod.EventBusSubscriber.Bus.FORGE)
 public final class LifeMeterHud {
 
-    /** 血条离屏幕底部的距离(比心形那一行高 12 像素,避免重叠)。 */
-    public static final int BOTTOM_OFFSET = 51;
-    /** 血条宽度 = 原版 10 颗心。 */
-    public static final int BAR_WIDTH = 182;
-
     private LifeMeterHud() {
     }
 

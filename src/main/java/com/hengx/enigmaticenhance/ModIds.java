@@ -26,15 +26,6 @@ public final class ModIds {
     public static final String GLUTTONY_BOOK_PATH = "gluttony_book";
 
     /**
-     * 1.1.21:左上角 HUD **整块删除**(不再注册任何 GuiOverlay)。
-     * 历史上那处 {@code RegisterGuiOverlaysEvent#registerAboveAll} 传带冒号的 path 正是 1.1.16 崩溃的根源;
-     * 现在这个 overlay 已经不存在,所以它不再参与 {@link #problems()} 校验(校验一个不存在的东西没有意义)。
-     * 常量仅作历史记录保留,标记 {@code @Deprecated}。
-     */
-    @Deprecated
-    public static final String OVERLAY_PATH_REMOVED = "bag_hud";
-
-    /**
      * 1.1.20 新增附魔 enigmaticenhance:auto_smelt 的**裸 path**(注册名由 DeferredRegister 拼命名空间)。
      * 同一个 path 也被战利品池名 {@link AutoSmeltLoot#POOL_NAME} 与配方 id 复用。
      */

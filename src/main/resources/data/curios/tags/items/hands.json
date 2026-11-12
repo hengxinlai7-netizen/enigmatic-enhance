@@ -1,6 +1,6 @@
 {
     "replace": false,
     "values": [
-        "enigmaticenhance:demon_hand_bone"
+        { "id": "enigmaticenhance:demon_hand_bone", "required": false }
     ]
 }

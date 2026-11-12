@@ -1,6 +1,5 @@
 package com.hengx.enigmaticenhance;
 
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -158,7 +157,4 @@ public final class BagHudSync {
         sent = 0;
     }
 
-    public static List<BagHudEffects.Entry> emptyList() {
-        return new ArrayList<>();
-    }
 }

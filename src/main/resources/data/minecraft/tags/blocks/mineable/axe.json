@@ -1,1 +1,6 @@
-{"replace":false,"values":["enigmaticenhance:war_banner"]}
+{
+    "replace": false,
+    "values": [
+        { "id": "enigmaticenhance:war_banner", "required": false }
+    ]
+}

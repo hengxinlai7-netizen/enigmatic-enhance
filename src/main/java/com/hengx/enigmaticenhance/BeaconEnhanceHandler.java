@@ -5,9 +5,6 @@ import java.util.List;
 import java.util.Set;
 
 import net.minecraft.world.effect.MobEffect;
-import net.minecraft.world.effect.MobEffectInstance;
-import net.minecraft.world.effect.MobEffects;
-import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.block.entity.BeaconBlockEntity;
 import net.minecraftforge.event.server.ServerStartedEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
@@ -144,20 +141,6 @@ public final class BeaconEnhanceHandler {
         catch (RuntimeException | LinkageError ignored) {
             return null;
         }
-    }
-
-    /** 该效果是否是我们的自定义效果(用于距离豁免)。 */
-    public static boolean isCustom(MobEffect effect) {
-        if (effect == null) {
-            return false;
-        }
-        net.minecraft.resources.ResourceLocation id = ForgeRegistries.MOB_EFFECTS.getKey(effect);
-        if (id == null) {
-            return false;
-        }
-        String s = id.toString();
-        return s.startsWith("enigmaticlegacy:") || s.startsWith("enigmaticaddons:")
-            || (s.startsWith("enigmaticenhance:") && !s.equals("enigmaticenhance:mercury_serpent"));
     }
 
     /** 纯化抗性的特殊处理:只给 I 级。 */

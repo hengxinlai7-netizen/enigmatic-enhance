@@ -9,6 +9,12 @@ displayName="神秘遗物增强 (Enigmatic Legacy Enhance)"
 description='''神秘遗物(Enigmatic Legacy)的增强附属模组。'''
 authors="${mod_authors}"
 
+# ---------------------------------------------------------------------------
+# 4.6.4:硬前置只有「神秘遗物 + 饰品栏」。
+#   其它所有模组(神化/铁魔法/Goety/远古典藏/千古乐事…)一律不声明,
+#   装了就联动、没装静默跳过(代码里全部是纯反射 + catch(Throwable))。
+# ---------------------------------------------------------------------------
+
 [[dependencies.${mod_id}]]
     modId="forge"
     mandatory=true
@@ -21,4 +27,28 @@ authors="${mod_authors}"
     mandatory=true
     versionRange="${minecraft_version_range}"
     ordering="NONE"
+    side="BOTH"
+
+# 硬前置 1:神秘遗物本体
+[[dependencies.${mod_id}]]
+    modId="enigmaticlegacy"
+    mandatory=true
+    versionRange="[2.0.0,)"
+    ordering="AFTER"
+    side="BOTH"
+
+# 硬前置 2:饰品栏(Curios)
+[[dependencies.${mod_id}]]
+    modId="curios"
+    mandatory=true
+    versionRange="[5.0.0,)"
+    ordering="AFTER"
+    side="BOTH"
+
+# 生态联动(可选):神秘遗物扩展 —— 没装静默跳过
+[[dependencies.${mod_id}]]
+    modId="enigmaticaddons"
+    mandatory=false
+    versionRange="[1.0.0,)"
+    ordering="AFTER"
     side="BOTH"

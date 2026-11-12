@@ -2,6 +2,10 @@
     "type": "apotheosis:enchanting",
     "conditions": [
         {
+            "type": "forge:mod_loaded",
+            "modid": "apotheosis"
+        },
+        {
             "type": "apotheosis:module",
             "module": "enchantment"
         },

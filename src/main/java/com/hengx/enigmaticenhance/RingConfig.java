@@ -195,6 +195,8 @@ public final class RingConfig {
     public static final ForgeConfigSpec.ConfigValue<java.util.List<? extends String>> ABYSSAL_EARTH_HEART_EXTRA_TRIGGERS;
     public static final ForgeConfigSpec.BooleanValue LOG_STARTUP_LINE;
     public static final ForgeConfigSpec.BooleanValue DEBUG_LOG;
+    /** 4.6.7:启动时数据自检(tag 引用完整性 + 配方形状冲突)。 */
+    public static final ForgeConfigSpec.BooleanValue DATA_SELF_CHECK;
 
     static {
         ForgeConfigSpec.Builder builder = new ForgeConfigSpec.Builder();
@@ -569,6 +571,13 @@ public final class RingConfig {
         DEBUG_LOG = builder.comment("是否输出调试日志(排查问题时才需要打开)。默认关闭。")
             .define("debugLog", false);
 
+        // 4.6.7:单独一个 [debug] 段放自检开关,不动上面已有的 debugLog 键,避免老配置失效
+        builder.comment("调试与自检。").push("debug");
+        DATA_SELF_CHECK = builder
+            .comment("启动时检查 tag 引用是否都存在、配方形状是否互相冲突。默认开启;只在启动跑一次,开销极小。")
+            .define("dataSelfCheck", true);
+        builder.pop();
+
         builder.pop();
         SPEC = builder.build();
     }
@@ -577,10 +586,6 @@ public final class RingConfig {
 
     public static boolean omniEnabled() {
         return OMNI_ENABLED.get();
-    }
-
-    public static boolean omniAttachToPlayers() {
-        return OMNI_ATTACH_TO_PLAYERS.get();
     }
 
     public static double ringOmniBonus() {
@@ -612,10 +617,6 @@ public final class RingConfig {
     /** 是否把被 Curios 槽位收缩挤出来的救赎之戒放回 ring 槽(而不是进背包)。 */
     public static boolean keepRingOnRelogin() {
         return RING_KEEP_ON_RELOGIN.get();
-    }
-
-    public static boolean allowScrollWithCursedScroll() {
-        return SCROLL_ALLOW_WITH_CURSED_SCROLL.get();
     }
 
     public static boolean disableEngineLightningItemClear() {
@@ -668,6 +669,16 @@ public final class RingConfig {
 
     public static boolean debugLog() {
         return DEBUG_LOG.get();
+    }
+
+    /** 4.6.7:启动期数据自检开关(默认 true,读配置失败也按 true 处理)。 */
+    public static boolean dataSelfCheckEnabled() {
+        try {
+            return DATA_SELF_CHECK.get();
+        }
+        catch (RuntimeException | LinkageError e) {
+            return true;
+        }
     }
 
     /** 恶魔契约:true = 字面实现(伤害 = 当前生命值,任何伤害都致死)。 */
@@ -792,11 +803,6 @@ public final class RingConfig {
     /** 古旧书袋 tooltip 总开关(1.1.21:HUD 已删除,这个开关只控制 tooltip 与同步)。 */
     public static boolean bagTooltipEnabled() {
         return BAG_TOOLTIP_ENABLED.get();
-    }
-
-    /** 古旧书袋物品本体(用于 tooltip 判定)。 */
-    public static Item antiqueBagItem2() {
-        return antiqueBagItem();
     }
 
     /** 血战沙场之证:锁血总开关。 */
@@ -1097,11 +1103,6 @@ public final class RingConfig {
         return UNCERTAIN_FOG_RADIUS.get();
     }
 
-    /** 1.2.10:伤害吸收上限(默认 20 = 10 颗金心)。 */
-    public static double demonBoneMaxAbsorption() {
-        return DEMON_BONE_MAX_ABSORPTION.get();
-    }
-
     /** 睡前读物是否修正第七重咒(失眠)。 */
     public static boolean bedtimeReadingFixesSeventhCurse() {
         return BEDTIME_READING_FIX.get();
@@ -1119,18 +1120,6 @@ public final class RingConfig {
 
     public static Item antiqueBagItem() {
         return itemOrNull(ANTIQUE_BAG_ID);
-    }
-
-    public static Item theTwistItem() {
-        return itemOrNull(THE_TWIST_ID);
-    }
-
-    public static Item theBlessItem() {
-        return itemOrNull(THE_BLESS_ID);
-    }
-
-    public static Item theInfinitumItem() {
-        return itemOrNull(THE_INFINITUM_ID);
     }
 
     /** 冒险者之证:是否允许挖掘方块(默认 true)。 */    public static boolean adventureCharmAllowMining() {
@@ -1172,16 +1161,6 @@ public final class RingConfig {
         return itemOrNull(DESPAIR_INSIGNIA_ID);
     }
 
-    public static boolean isAdventureCharm(Item item) {
-        Item charm = adventureCharmItem();
-        return charm != null && item == charm;
-    }
-
-    public static boolean isDespairInsignia(Item item) {
-        Item insignia = despairInsigniaItem();
-        return insignia != null && item == insignia;
-    }
-
     private static Item itemOrNull(ResourceLocation id) {
         if (id == null || !ForgeRegistries.ITEMS.containsKey(id)) {
             return null;
@@ -1196,10 +1175,6 @@ public final class RingConfig {
 
     public static Item cursedRingItem() {
         return itemOrNull(CURSED_RING_ID);
-    }
-
-    public static Item cursedScrollItem() {
-        return itemOrNull(CURSED_SCROLL_ID);
     }
 
     public static Item brokenRingItem() {
@@ -1218,23 +1193,9 @@ public final class RingConfig {
         return itemOrNull(GLUTTONY_CHARM_ID);
     }
 
-    public static boolean isGluttonyCharm(Item item) {
-        Item charm = gluttonyCharmItem();
-        return charm != null && item == charm;
-    }
-
     /** 附魔师的珍珠(严格按注册表 id;缺失返回 null,不抛异常)。 */
     public static Item enchanterPearlItem() {
         return itemOrNull(ENCHANTER_PEARL_ID);
-    }
-
-    public static boolean isEnchanterPearl(Item item) {
-        Item pearl = enchanterPearlItem();
-        return pearl != null && item == pearl;
-    }
-
-    public static Item enablerItem() {
-        return itemOrNull(ResourceLocation.tryParse(SCROLL_ENABLER_ID.get()));
     }
 
     public static boolean isRing(Item item) {
@@ -1272,8 +1233,4 @@ public final class RingConfig {
         return itemOrNull(ABYSSAL_HEART_ID);
     }
 
-    public static boolean isEarthHeart(Item item) {
-        Item heart = earthHeartItem();
-        return heart != null && item == heart;
-    }
 }

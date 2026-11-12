@@ -140,11 +140,6 @@ public final class TravelerHatData {
         to.getPersistentData().put(ROOT, source.copy());
     }
 
-    /** 该玩家是否戴着旅行家帽子(饰品栏 curios:head)。 */
-    public static boolean isWearing(Player player) {
-        return !TravelerHatHandler.equippedHat(player).isEmpty();
-    }
-
     /** 群系数量对应的生命上限加成。 */
     public static double healthBonus(Player player) {
         return RingConfig.travelerHatHealthPerBiome() * biomeCount(player);

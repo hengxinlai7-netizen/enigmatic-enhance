@@ -13,7 +13,6 @@ import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.util.Mth;
 import net.minecraftforge.event.TickEvent;
 import net.minecraftforge.event.entity.living.LivingDropsEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
@@ -233,9 +232,6 @@ public final class SpiritLightHandler {
     /** 每次击杀最多补几种新物品(防止把整张表刷爆)。 */
     private static final int RARE_MAX_TYPES = 6;
 
-    /** 最多补掷多少次战利品表(40 次 × 10% ≈ 98.5% 覆盖兔子脚这类稀有掉落)。 */
-    private static final int RARE_ROLLS = 40;
-
     /**
      * 1.2.12e:低概率掉落保底。
      * <p>神化的「战利品大爆发」只是把<b>已经掉出来的</b>战利品再复制几份,
@@ -303,62 +299,96 @@ public final class SpiritLightHandler {
 
     // ------------------------------------------------------------------ 隐藏效果
 
-    /** 玩家主手武器上的 festive 词缀实例(没有/神化缺失 → null)。 */
+    /** 神化是否存在的缓存标志(纯反射探测;缺失时下面的联动全部静默跳过)。 */
+    private static volatile Boolean apotheosisLoaded;
+
+    /** 神化(联动模组)是否存在。绝不抛出、绝不写日志。 */
+    public static boolean apotheosisLoaded() {
+        Boolean cached = apotheosisLoaded;
+        if (cached == null) {
+            try {
+                Class.forName("dev.shadowsoffire.apotheosis.adventure.affix.AffixHelper", false,
+                    SpiritLightHandler.class.getClassLoader());
+                cached = Boolean.TRUE;
+            }
+            catch (Throwable t) {
+                cached = Boolean.FALSE;
+            }
+            apotheosisLoaded = cached;
+        }
+        return cached.booleanValue();
+    }
+
+    /**
+     * 玩家主手武器上的 festive 词缀实例(没有/神化缺失 → null)。
+     * <p>返回类型故意是 {@link Object}:一旦签名里出现神化类型,Forge 注册本类时
+     * {@code Class#getMethods()} 会去解析签名 → 没装神化就 {@code NoClassDefFoundError}。
+     * 这里全部用精确查找的反射,且吞掉 {@code Throwable}。</p>
+     */
     @Nullable
-    public static dev.shadowsoffire.apotheosis.adventure.affix.AffixInstance festiveInstance(Player player) {
+    static Object festiveInstance(Player player) {
+        if (!apotheosisLoaded()) {
+            return null;
+        }
         try {
             ItemStack weapon = player.getMainHandItem();
             if (weapon.isEmpty()) {
                 return null;
             }
-            var affixes = dev.shadowsoffire.apotheosis.adventure.affix.AffixHelper.getAffixes(weapon);
-            var instance = affixes.get(dev.shadowsoffire.apotheosis.Apoth.Affixes.FESTIVE);
-            if (instance == null || !instance.isValid()) {
+            ClassLoader cl = SpiritLightHandler.class.getClassLoader();
+            Class<?> helper = Class.forName("dev.shadowsoffire.apotheosis.adventure.affix.AffixHelper", false, cl);
+            Object map = helper.getMethod("getAffixes", ItemStack.class).invoke(null, weapon);
+            if (!(map instanceof java.util.Map<?, ?> affixes)) {
                 return null;
             }
-            return instance;
+            Class<?> holders = Class.forName("dev.shadowsoffire.apotheosis.Apoth$Affixes", false, cl);
+            Object festiveHolder = holders.getField("FESTIVE").get(null);
+            Object instance = affixes.get(festiveHolder);
+            if (instance == null) {
+                return null;
+            }
+            Object valid = instance.getClass().getMethod("isValid").invoke(instance);
+            return Boolean.TRUE.equals(valid) ? instance : null;
         }
-        catch (RuntimeException | LinkageError ignored) {
+        catch (Throwable t) {
             return null;
         }
-    }
-
-    /** 手持武器是否带 festive 词缀。 */
-    public static boolean hasFestiveWeapon(Player player) {
-        return festiveInstance(player) != null;
     }
 
     /**
      * 强制触发 festive:重复调用神化自己的 {@code FestiveAffix#drops},
      * 一旦掉落集合发生变化就停,并打上 {@code apoth.no_pinata} 防止再次触发。
-     * 返回是否触发成功。
+     * 返回是否触发成功。神化缺失/版本不符时静默返回 false。
      */
     public static boolean forceFestive(Player player, LivingDropsEvent event) {
         LivingEntity victim = event.getEntity();
         if (victim == null || victim.getPersistentData().getBoolean(NO_PINATA)) {
             return false;
         }
-        var instance = festiveInstance(player);
+        Object instance = festiveInstance(player);
         if (instance == null) {
             return false;
         }
         try {
-            var affix = instance.affix().get();
-            if (!(affix instanceof dev.shadowsoffire.apotheosis.adventure.affix.effect.FestiveAffix festive)) {
+            Object holder = instance.getClass().getMethod("affix").invoke(instance);
+            Object affix = holder.getClass().getMethod("get").invoke(holder);
+            if (affix == null) {
                 return false;
             }
+            // 精确查找 drops(LivingDropsEvent) —— 不做 getMethods() 批量扫描
+            java.lang.reflect.Method drops = affix.getClass().getMethod("drops", LivingDropsEvent.class);
             String before = dropsSignature(event);
             for (int i = 0; i < FESTIVE_MAX_TRIES; i++) {
-                festive.drops(event);
+                drops.invoke(affix, event);
                 if (!before.equals(dropsSignature(event))) {
                     victim.getPersistentData().putBoolean(NO_PINATA, true);
-                    DebugLog.info("[SpiritLight] 强制触发战利品大爆发(尝试 {} 次)", i + 1);
+                    DebugLog.debug("[SpiritLight] 强制触发战利品大爆发(尝试 {} 次)", i + 1);
                     return true;
                 }
             }
         }
-        catch (RuntimeException | LinkageError ex) {
-            DebugLog.error("[SpiritLight] 强制触发 festive 失败", ex);
+        catch (Throwable t) {
+            DebugLog.debug("[SpiritLight] 强制触发 festive 失败(神化联动已跳过): {}", t.toString());
         }
         return false;
     }
@@ -377,8 +407,4 @@ public final class SpiritLightHandler {
         return event.getDrops().size() + ":" + hash;
     }
 
-    /** 距离取整(给 HUD/调试用)。 */
-    public static int movedPercent(ItemStack bottle) {
-        return Mth.clamp((int) (movedDistance(bottle) / TRANSFORM_DISTANCE * 100.0D), 0, 100);
-    }
 }

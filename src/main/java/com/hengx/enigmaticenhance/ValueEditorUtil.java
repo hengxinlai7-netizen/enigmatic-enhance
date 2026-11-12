@@ -94,22 +94,6 @@ public final class ValueEditorUtil {
         return removed;
     }
 
-    /** 属性来源说明(简化版:按属性分类给出常见来源)。 */
-    public static Component sourceHint(Attribute attribute) {
-        String path = idOf(attribute).getPath();
-        String key = switch (path) {
-            case "generic.max_health" -> "tooltip.enigmaticenhance.value_editor.source.health";
-            case "generic.armor" -> "tooltip.enigmaticenhance.value_editor.source.armor";
-            case "generic.armor_toughness" -> "tooltip.enigmaticenhance.value_editor.source.toughness";
-            case "generic.attack_damage" -> "tooltip.enigmaticenhance.value_editor.source.attack";
-            case "generic.attack_speed" -> "tooltip.enigmaticenhance.value_editor.source.attack_speed";
-            case "generic.movement_speed" -> "tooltip.enigmaticenhance.value_editor.source.speed";
-            case "generic.luck" -> "tooltip.enigmaticenhance.value_editor.source.luck";
-            default -> "tooltip.enigmaticenhance.value_editor.source.other";
-        };
-        return Component.translatable(key);
-    }
-
     private ValueEditorUtil() {
     }
 }

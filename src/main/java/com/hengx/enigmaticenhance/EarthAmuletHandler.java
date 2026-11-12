@@ -61,9 +61,6 @@ public final class EarthAmuletHandler {
         EntityType.PIGLIN, EntityType.PIGLIN_BRUTE, EntityType.ZOMBIFIED_PIGLIN, EntityType.HOGLIN,
         EntityType.ZOGLIN, EntityType.BLAZE, EntityType.GHAST, EntityType.MAGMA_CUBE, EntityType.WITHER_SKELETON);
 
-    private static final String NETHER_MOBS_TEXT =
-        "piglin/piglin_brute/zombified_piglin/hoglin/zoglin/blaze/ghast/magma_cube/wither_skeleton";
-
     /** 由本模组授予过创造飞行的玩家(取下/死亡/切维度/退游戏时按这个清单回收)。 */
     private static final Set<UUID> FLIGHT_GRANTED = ConcurrentHashMap.newKeySet();
 
@@ -191,19 +188,6 @@ public final class EarthAmuletHandler {
         boolean on = noclipEnabled(player);
         DebugLog.info("{} {} 龙首穿墙开关 -> {}", LOG_TAG, player.getName().getString(), on ? "开" : "关");
         updateNoClip(player, EarthAmuletData.equippedAmulet(player));
-    }
-
-    /** 玩家碰撞箱是否与实心方块相交(用于"别在方块里关穿墙")。 */
-    private static boolean insideSolidBlock(Player player) {
-        try {
-            if (player.level().isClientSide) {
-                return false;
-            }
-            return !player.level().noCollision(player, player.getBoundingBox().deflate(0.01D));
-        }
-        catch (RuntimeException | LinkageError ignored) {
-            return false;
-        }
     }
 
     /** 授予创造飞行(只记录"原本不能飞"的情形)。 */

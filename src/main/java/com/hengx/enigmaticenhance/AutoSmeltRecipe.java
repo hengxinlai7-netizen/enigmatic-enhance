@@ -1,7 +1,5 @@
 package com.hengx.enigmaticenhance;
 
-import net.minecraft.nbt.CompoundTag;
-import net.minecraft.nbt.ListTag;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
@@ -38,22 +36,6 @@ public final class AutoSmeltRecipe {
     /** 附魔的完整 id(enigmaticenhance:auto_smelt),日志与断言用。 */
     public static String enchantmentId() {
         return EnigmaticEnhance.MODID + ":" + ModIds.AUTO_SMELT_PATH;
-    }
-
-    /**
-     * 期望产物:原版附魔书 + {@code StoredEnchantments:[{id:"enigmaticenhance:auto_smelt", lvl:1}]}。
-     * 与 {@link AutoSmeltLoot} 的战利品书、以及 {@code EnchantedBookItem#addEnchantment} 的格式逐字段一致。
-     */
-    public static ItemStack expectedResult() {
-        ItemStack book = new ItemStack(Items.ENCHANTED_BOOK);
-        CompoundTag enchantment = new CompoundTag();
-        enchantment.putString("id", enchantmentId());
-        enchantment.putShort("lvl", (short) 1);
-        ListTag stored = new ListTag();
-        stored.add(enchantment);
-        CompoundTag tag = book.getOrCreateTag();
-        tag.put("StoredEnchantments", stored);
-        return book;
     }
 
     /** 这个堆是不是"我们的自动熔炼附魔书"(物品 + 附魔都对)。 */

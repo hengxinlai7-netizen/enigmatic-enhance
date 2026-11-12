@@ -179,11 +179,6 @@ public final class GluttonyHandler {
         }
     }
 
-    /** 当前是否已经对这名玩家写过锁定量(自检/调试用)。 */
-    public static boolean isLocked(Player player) {
-        return player != null && LOCKED.contains(player.getUUID());
-    }
-
     /**
      * 疲劳结算:每满 4 点疲劳扣 1 点饱和度。原版分支用 {@code > 4.0F},恰好 4.0 时不结算,
      * 这里用 {@code >= 4.0F} 补齐(与 {@code addExhaustion(4f)} 的直觉一致),并且一次结算完所有积压,

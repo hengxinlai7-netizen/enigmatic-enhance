@@ -1,6 +1,6 @@
 {
     "replace": false,
     "values": [
-        "enigmaticenhance:demon_pact"
+        { "id": "enigmaticenhance:demon_pact", "required": false }
     ]
 }

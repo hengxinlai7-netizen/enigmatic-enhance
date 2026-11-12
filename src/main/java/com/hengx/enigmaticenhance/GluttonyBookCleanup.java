@@ -121,17 +121,6 @@ public final class GluttonyBookCleanup {
         }
     }
 
-    /** 死亡或复活后停止驱动。 */
-    public static void stopDriving(Player player) {
-        try {
-            if (player != null) {
-                DRIVING.remove(player.getUUID());
-            }
-        }
-        catch (RuntimeException | LinkageError ignored) {
-            // 忽略
-        }
-    }
     /** 死亡复活:新实体会复制旧实体的持久数据,负上限修饰符必须在这里摘掉。 */
     @SubscribeEvent
     public static void onClone(PlayerEvent.Clone event) {
