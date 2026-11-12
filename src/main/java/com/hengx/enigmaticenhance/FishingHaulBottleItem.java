@@ -14,10 +14,17 @@ import net.minecraft.world.level.Level;
  *
  * <p>来源:大地之瓶 + 海洋之心无序合成。携带/手持时,每点幸运值 +10% 额外钓鱼产物,
  * 超过 100% 允许多次结算;放入古旧书袋时额外 +2 幸运。实际效果见 {@link FishingHaulBottleHandler}。</p>
+ *
+ * <p>4.8.1:书袋里那 +2 现在是**真正的 {@code generic.luck} 属性修饰符**(ADDITION +2,
+ * 固定 UUID,transient 不写存档),不再是只活在一次结算里的局部变量 —— 玩家用
+ * {@code /attribute} 能直接看到 2.0。见 {@link FishingHaulBottleHandler#BAG_LUCK}。</p>
+ *
+ * <p>4.8.0:堆叠上限由 16 改为 <b>1</b>,与其它五种瓶装产物(历史迷雾/灵界之光/冥河之水/
+ * 战争迷雾/太阳/不定之雾/镜中之影)一致。它本身不存内容物,所以改 1 不涉及任何按数量
+ * 分配的 NBT 逻辑:{@link FishingHaulBottleHandler} 只看"有没有",不看 {@code getCount()};
+ * 书袋里一个槽位放一瓶也才是"+2 幸运"的正解。</p>
  */
 public class FishingHaulBottleItem extends Item {
-
-    public static final int STACK_SIZE = 16;
 
     private static final String HEADER_KEY = "tooltip.enigmaticenhance.fishing_haul_bottle.header";
     private static final String LORE_KEY = "tooltip.enigmaticenhance.fishing_haul_bottle.lore";
@@ -25,7 +32,7 @@ public class FishingHaulBottleItem extends Item {
     private static final String STATE_KEY = "tooltip.enigmaticenhance.fishing_haul_bottle.state";
 
     public FishingHaulBottleItem() {
-        super(new Item.Properties().stacksTo(STACK_SIZE));
+        super(new Item.Properties().stacksTo(1));
     }
 
     /**

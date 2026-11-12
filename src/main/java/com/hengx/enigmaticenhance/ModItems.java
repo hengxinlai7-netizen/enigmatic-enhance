@@ -333,6 +333,17 @@ public final class ModItems {
         return SHARPSHOOTER_CHARM.isPresent() ? SHARPSHOOTER_CHARM.get() : null;
     }
 
+    /** 1.7.2:渔获瓶(同上)。 */
+    @Nullable
+    public static Item fishingHaulBottleOrNull() {
+        try {
+            return FISHING_HAUL_BOTTLE.isPresent() ? FISHING_HAUL_BOTTLE.get() : null;
+        }
+        catch (Throwable t) {
+            return null;
+        }
+    }
+
     /** 1.2.11c:这些物品应当能放进古旧书袋(标签被别的模组覆盖时的兜底)。 */
     public static boolean isBookBagItem(Item item) {
         if (item == null) {
@@ -345,7 +356,8 @@ public final class ModItems {
             || item == warFogOrNull()
             || item == sunBottleOrNull()
             || item == uncertainFogOrNull()
-            || item == mirrorShadowOrNull();
+            || item == mirrorShadowOrNull()
+            || item == fishingHaulBottleOrNull();
     }
 
     /** 2.6.1:复苏之叶术石(缺失返回 null)。 */

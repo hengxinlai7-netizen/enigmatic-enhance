@@ -8,6 +8,7 @@
         { "id": "enigmaticenhance:war_fog", "required": false },
         { "id": "enigmaticenhance:bottled_sun", "required": false },
         { "id": "enigmaticenhance:uncertain_fog", "required": false },
-        { "id": "enigmaticenhance:mirror_shadow", "required": false }
+        { "id": "enigmaticenhance:mirror_shadow", "required": false },
+        { "id": "enigmaticenhance:fishing_haul_bottle", "required": false }
     ]
 }

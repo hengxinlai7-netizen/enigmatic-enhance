@@ -44,9 +44,11 @@ final class BottleChainSelfTest {
         boolean t52 = testUnbreakableEnchantment();
         boolean t53 = testFogAndMirror(level, player);
         boolean t54 = testFogBlocksTeleport(level, player);
+        boolean t55 = testFishingHaulBottle();
+        boolean t56 = testFishingBagLuck(player);
         log(TAG + " 小结 T44(灵界之光)=" + t44 + " T45(冥河之水)=" + t45 + " T46(战争迷雾)=" + t46
-            + " T48(书袋HUD+JEI)=" + t48 + " T49(经验/命中盒/暴食锁)=" + t49 + " T50(新附魔)=" + t50 + " T51(虚空无视限伤)=" + t51 + " T52(无法破坏)=" + t52 + " T53(不定之雾/镜影)=" + t53 + " T54(禁瞬移)=" + t54 + " => " + (t44 && t45 && t46 && t47 && t48 && t49 && t50 && t51 && t52 && t53 && t54 ? "PASS" : "FAIL"));
-        return t44 && t45 && t46 && t47 && t48 && t49 && t50 && t51 && t52 && t53 && t54;
+            + " T48(书袋HUD+JEI)=" + t48 + " T49(经验/命中盒/暴食锁)=" + t49 + " T50(新附魔)=" + t50 + " T51(虚空无视限伤)=" + t51 + " T52(无法破坏)=" + t52 + " T53(不定之雾/镜影)=" + t53 + " T54(禁瞬移)=" + t54 + " T55(渔获瓶)=" + t55 + " T56(书袋+2幸运)=" + t56 + " => " + (t44 && t45 && t46 && t47 && t48 && t49 && t50 && t51 && t52 && t53 && t54 && t55 && t56 ? "PASS" : "FAIL"));
+        return t44 && t45 && t46 && t47 && t48 && t49 && t50 && t51 && t52 && t53 && t54 && t55 && t56;
     }
 
     // ------------------------------------------------------------------ T44
@@ -601,6 +603,146 @@ final class BottleChainSelfTest {
             + "持有判定=" + carried + "[应 true];拿走=" + notCarried + "[应 true]");
         check("T54", ok);
         return ok;
+    }
+
+
+    /** 4.8.0:渔获瓶必须「不可堆叠 + 在 minecraft:bookshelf_books 里」,否则放不进古旧书袋。 */
+    private static boolean testFishingHaulBottle() {
+        Item fishing = ModItems.fishingHaulBottleOrNull();
+        if (fishing == null) {
+            log(TAG + " T55 渔获瓶缺失");
+            check("T55", false);
+            return false;
+        }
+        ItemStack stack = new ItemStack(fishing);
+        // AntiqueBag.isBook() 认的就是这个标签(与其它五个瓶子同一条通路)
+        boolean tag = stack.is(net.minecraft.tags.ItemTags.BOOKSHELF_BOOKS);
+        // 标签被整合包覆盖时,AntiqueBagIsBookMixin 走的本模组兜底名单
+        boolean fallback = ModItems.isBookBagItem(fishing);
+        boolean single = stack.getMaxStackSize() == 1;
+        boolean model = resource("assets/enigmaticenhance/models/item/fishing_haul_bottle.json");
+        boolean texture = resource("assets/enigmaticenhance/textures/item/fishing_haul_bottle.png");
+        log(TAG + " T55 书袋标签=" + tag + "[应 true];兜底名单=" + fallback + "[应 true];"
+            + "堆叠=" + stack.getMaxStackSize() + "[应 1];模型=" + model + " 材质=" + texture);
+        boolean ok = tag && fallback && single && model && texture;
+        check("T55", ok);
+        return ok;
+    }
+
+
+    /**
+     * 4.8.1:书袋里的渔获瓶必须给出<b>真实的</b> {@code generic.luck} +2。
+     *
+     * <p>用户实测「幸运加成没生效」时贴的输出就是 {@code 幸运值 = 0.0} —— 原来那 +2 只加在
+     * {@code onFished} 的局部变量里,属性上永远是 0。这里断言四件事:</p>
+     * <ol>
+     *   <li>瓶子进书袋 ⇒ 幸运 +2 且修饰符(UUID)在;</li>
+     *   <li>再调一次不会叠加成 +4(幂等);</li>
+     *   <li>瓶子拿走后 ⇒ 幸运回到原值(修饰符撤掉);</li>
+     *   <li>全程不依赖任何外部模组,缺扩展时跳过。</li>
+     * </ol>
+     *
+     * <p>{@code FakePlayer} 不会被 {@code PlayerTickEvent} 驱动,所以这里直接调
+     * {@link FishingHaulBottleHandler#maintainBagLuck(Player)}(tick 里走的就是它)。</p>
+     */
+    private static boolean testFishingBagLuck(Player player) {
+        Item fishing = ModItems.fishingHaulBottleOrNull();
+        Item bag = RingConfig.antiqueBagItem();
+        if (fishing == null) {
+            log(TAG + " T56 渔获瓶缺失");
+            check("T56", false);
+            return false;
+        }
+        if (bag == null || player.getAttribute(net.minecraft.world.entity.ai.attributes.Attributes.LUCK) == null) {
+            log(TAG + " T56 书袋/幸运属性缺失(未装扩展),跳过");
+            check("T56", true);
+            return true;
+        }
+        double before = player.getAttributeValue(net.minecraft.world.entity.ai.attributes.Attributes.LUCK);
+        boolean injected = putInBag(player, bag, fishing);
+        boolean added = FishingHaulBottleHandler.maintainBagLuck(player);
+        double inBag = player.getAttributeValue(net.minecraft.world.entity.ai.attributes.Attributes.LUCK);
+        boolean hasModifier = player.getAttribute(net.minecraft.world.entity.ai.attributes.Attributes.LUCK)
+            .getModifier(FishingHaulBottleHandler.LUCK_MODIFIER_ID) != null;
+        // 幂等:再算一次不能变成 +4
+        FishingHaulBottleHandler.maintainBagLuck(player);
+        double twice = player.getAttributeValue(net.minecraft.world.entity.ai.attributes.Attributes.LUCK);
+        // 拿出书袋 ⇒ 立刻撤回
+        boolean emptied = bagSetBook(player, bag, null);
+        FishingHaulBottleHandler.maintainBagLuck(player);
+        double after = player.getAttributeValue(net.minecraft.world.entity.ai.attributes.Attributes.LUCK);
+        boolean modifierGone = player.getAttribute(net.minecraft.world.entity.ai.attributes.Attributes.LUCK)
+            .getModifier(FishingHaulBottleHandler.LUCK_MODIFIER_ID) == null;
+        removeBagItem(player, bag);
+        boolean ok = injected && added && hasModifier && emptied && modifierGone
+            && Math.abs(inBag - before - FishingHaulBottleHandler.BAG_LUCK) < 1.0E-6D
+            && Math.abs(twice - inBag) < 1.0E-6D
+            && Math.abs(after - before) < 1.0E-6D;
+        log(TAG + " T56 书袋内幸运=" + inBag + "[应 " + (before + FishingHaulBottleHandler.BAG_LUCK)
+            + "];再算一次=" + twice + "[应不变];取出后=" + after + "[应回 " + before
+            + "];修饰符在=" + hasModifier + "[应 true];取出后修饰符=" + (!modifierGone ? "还在" : "已撤")
+            + "[应已撤]");
+        check("T56", ok);
+        return ok;
+    }
+
+    /** 把 {@code book} 放进玩家的书袋槽 0(书袋物品没有就先进背包)。反射,缺扩展时 false。 */
+    private static boolean putInBag(Player player, Item bag, Item book) {
+        if (!bagSetBook(player, bag, book)) {
+            return false;
+        }
+        return !BookBag.findBook(player, new ResourceLocation(EnigmaticEnhance.MODID,
+            ModIds.FISHING_HAUL_BOTTLE_PATH)).isEmpty();
+    }
+
+    /** 反射写书袋槽 0({@code book == null} 表示清空);顺带保证书袋物品在背包里。 */
+    private static boolean bagSetBook(Player player, Item bag, Item book) {
+        try {
+            boolean have = false;
+            for (int i = 0; i < player.getInventory().getContainerSize(); i++) {
+                if (player.getInventory().getItem(i).getItem() == bag) {
+                    have = true;
+                    break;
+                }
+            }
+            if (!have) {
+                player.getInventory().add(new ItemStack(bag));
+            }
+            Class<?> capClass = Class.forName(
+                "auviotre.enigmatic.addon.contents.objects.bookbag.AntiqueBagCapability");
+            Object capability = capClass.getField("INVENTORY").get(null);
+            Object lazy = player.getCapability((net.minecraftforge.common.capabilities.Capability) capability);
+            if (!(lazy instanceof net.minecraftforge.common.util.LazyOptional<?> optional)) {
+                return false;
+            }
+            Object handler = optional.resolve().orElse(null);
+            if (handler == null) {
+                return false;
+            }
+            Class<?> iface = Class.forName(
+                "auviotre.enigmatic.addon.contents.objects.bookbag.IAntiqueBagHandler");
+            iface.getMethod("setBook", int.class, ItemStack.class)
+                .invoke(handler, 0, book == null ? ItemStack.EMPTY : new ItemStack(book));
+            return true;
+        }
+        catch (Throwable t) {
+            log(TAG + " T56 构造书袋内容异常: " + t);
+            return false;
+        }
+    }
+
+    /** 清掉测试留下的书袋物品,免得影响后面的用例。 */
+    private static void removeBagItem(Player player, Item bag) {
+        try {
+            for (int i = 0; i < player.getInventory().getContainerSize(); i++) {
+                if (player.getInventory().getItem(i).getItem() == bag) {
+                    player.getInventory().setItem(i, ItemStack.EMPTY);
+                }
+            }
+        }
+        catch (RuntimeException ignored) {
+            // 清理失败不影响用例结论
+        }
     }
 
 
