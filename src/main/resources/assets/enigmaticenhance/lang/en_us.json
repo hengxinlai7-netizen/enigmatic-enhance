@@ -254,6 +254,6 @@
   "tooltip.enigmaticenhance.sea_of_consciousness.header": "§7While held:",
   "tooltip.enigmaticenhance.sea_of_consciousness.line1": "§8· You cannot deal any damage",
   "tooltip.enigmaticenhance.sea_of_consciousness.line2": "§8· Creatures without aggro on you actively move away",
-  "tooltip.enigmaticenhance.war_banner.lore": "§7· A heavy banner; planting it is a declaration.",
-  "tooltip.enigmaticenhance.war_banner.effect": "§e· While placed, buffs nearby players."
+  "tooltip.enigmaticenhance.war_banner.lore": "§7· A heavy banner; planting it declares war on everything around it.",
+  "tooltip.enigmaticenhance.war_banner.effect": "§c· While placed, every 3 seconds it afflicts every creature within 12 blocks — you included — with Blood Calamity: armor reduced to zero, health cannot regenerate, and each harmful effect you carry adds 10% damage taken."
 }

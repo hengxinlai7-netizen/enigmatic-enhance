@@ -26,18 +26,24 @@ import net.minecraft.world.phys.shapes.VoxelShape;
  *
  * <p>功能:每 3 秒(60 tick)对半径 12 格球体内所有实体(含玩家)施加 5 秒血色之灾;
  * 无碰撞体积;硬度 1.0F、木质音效、斧类工具可采集。</p>
+ *
+ * <p><b>这是负面效果</b>({@link BloodCalamityEffect}:护甲清零、无法回血、每层负面 +10% 受伤),
+ * 所以物品说明必须按「减益」措辞 —— 本次修订之前写成了"为周围的玩家提供加成",与代码实际行为相反。</p>
  */
 public class WarBannerBlock extends Block {
 
     /**
      * 4.6.2(内存):2 行 tooltip 全是常量 ⇒ 只建一次,不再每帧重建(理由见 {@link DemonHandBoneItem})。
+     * <p>
+     * 4.7.0 修订:第二行改为 <b>红色</b> —— 它施加的是负面效果(血色之灾),不是加成。
+     * 文案里的「3 秒 / 12 格」必须与 {@link #APPLY_INTERVAL}、{@link #RADIUS} 保持一致。
      */
     private static final net.minecraft.network.chat.Component TOOLTIP_LORE =
         net.minecraft.network.chat.Component.translatable("tooltip.enigmaticenhance.war_banner.lore")
             .withStyle(net.minecraft.ChatFormatting.GRAY);
     private static final net.minecraft.network.chat.Component TOOLTIP_EFFECT =
         net.minecraft.network.chat.Component.translatable("tooltip.enigmaticenhance.war_banner.effect")
-            .withStyle(net.minecraft.ChatFormatting.YELLOW);
+            .withStyle(net.minecraft.ChatFormatting.RED);
 
     /** 4.3.3:物品栏里的说明(用户要求加在物品描述里)。 */
     @Override

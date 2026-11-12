@@ -95,6 +95,10 @@ public class EnigmaticEnhance {
         // 1.2.6c:瓶装战争迷雾(击杀 50 只转化 + 无差别仇恨)
         safeRegister(WarFogHandler.class);
             safeRegister(new CurioCompat());
+        // 4.7.0 修订:内置注册 head/hands 槽位 —— 模组总线发 IMC(InterModEnqueueEvent),
+        //             Forge 总线做启动自检(ServerStartedEvent 检查玩家身上是否真有这两个槽)
+        safeRegisterOn(modBus, CuriosSlots.IMC.class);
+        safeRegister(CuriosSlots.class);
         // 1.2.6d:瓶装太阳(金块+正午转化 / 亡灵增伤 / 饱和与生命回复)
         safeRegister(SunBottleHandler.class);
         }

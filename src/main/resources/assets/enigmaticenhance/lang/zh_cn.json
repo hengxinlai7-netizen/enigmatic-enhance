@@ -262,6 +262,6 @@
   "tooltip.enigmaticenhance.sea_of_consciousness.header": "§7手持时生效：",
   "tooltip.enigmaticenhance.sea_of_consciousness.line1": "§8· 你无法造成任何伤害",
   "tooltip.enigmaticenhance.sea_of_consciousness.line2": "§8· 对你没有仇恨的生物会主动远离你",
-  "tooltip.enigmaticenhance.war_banner.lore": "§7· 一面沉重的战旗，插下去就是宣言。",
-  "tooltip.enigmaticenhance.war_banner.effect": "§e· 插在地上时为周围的玩家提供加成。"
+  "tooltip.enigmaticenhance.war_banner.lore": "§7· 一面沉重的战旗，插下去就是对所有人的宣战。",
+  "tooltip.enigmaticenhance.war_banner.effect": "§c· 插在地上时，每 3 秒给周围 12 格内的所有生物（包括你自己）施加【血色之灾】：护甲清零、无法回血，且身上每有 1 个负面效果就多受 10% 伤害。"
 }
