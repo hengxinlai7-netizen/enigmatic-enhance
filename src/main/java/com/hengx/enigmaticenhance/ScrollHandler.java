@@ -120,24 +120,48 @@ public final class ScrollHandler {
     // ------------------------------------------------------------------ 雷击累积判定
 
     /**
-     * 一次"攻击命中"是否允许给目标累积雷击电荷。
-     * true = 按原版累积(总开关关掉 / 与本功能无关时一律 true,保证原行为不变)。
+     * 4.8.2:两个全局开关(总开关 + 雷击子开关)是否都开着。
+     *
+     * <p>这是<b>所有</b>「加电荷 / 落雷」路径的第一道闸 —— 只要有一处没走它,
+     * 就会出现「关掉雷击还能打出来」。读配置失败按"关"处理,绝不放行。</p>
      */
-    public static boolean allowLightningCharge(LivingEntity attacker) {
-        if (!RingConfig.scaleEnabled()) {
-            return false; // 总开关关:雷击不生效(用户口径)
+    public static boolean lightningSwitchesOn() {
+        try {
+            return RingConfig.scaleEnabled() && RingConfig.scaleLightningEnabled();
         }
-        if (!RingConfig.scaleLightningEnabled()) {
-            return false; // 雷击子效果被关掉
-        }
-        if (attacker == null) {
+        catch (RuntimeException | LinkageError e) {
             return false;
         }
-        ItemStack scroll = Superposition.getCurioStack(attacker, RingConfig.thunderScrollItem());
-        if (scroll.isEmpty()) {
-            return true; // 攻击者没戴卷轴:不是本功能管的范围
+    }
+
+    /**
+     * 4.8.2:统一闸门 —— 总开关 + 雷击子开关 + 该实体身上那枚卷轴的逐件开关(Ctrl+左键)。
+     *
+     * <p>没戴卷轴时只受两个全局开关约束(扩展那边本来也只在"攻击者戴着卷轴"时才累积电荷)。
+     * 任何要写 {@code Electric} 或要落雷的地方都必须先过这一关。</p>
+     */
+    public static boolean lightningAllowed(LivingEntity entity) {
+        if (!lightningSwitchesOn()) {
+            return false;
         }
-        return !isLightningDisabled(scroll) && rollLightningChance();
+        if (entity == null) {
+            return false;
+        }
+        ItemStack scroll = Superposition.getCurioStack(entity, RingConfig.thunderScrollItem());
+        return scroll.isEmpty() || !isLightningDisabled(scroll);
+    }
+
+    /**
+     * 一次"攻击命中"是否允许给目标累积雷击电荷。
+     * true = 按原版累积(总开关关掉 / 雷击关掉时一律 false)。
+     */
+    public static boolean allowLightningCharge(LivingEntity attacker) {
+        // 4.8.2:先过统一闸门(总开关 + 雷击子开关 + 逐件开关),再看概率。
+        // 以前这里在"取不到饰品栏里的卷轴"时会返回 true(放行),那等于开关全失效,已修掉。
+        if (!lightningAllowed(attacker)) {
+            return false;
+        }
+        return rollLightningChance();
     }
 
     /** 概率判定(百分比,100 = 必定)。电荷累积的两条路径共用同一套判定。 */
@@ -161,11 +185,17 @@ public final class ScrollHandler {
     }
 
     /**
-     * 1.1.14:该玩家此刻是否处于"雷击电荷应当扩散"的状态 —— 总开关 + 雷击子开关 + 电荷扩散开关 +
-     * 佩戴卷轴 + 该卷轴的雷击没被 Ctrl+左键 关掉(概率判定由调用处按目标逐个执行)。
+     * 1.1.14:该玩家此刻是否处于"雷击电荷应当扩散"的状态 —— 电荷扩散开关 + 统一闸门
+     * (总开关 + 雷击子开关 + 该卷轴的逐件开关)+ 佩戴卷轴(概率判定由调用处按目标逐个执行)。
+     *
+     * <p>4.8.2:统一闸门改成调用 {@link #lightningAllowed} —— 扩散这条路径以前只靠自己拼
+     * {@code scaleChargeSpread()},和"累积电荷"那条路径口径不一致,是最容易漏开关的地方。</p>
      */
     public static ItemStack lightningActiveScroll(Player player) {
         if (player == null || !RingConfig.scaleChargeSpread()) {
+            return ItemStack.EMPTY;
+        }
+        if (!lightningAllowed(player)) {
             return ItemStack.EMPTY;
         }
         ItemStack scroll = Superposition.getCurioStack(player, RingConfig.thunderScrollItem());

@@ -296,11 +296,15 @@ public final class RingConfig {
 
         builder.comment("战利品保底 / 灌注联动").push("lootGuarantee");
         HELL_BLADE_GUARANTEED = builder
-            .comment("战利品表里含「地狱刃片护符」时,每名玩家首次开箱必得一份。默认开启。")
+            .comment("给下界地牢箱子追加一个「地狱刃片护符」池子。默认开启。",
+                "4.8.2:严格保持神秘遗物扩展「每名玩家一辈子只有一枚」的设定 ——",
+                "判定用的是扩展自己的 LootedHellCharm 标记,所以两边共用同一条唯一性。",
+                "关闭 = 本模组完全不介入,刃片回到扩展原本的「1/3 概率把大地之心碎片换成刃片」。")
             .define("hellBladeGuaranteed", true);
         HELL_BLADE_CHANCE = builder
             .comment("4.0.1:地狱刃片在【每个】下界地牢箱子里的出现概率(0~1)。",
-                "一个堡垒遗迹有多张表、几十个箱子,设成 1.0 会一次刷出十几个。",
+                "4.8.2:这名玩家一旦拿到过一枚,后面的箱子就不再产出。",
+                "一个堡垒遗迹有多张表、几十个箱子,设成 1.0 只是「第一个箱子必出」。",
                 "默认 0.15(15%)。想要每箱必出就设 1.0。")
             .defineInRange("hellBladeChance", 0.15D, 0.0D, 1.0D);
         PEARL_INFUSION_ENABLED = builder

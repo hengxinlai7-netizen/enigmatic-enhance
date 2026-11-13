@@ -69,4 +69,33 @@ public class AddonThunderLightningMixin {
         }
         tag.putInt(key, value);
     }
+
+    /**
+     * 4.8.2:关掉雷击后,**连残留电荷触发的落雷也不许生成**。
+     *
+     * <p>扩展在 {@code onTick} 里读到 {@code Electric} 超过阈值就 {@code level.addFreshEntity(雷电)}
+     * (带 {@code HarmlessThunder} 标签、伤害 600)。只"不再累积"是不够的:目标身上原本就攒着的电荷
+     * 会在下一 tick 直接劈出来 —— 这正是用户看到的「开关关了还在打雷」。
+     * {@link com.hengx.enigmaticenhance.ThunderChargeGuard} 会清残留电荷,但它 20 tick 才跑一次,
+     * 挡不住"关掉开关的下一 tick";所以这里在真正落雷那一刻再拦一次。</p>
+     *
+     * <p>{@code require = 0}:万一扩展换了实现、这里匹配不到调用点,只留一条警告、不会让游戏崩;
+     * 兜底还有 {@code ThunderChargeGuard} 的清电荷。</p>
+     */
+    @Redirect(method = "onTick(Lnet/minecraftforge/event/entity/living/LivingEvent$LivingTickEvent;)V",
+        at = @At(value = "INVOKE",
+            target = "Lnet/minecraft/world/level/Level;m_7967_(Lnet/minecraft/world/entity/Entity;)Z"),
+        require = 0, remap = false)
+    private boolean enigmaticenhance$gateThunderBolt(net.minecraft.world.level.Level level,
+        net.minecraft.world.entity.Entity entity) {
+        if (entity instanceof net.minecraft.world.entity.LightningBolt bolt
+            && bolt.getTags().contains("HarmlessThunder")
+            && !ScrollHandler.lightningSwitchesOn()) {
+            if (RingConfig.debugLog()) {
+                DebugLog.info("[卷轴雷击] 雷击已关闭,拦截一次残留电荷落雷");
+            }
+            return false;
+        }
+        return level.addFreshEntity(entity);
+    }
 }
