@@ -179,6 +179,10 @@ public class EnigmaticEnhance {
             else if (selftest.contains("ring")) {
                 RingSelfTest.register();
             }
+            else if (selftest.contains("hellblade")) {
+                // 4.8.2:【地狱刃片唯一性】+【万钧之护雷击开关】的模拟验证(见 HellBladeThunderSelfTest)
+                HellBladeThunderSelfTest.register();
+            }
             else {
                 FlowerSelfTest.register();
             }

@@ -96,16 +96,26 @@ public final class BastionTreasureHandler {
                 return;
             }
 
+            // 4.8.2:抽之前记一下地狱刃片的一次性标记有没有打过 ——
+            // 刃片是「生成即消耗唯一性」的,如果最后箱子塞不下,要把标记退回去。
+            boolean hadHellBladeMark = HellBladeLootHandler.hasLooted(player);
+
             // 抽一次藏宝室表
             List<ItemStack> drops = roll(serverLevel, pos, player, held);
             if (drops.isEmpty()) {
                 DebugLog.warn("[Bastion] 藏宝室表没有产出,跳过");
+                if (!hadHellBladeMark) {
+                    HellBladeLootHandler.revokeLooted(player);
+                }
                 return;
             }
 
             // 塞进箱子
             int added = insert(serverLevel, pos, player, drops);
             if (added <= 0) {
+                if (!hadHellBladeMark) {
+                    HellBladeLootHandler.revokeLooted(player);
+                }
                 player.displayClientMessage(
                     net.minecraft.network.chat.Component.literal("§c箱子里没有空间，未消耗扭曲之心"), true);
                 return;
