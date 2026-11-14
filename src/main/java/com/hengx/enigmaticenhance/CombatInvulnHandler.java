@@ -84,6 +84,11 @@ public final class CombatInvulnHandler {
         if (entity == null || entity.level().isClientSide) {
             return false;
         }
+        // 4.8.3:执行之手自带 bypasses_cooldown / bypasses_invulnerability,
+        // 本模组自己的战斗无敌帧也不能吃它(否则"全额"会被我们自己拦掉)
+        if (ExecutionDamage.isExecution(source)) {
+            return false;
+        }
         if (!RingConfig.combatInvulnEnabled()) {
             return false;
         }

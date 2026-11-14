@@ -20,7 +20,6 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.entity.projectile.FishingHook;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
-import net.minecraft.world.phys.Vec3;
 import net.minecraftforge.event.TickEvent;
 import net.minecraftforge.event.entity.EntityJoinLevelEvent;
 import net.minecraftforge.event.entity.player.ItemFishedEvent;
@@ -55,7 +54,11 @@ import net.minecraftforge.registries.ForgeRegistries;
  * 而原版 {@code FishingHook.retrieve} 与 Aquaculture 的 {@code spawnLoot} 在 post 之后
  * <b>仍然用它们自己那份 list</b> 生成物品。也就是说 <b>往 {@code event.getDrops()} 里 add
  * 是彻底无效的</b> —— 旧实现(1.7.2~4.8.1)正是这么写的,所以"1024 幸运还是一条鱼"。
- * 现在事件通道改成"自己发鱼"(背包优先,满了掉脚下),不再指望任何鱼竿消费我们改过的列表。</p>
+ * 现在事件通道改成"自己发鱼",不再指望任何鱼竿消费我们改过的列表。</p>
+ *
+ * <p><b>4.8.3(用户要求):多出来的渔获不再直接塞进背包</b>,而是像正常钓上来一样
+ * 在<b>玩家脚下</b>生成 {@link ItemEntity}(带一点随机速度、10 tick 拾取延迟),
+ * 玩家看得见、捡得到,也仍然遵守"背包满就留在地上"的常识。见 {@link #dropCatch}。</p>
  *
  * <p><b>两条线不会重复乘:</b>事件通道命中后会记一次 {@link #HANDLED_TICK}(同一 tick),
  * 生成通道看到这个记录就直接跳过 —— 所以一竿只会被乘一次,不会 4 倍。</p>
@@ -240,8 +243,8 @@ public final class FishingHaulBottleHandler {
      * 去生成物品实体,不读 {@code event.getDrops()}。所以以前"往事件里塞 102 条鱼"一条都出不来 ——
      * 这正是用户"给了 1024 幸运还是一条鱼"的真实原因(比"事件没收到"更根本)。</p>
      *
-     * <p>因此这里改成:读事件里的产出 → 自己把多出来的鱼<b>直接给玩家</b>
-     * (背包放得下就进背包,放不下就掉在脚下)。不依赖任何鱼竿是否消费我们改过的列表。</p>
+     * <p>因此这里改成:读事件里的产出 → 自己把多出来的鱼<b>掉在玩家脚下</b>
+     * (4.8.3 起不再直接进背包,见 {@link #dropCatch})。不依赖任何鱼竿是否消费我们改过的列表。</p>
      */
     @SubscribeEvent
     public static void onFished(ItemFishedEvent event) {
@@ -266,8 +269,9 @@ public final class FishingHaulBottleHandler {
                 for (int i = 0; i < extra; i++) {
                     for (ItemStack s : caught) {
                         if (!s.isEmpty() && s.is(ItemTags.FISHES)) {
-                            give(p, s.copy());
-                            given++;
+                            if (dropCatch(p, s)) {
+                                given++;
+                            }
                         }
                     }
                 }
@@ -327,13 +331,14 @@ public final class FishingHaulBottleHandler {
             }
             diagSpawn(owner, stack, carried, inBag, mult, extra);
             // 不在"实体加入世界"的回调里再塞实体:推到本 tick 末尾执行
-            final double x = item.getX();
-            final double y = item.getY();
-            final double z = item.getZ();
-            final Vec3 motion = item.getDeltaMovement();
+            // 4.8.3:坐标用**玩家**的 —— 鱼实体虽然出现在浮标位置,但浮标随时可能被收回/消失,
+            //        玩家位置一定是有效且"该把渔获给他"的位置。
+            final double x = owner.getX();
+            final double y = owner.getY();
+            final double z = owner.getZ();
             final ItemStack template = stack.copy();
             final int count = extra;
-            level.getServer().execute(() -> spawnCopies(level, x, y, z, motion, template, count));
+            level.getServer().execute(() -> spawnCopies(level, x, y, z, template, count));
         }
         catch (RuntimeException | LinkageError ignored) {
             // 忽略
@@ -348,31 +353,75 @@ public final class FishingHaulBottleHandler {
      *
      * @return 实际生成份数
      */
-    static int spawnCopies(ServerLevel level, double x, double y, double z, Vec3 motion,
-                           ItemStack template, int count) {
+    static int spawnCopies(ServerLevel level, double x, double y, double z, ItemStack template, int count) {
         if (level == null || template == null || template.isEmpty() || count <= 0) {
             return 0;
         }
+        boolean previous = spawningCopy;
         spawningCopy = true;
         int made = 0;
         try {
             RandomSource random = level.getRandom();
-            Vec3 base = motion == null ? Vec3.ZERO : motion;
             for (int i = 0; i < count; i++) {
-                ItemEntity copy = new ItemEntity(level, x, y + 0.15D, z, template.copy());
-                copy.setDeltaMovement(
-                    base.x + (random.nextDouble() - 0.5D) * 0.1D,
-                    base.y + random.nextDouble() * 0.1D + 0.05D,
-                    base.z + (random.nextDouble() - 0.5D) * 0.1D);
-                if (level.addFreshEntity(copy)) {
+                if (dropCatch(level, x, y, z, template, random)) {
                     made++;
                 }
             }
         }
         finally {
-            spawningCopy = false;
+            spawningCopy = previous;
         }
         return made;
+    }
+
+    /**
+     * 4.8.3:把多出来的一份渔获<b>像正常钓上来一样</b>掉在玩家脚下。
+     *
+     * <p>为什么不再 {@code inventory.add()}:用户要的是"看得见的正常掉落物"。
+     * 位置用玩家坐标(<b>不是浮标坐标</b> —— 浮标这时可能已经消失/被收回);
+     * 给一点随机横向速度让几条鱼散开;{@code setPickUpDelay(10)} 让它先弹一下,
+     * 不会生成当帧就被吸进背包。</p>
+     *
+     * <p>背包满/不满都走这条路,所以"背包满了就掉地上"这条行为天然保留。</p>
+     *
+     * @return 是否真的加进了世界
+     */
+    static boolean dropCatch(Player p, ItemStack stack) {
+        if (p == null || stack == null || stack.isEmpty() || p.level().isClientSide) {
+            return false;
+        }
+        return dropCatch(p.level(), p.getX(), p.getY(), p.getZ(), stack, p.level().getRandom());
+    }
+
+    /** 坐标化版本(生成通道用玩家坐标,不依赖任何实体是否还在)。 */
+    private static boolean dropCatch(Level level, double x, double y, double z, ItemStack stack,
+                                     RandomSource random) {
+        if (level == null || stack == null || stack.isEmpty()) {
+            return false;
+        }
+        // 重入闸:addFreshEntity 会同步派发 EntityJoinLevelEvent(生成通道的入口),
+        // 不压住的话我们刚掉的这一条会被当成"新钓上来的鱼"再乘一次 ⇒ 指数级刷鱼。
+        boolean previous = spawningCopy;
+        spawningCopy = true;
+        try {
+            ItemEntity drop = new ItemEntity(level, x, y + 0.5D, z, stack.copy());
+            drop.setDeltaMovement(
+                (random.nextDouble() - 0.5D) * 0.1D,
+                0.2D,
+                (random.nextDouble() - 0.5D) * 0.1D);
+            drop.setPickUpDelay(10);   // 短暂延迟,避免和玩家碰撞后立刻被吸走
+            if (level.addFreshEntity(drop)) {
+                DROPPED_CATCH++;
+                return true;
+            }
+        }
+        catch (RuntimeException | LinkageError ignored) {
+            // 生成失败不影响本竿原本的渔获
+        }
+        finally {
+            spawningCopy = previous;
+        }
+        return false;
     }
 
     /**
@@ -444,19 +493,8 @@ public final class FishingHaulBottleHandler {
 
     // ------------------------------------------------------------------ 防重复 / 诊断
 
-    /** 自检用计数:背包放不下、改成"掉在脚下"的份数(4.8.2)。 */
-    static int GIVE_DROPPED;
-
-    /** 把多出来的一份渔获给玩家:背包放得下就进背包,放不下就掉在脚下。 */
-    private static void give(Player p, ItemStack stack) {
-        if (stack.isEmpty()) {
-            return;
-        }
-        if (!p.getInventory().add(stack)) {
-            GIVE_DROPPED++;
-            p.drop(stack, false);
-        }
-    }
+    /** 自检用计数:4.8.3 起"额外渔获"全部以掉落物形式出现的份数(以前是"背包满才掉"的份数)。 */
+    static int DROPPED_CATCH;
 
     private static void markHandled(Player p) {
         if (HANDLED_TICK.size() > 64) {
