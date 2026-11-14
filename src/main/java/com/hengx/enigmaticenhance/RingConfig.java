@@ -124,6 +124,10 @@ public final class RingConfig {
     public static final ForgeConfigSpec.BooleanValue SPIRIT_LIGHT_ENABLED;
     public static final ForgeConfigSpec.BooleanValue STYX_WATER_ENABLED;
     public static final ForgeConfigSpec.BooleanValue FISHING_HAUL_ENABLED;
+    /** 4.8.2:携带渔获瓶时的渔获倍数(总量倍数,1.0 = 不增加)。 */
+    public static final ForgeConfigSpec.DoubleValue FISHING_HAUL_CATCH_MULTIPLIER;
+    /** 4.8.2:渔获瓶放进古旧书袋时的额外倍数(与上一项叠乘)。 */
+    public static final ForgeConfigSpec.DoubleValue FISHING_HAUL_BAG_MULTIPLIER;
     public static final ForgeConfigSpec.BooleanValue EVIL_ESSENCE_ENABLED;
     public static final ForgeConfigSpec.BooleanValue UNBREAKABLE_ENCHANT_ENABLED;
     public static final ForgeConfigSpec.BooleanValue ELEMENTAL_MAGIC_ENABLED;
@@ -390,8 +394,14 @@ public final class RingConfig {
             .comment("瓶装冥河之水(图腾转化 + 免死一次)。默认开启。")
             .define("styxWaterEnabled", true);
         FISHING_HAUL_ENABLED = builder
-            .comment("渔获瓶(按幸运值提升钓鱼产出)。默认开启。")
+            .comment("渔获瓶(携带/书袋中的渔获倍数与书袋幸运加成)。默认开启。")
             .define("fishingHaulEnabled", true);
+        FISHING_HAUL_CATCH_MULTIPLIER = builder
+            .comment("渔获瓶:携带时(背包/主手/副手)的渔获倍数,1.0 = 不增加。默认 2.0(两条鱼)。")
+            .defineInRange("fishingHaulCatchMultiplier", 2.0D, 1.0D, 16.0D);
+        FISHING_HAUL_BAG_MULTIPLIER = builder
+            .comment("渔获瓶:放进古旧书袋时的额外倍数(与上一项叠乘)。默认 1.5(共三条鱼)。")
+            .defineInRange("fishingHaulBagMultiplier", 1.5D, 1.0D, 16.0D);
         EVIL_ESSENCE_ENABLED = builder
             .comment("邪恶精髓复制。默认开启。")
             .define("evilEssenceEnabled", true);
@@ -1004,6 +1014,16 @@ public final class RingConfig {
 
     public static boolean fishingHaulEnabled() {
         try { return FISHING_HAUL_ENABLED.get(); } catch (RuntimeException | LinkageError e) { return true; }
+    }
+
+    /** 4.8.2:携带渔获瓶时的渔获倍数(读不到配置时退回 2.0)。 */
+    public static double fishingHaulCatchMultiplier() {
+        try { return FISHING_HAUL_CATCH_MULTIPLIER.get(); } catch (RuntimeException | LinkageError e) { return 2.0D; }
+    }
+
+    /** 4.8.2:渔获瓶在古旧书袋里的额外倍数(读不到配置时退回 1.5)。 */
+    public static double fishingHaulBagMultiplier() {
+        try { return FISHING_HAUL_BAG_MULTIPLIER.get(); } catch (RuntimeException | LinkageError e) { return 1.5D; }
     }
 
     public static boolean evilEssenceEnabled() {
