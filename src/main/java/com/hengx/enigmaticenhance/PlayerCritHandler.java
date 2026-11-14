@@ -77,8 +77,8 @@ public final class PlayerCritHandler {
             if (event.getAmount() <= 0.0F) {
                 return;
             }
-            // 真实伤害已绕过所有加成,这里不再叠
-            if (TrueDamage.isTrueDamage(event.getSource())) {
+            // 4.8.3:执行之手的伤害是"全额真实伤害",已经绕过所有加成,这里不再叠暴击
+            if (ExecutionDamage.isExecution(event.getSource())) {
                 return;
             }
             Entity attacker = event.getSource().getEntity();

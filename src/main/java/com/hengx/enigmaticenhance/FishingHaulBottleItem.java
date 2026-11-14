@@ -26,6 +26,11 @@ import net.minecraft.world.level.Level;
  * 固定 UUID,transient 不写存档),玩家用 {@code /attribute} 能看到 2.0。
  * 见 {@link FishingHaulBottleHandler#BAG_LUCK}。</p>
  *
+ * <p>4.8.3:多出来的渔获<b>不再直接塞进背包</b>,而是在玩家脚下生成
+ * {@link net.minecraft.world.entity.item.ItemEntity}(随机速度 + 10 tick 拾取延迟),
+ * 与正常钓上来的鱼一致 —— tooltip 里多了一行说明,见
+ * {@code tooltip.enigmaticenhance.fishing_haul_bottle.drop}。</p>
+ *
  * <p>4.8.0:堆叠上限由 16 改为 <b>1</b>,与其它五种瓶装产物(历史迷雾/灵界之光/冥河之水/
  * 战争迷雾/太阳/不定之雾/镜中之影)一致。它本身不存内容物,所以改 1 不涉及任何按数量
  * 分配的 NBT 逻辑:{@link FishingHaulBottleHandler} 只看"有没有",不看 {@code getCount()};
@@ -36,6 +41,7 @@ public class FishingHaulBottleItem extends Item {
     private static final String HEADER_KEY = "tooltip.enigmaticenhance.fishing_haul_bottle.header";
     private static final String LORE_KEY = "tooltip.enigmaticenhance.fishing_haul_bottle.lore";
     private static final String EFFECT_KEY = "tooltip.enigmaticenhance.fishing_haul_bottle.effect";
+    private static final String DROP_KEY = "tooltip.enigmaticenhance.fishing_haul_bottle.drop";
     private static final String STATE_KEY = "tooltip.enigmaticenhance.fishing_haul_bottle.state";
 
     public FishingHaulBottleItem() {
@@ -48,6 +54,7 @@ public class FishingHaulBottleItem extends Item {
     private static final Component HEADER_LINE = Component.translatable(HEADER_KEY).withStyle(ChatFormatting.AQUA);
     private static final Component LORE_LINE = Component.translatable(LORE_KEY).withStyle(ChatFormatting.GRAY);
     private static final Component EFFECT_LINE = Component.translatable(EFFECT_KEY).withStyle(ChatFormatting.GRAY);
+    private static final Component DROP_LINE = Component.translatable(DROP_KEY).withStyle(ChatFormatting.GRAY);
     private static final Component STATE_LINE = Component.translatable(STATE_KEY).withStyle(ChatFormatting.GRAY);
 
     @Override
@@ -55,6 +62,7 @@ public class FishingHaulBottleItem extends Item {
         tooltip.add(HEADER_LINE);
         tooltip.add(LORE_LINE);
         tooltip.add(EFFECT_LINE);
+        tooltip.add(DROP_LINE);
         tooltip.add(STATE_LINE);
     }
 }

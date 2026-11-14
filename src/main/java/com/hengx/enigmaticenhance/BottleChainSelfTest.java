@@ -861,23 +861,24 @@ final class BottleChainSelfTest {
             ok &= bagUsed && c[0] == 4 && c[1] == 0;
             ok &= avgPerCatch > 2.5D && avgPerCatch < 3.5D;
             ok &= spawnActiveBefore && !spawnActiveAfter;
-            ok &= g[0] == 0 && g[2] == 2;
+            // 4.8.3:背包满不满都是"掉在脚下",所以 g[0](掉落鱼) 与 g[2](掉落计数) 都应是 2
+            ok &= g[0] == 2 && g[2] == 2;
             ok &= filled > 0;
             ok &= h[0] == 200 && h[3] == 1;
             ok &= i1[0] == 0 && i1[1] == 0;
             ok &= j1[0] == 0 && j1[1] == 0;
-            log(TAG + " T57 实测数字(每竿都是 2 鱼 + 1 杂物的假渔获):"
-                + " [a]不携带 鱼+" + a[0] + " 杂物+" + a[1] + "[应 0/0]"
-                + " | [b]携带×" + fmt(mCarry) + " 鱼+" + b[0] + " 杂物+" + b[1] + "[应 2/0]"
-                + " | [c]书袋×" + fmt(mBag) + (bagUsed ? " 鱼+" + c[0] + " 杂物+" + c[1] + "[应 4/0]" : " 书袋不可用,跳过")
-                + " | [d]2.5倍×200竿 鱼+" + d[0] + " 平均" + String.format(java.util.Locale.ROOT, "%.2f", avgPerCatch)
+            log(TAG + " T57 实测数字(每竿都是 2 鱼 + 1 杂物的假渔获,额外渔获全部掉在脚下):"
+                + " [a]不携带 掉落+" + a[0] + " 杂物+" + a[1] + "[应 0/0]"
+                + " | [b]携带×" + fmt(mCarry) + " 掉落+" + b[0] + " 杂物+" + b[1] + "[应 2/0]"
+                + " | [c]书袋×" + fmt(mBag) + (bagUsed ? " 掉落+" + c[0] + " 杂物+" + c[1] + "[应 4/0]" : " 书袋不可用,跳过")
+                + " | [d]2.5倍×200竿 掉落+" + d[0] + " 平均" + String.format(java.util.Locale.ROOT, "%.2f", avgPerCatch)
                 + "/竿[应≈3]"
                 + " | [e]杂物(d 里)" + d[1] + "[应 0]"
                 + " | [f]事件通道处理后生成通道=" + (spawnActiveAfter ? "仍激活[错]" : "静默[对]")
-                + " | [g]满包(填了" + filled + "格) 进包+" + g[0] + " 掉落" + g[2] + "[应 0/2]"
-                + " | [h]100竿 鱼+" + h[0] + " 单竿稳定=" + (h[3] == 1) + "[应 200/True]"
-                + " | [i]倍率1.0 鱼+" + i1[0] + "[应 0]"
-                + " | [j]总开关关 鱼+" + j1[0] + "[应 0]"
+                + " | [g]满包(填了" + filled + "格) 掉落+" + g[0] + " 计数+" + g[2] + "[应 2/2]"
+                + " | [h]100竿 掉落+" + h[0] + " 单竿稳定=" + (h[3] == 1) + "[应 200/True]"
+                + " | [i]倍率1.0 掉落+" + i1[0] + "[应 0]"
+                + " | [j]总开关关 掉落+" + j1[0] + "[应 0]"
                 + " | 公式 2.5倍额外份数均值=" + String.format(java.util.Locale.ROOT, "%.3f", avgExtra)
                 + "(2000次,应≈1.5);1/2/3倍额外份数=" + e1 + "/" + e2 + "/" + e3 + "[应 0/1/2]");
         }
@@ -902,20 +903,23 @@ final class BottleChainSelfTest {
     }
 
     /**
-     * 连跑 {@code n} 竿假渔获,返回 {鱼增量, 杂物增量, "背包满所以掉在脚下"份数, 单竿是否恒定(1/0)}。
+     * 连跑 {@code n} 竿假渔获,返回 {掉在地上的鱼份数, 背包里杂物增量, 掉落计数增量, 单竿是否恒定(1/0)}。
      *
-     * <p>全部靠<b>数背包</b>得出,不看日志。</p>
+     * <p>4.8.3 起额外渔获<b>全部以掉落物形式</b>出现(不再进背包),所以这里数的是
+     * {@link FishingHaulBottleHandler#DROPPED_CATCH}(只有 {@code addFreshEntity} 成功才 +1),
+     * 而不是背包 —— 自检跑在服务器启动事件里,这时新加入世界的实体对
+     * {@code getEntitiesOfClass} 还不可见(见 {@code testFishingBobberDetect} 的说明),
+     * 所以不能用实体查询去数。</p>
      */
     private static int[] catchBatches(ServerLevel level, Player player, int n) {
-        int fish0 = countFish(player);
         int boots0 = countItem(player, Items.LEATHER_BOOTS);
-        FishingHaulBottleHandler.GIVE_DROPPED = 0;
+        FishingHaulBottleHandler.DROPPED_CATCH = 0;
         int first = 0;
         boolean stable = true;
         for (int i = 0; i < n; i++) {
-            int before = countFish(player);
+            int before = FishingHaulBottleHandler.DROPPED_CATCH;
             postFakeCatch(level, player);
-            int delta = countFish(player) - before;
+            int delta = FishingHaulBottleHandler.DROPPED_CATCH - before;
             if (i == 0) {
                 first = delta;
             }
@@ -923,9 +927,9 @@ final class BottleChainSelfTest {
                 stable = false;
             }
         }
-        int fish = countFish(player) - fish0;
+        int dropped = FishingHaulBottleHandler.DROPPED_CATCH;
         int boots = countItem(player, Items.LEATHER_BOOTS) - boots0;
-        return new int[] { fish, boots, FishingHaulBottleHandler.GIVE_DROPPED, stable ? 1 : 0 };
+        return new int[] { dropped, boots, dropped, stable ? 1 : 0 };
     }
 
     /** 把背包(含护甲/副手槽)塞满石头,返回塞了多少格;渔获瓶与鱼所在格保留不动。 */
@@ -980,19 +984,6 @@ final class BottleChainSelfTest {
         catch (Throwable t) {
             log(TAG + " T57 post 假渔获异常: " + t);
         }
-    }
-
-    /** 数背包里的鱼(含堆叠数量)。 */
-    private static int countFish(Player player) {
-        int n = 0;
-        var inv = player.getInventory();
-        for (int i = 0; i < inv.getContainerSize(); i++) {
-            ItemStack s = inv.getItem(i);
-            if (!s.isEmpty() && s.is(net.minecraft.tags.ItemTags.FISHES)) {
-                n += s.getCount();
-            }
-        }
-        return n;
     }
 
     private static int countItem(Player player, Item item) {

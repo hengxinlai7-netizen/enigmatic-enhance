@@ -320,10 +320,15 @@ public final class RingConfig {
                 "false = 旧行为,允许补掷带出新附魔。默认 true。")
             .define("pearlExtraEnchantOnlyExisting", true);
 
-        builder.comment("【执行之手】未完成功能:对 Boss 的破防(跳过死亡动画)与真实伤害转化。",
-            "实测会导致部分 Boss 无法被击杀,默认【关闭】。需要时再打开。").push("handOfExecution");
+        builder.comment("【执行之手】4.8.3 改为专属伤害类型 enigmaticenhance:execution:",
+            "该类型写进了 minecraft:tags/damage_type/ 的 bypasses_armor / bypasses_shield /",
+            "bypasses_invulnerability / bypasses_cooldown / bypasses_resistance / bypasses_effects /",
+            "bypasses_enchantments —— 护甲、保护附魔、抗性、盾牌、无敌帧全部失效;",
+            "事件层还会把被削减的数值还原、把针对这一脚的 cancel 驳回(见 HandOfExecutionHandler)。",
+            "注意:bypasses_invulnerability 同时让【不死图腾】救不下目标(设计如此,见 tooltip)。",
+            "实测仍可能导致部分 Boss 的死亡流程异常,默认【关闭】。需要时再打开。").push("handOfExecution");
         HAND_OF_EXECUTION_ENABLED = builder
-            .comment("执行之手总开关。false = 完全失效(既不改真实伤害、也不破防 Boss)。默认 false。")
+            .comment("执行之手总开关。false = 完全失效(既不改伤害类型、也不破防 Boss)。默认 false。")
             .define("enabled", false);
         builder.pop();
         SPELLSTONE_BOOST_ENABLED = builder
