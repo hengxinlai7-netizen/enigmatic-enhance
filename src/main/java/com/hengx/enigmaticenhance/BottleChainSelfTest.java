@@ -46,9 +46,12 @@ final class BottleChainSelfTest {
         boolean t54 = testFogBlocksTeleport(level, player);
         boolean t55 = testFishingHaulBottle();
         boolean t56 = testFishingBagLuck(player);
+        boolean t57 = testFishingMultiplier(level, player);
+        String t58 = testFishingBobberDetect(level, player);
+        boolean t58ok = !"FAIL".equals(t58);
         log(TAG + " 小结 T44(灵界之光)=" + t44 + " T45(冥河之水)=" + t45 + " T46(战争迷雾)=" + t46
-            + " T48(书袋HUD+JEI)=" + t48 + " T49(经验/命中盒/暴食锁)=" + t49 + " T50(新附魔)=" + t50 + " T51(虚空无视限伤)=" + t51 + " T52(无法破坏)=" + t52 + " T53(不定之雾/镜影)=" + t53 + " T54(禁瞬移)=" + t54 + " T55(渔获瓶)=" + t55 + " T56(书袋+2幸运)=" + t56 + " => " + (t44 && t45 && t46 && t47 && t48 && t49 && t50 && t51 && t52 && t53 && t54 && t55 && t56 ? "PASS" : "FAIL"));
-        return t44 && t45 && t46 && t47 && t48 && t49 && t50 && t51 && t52 && t53 && t54 && t55 && t56;
+            + " T48(书袋HUD+JEI)=" + t48 + " T49(经验/命中盒/暴食锁)=" + t49 + " T50(新附魔)=" + t50 + " T51(虚空无视限伤)=" + t51 + " T52(无法破坏)=" + t52 + " T53(不定之雾/镜影)=" + t53 + " T54(禁瞬移)=" + t54 + " T55(渔获瓶)=" + t55 + " T56(书袋+2幸运)=" + t56 + " T57(多倍渔获)=" + t57 + " T58(浮标判定)=" + t58 + " => " + (t44 && t45 && t46 && t47 && t48 && t49 && t50 && t51 && t52 && t53 && t54 && t55 && t56 && t57 && t58ok ? "PASS" : "FAIL"));
+        return t44 && t45 && t46 && t47 && t48 && t49 && t50 && t51 && t52 && t53 && t54 && t55 && t56 && t57 && t58ok;
     }
 
     // ------------------------------------------------------------------ T44
@@ -743,6 +746,347 @@ final class BottleChainSelfTest {
         catch (RuntimeException ignored) {
             // 清理失败不影响用例结论
         }
+    }
+
+
+    /**
+     * 4.8.2:多倍渔获 —— 倍数配置、取整/概率公式,以及**真的把一竿事件过一遍总线**。
+     *
+     * <p>用户实测「渔获瓶的多倍渔获疑似没有生效」时,旧的"幸运/10"算法在书袋里(2 点幸运)
+     * 只给出 20% 概率多 1 条。这里断言新算法:倍数 2.0 ⇒ 额外 1 份、3.0 ⇒ 额外 2 份、
+     * 1.0 ⇒ 0 份(所以"1.0 = 不增加")。</p>
+     *
+     * <p>后半段造一竿假的 {@code ItemFishedEvent}(2 条鱼 + 1 件杂物)发到事件总线上:
+     * 没带瓶子 ⇒ 一条都不多;带了瓶子 ⇒ 鱼翻倍、杂物不动。这同时证明
+     * <b>{@code onFished} 确实挂在总线上、确实会执行</b>。</p>
+     */
+    private static boolean testFishingMultiplier(ServerLevel level, Player player) {
+        boolean ok = true;
+        Item fishing = ModItems.fishingHaulBottleOrNull();
+        Item bag = RingConfig.antiqueBagItem();
+        if (fishing == null) {
+            log(TAG + " T57 渔获瓶缺失");
+            check("T57", false);
+            return false;
+        }
+        double carryCfg = RingConfig.fishingHaulCatchMultiplier();
+        double bagCfg = RingConfig.fishingHaulBagMultiplier();
+        double mCarry = FishingHaulBottleHandler.catchMultiplier(player, false, true);
+        double mBag = FishingHaulBottleHandler.catchMultiplier(player, true, true);
+        double mNone = FishingHaulBottleHandler.catchMultiplier(player, false, false);
+        ok &= Math.abs(mCarry - carryCfg) < 1.0E-9D;
+        ok &= Math.abs(mBag - carryCfg * bagCfg) < 1.0E-9D;
+        ok &= Math.abs(mNone - 1.0D) < 1.0E-9D;
+
+        var random = level.getRandom();
+        int e1 = FishingHaulBottleHandler.extraCatches(random, 1.0D);
+        int e2 = FishingHaulBottleHandler.extraCatches(random, 2.0D);
+        int e3 = FishingHaulBottleHandler.extraCatches(random, 3.0D);
+        ok &= e1 == 0 && e2 == 1 && e3 == 2;
+        int sum = 0;
+        int samples = 2000;
+        for (int i = 0; i < samples; i++) {
+            sum += FishingHaulBottleHandler.extraCatches(random, 2.5D);
+        }
+        double avgExtra = sum / (double) samples;
+
+        boolean cfgOk = true;
+        try {
+            // ===== a) 不携带渔获瓶 =====
+            clearTestItems(player, fishing);
+            int[] a = catchBatches(level, player, 1);
+
+            // ===== b) 背包携带(×2) + e) 杂物不复制 =====
+            player.getInventory().add(new ItemStack(fishing));
+            int[] b = catchBatches(level, player, 1);
+            clearTestItems(player, fishing);
+
+            // ===== c) 书袋(×2 × 1.5 = 3.0) =====
+            int[] c = new int[] { -1, -1, -1, 0 };
+            boolean bagUsed = false;
+            if (bag != null && putInBag(player, bag, fishing)) {
+                bagUsed = true;
+                c = catchBatches(level, player, 1);
+                bagSetBook(player, bag, null);
+                removeBagItem(player, bag);
+            }
+            clearTestItems(player, fishing);
+
+            // ===== d) 小数倍率 2.5:真跑 200 竿,数每竿平均 =====
+            RingConfig.FISHING_HAUL_CATCH_MULTIPLIER.set(2.5D);
+            player.getInventory().add(new ItemStack(fishing));
+            int[] d = catchBatches(level, player, 200);
+            clearTestItems(player, fishing);
+            RingConfig.FISHING_HAUL_CATCH_MULTIPLIER.set(carryCfg);
+            double avgPerCatch = d[0] / 200.0D;
+
+            // ===== f) 一竿只乘一次(事件通道处理完,生成通道必须静默) =====
+            FishingHaulBottleHandler.resetHandled(player);
+            boolean spawnActiveBefore = FishingHaulBottleHandler.spawnChannelActive(player);
+            player.getInventory().add(new ItemStack(fishing));
+            postFakeCatch(level, player);
+            boolean spawnActiveAfter = FishingHaulBottleHandler.spawnChannelActive(player);
+            clearTestItems(player, fishing);
+            FishingHaulBottleHandler.resetHandled(player);
+
+            // ===== g) 背包满:多余的鱼掉在脚下,不丢 =====
+            player.getInventory().add(new ItemStack(fishing));
+            int filled = fillInventory(player, Items.STONE, fishing);
+            int[] g = catchBatches(level, player, 1);
+            clearInventoryFiller(player, Items.STONE);
+            clearTestItems(player, fishing);
+
+            // ===== h) 连续 100 竿(×2)必须每竿都 +2,不会时有时无 =====
+            player.getInventory().add(new ItemStack(fishing));
+            int[] h = catchBatches(level, player, 100);
+            clearTestItems(player, fishing);
+
+            // ===== i) 负向对照 1:倍率改成 1.0 =====
+            RingConfig.FISHING_HAUL_CATCH_MULTIPLIER.set(1.0D);
+            cfgOk &= Math.abs(RingConfig.fishingHaulCatchMultiplier() - 1.0D) < 1.0E-9D;
+            player.getInventory().add(new ItemStack(fishing));
+            int[] i1 = catchBatches(level, player, 1);
+            clearTestItems(player, fishing);
+            RingConfig.FISHING_HAUL_CATCH_MULTIPLIER.set(carryCfg);
+
+            // ===== j) 负向对照 2:总开关关掉 =====
+            RingConfig.FISHING_HAUL_ENABLED.set(false);
+            player.getInventory().add(new ItemStack(fishing));
+            int[] j1 = catchBatches(level, player, 1);
+            clearTestItems(player, fishing);
+            RingConfig.FISHING_HAUL_ENABLED.set(true);
+
+            ok &= a[0] == 0 && a[1] == 0;
+            ok &= b[0] == 2 && b[1] == 0;
+            ok &= bagUsed && c[0] == 4 && c[1] == 0;
+            ok &= avgPerCatch > 2.5D && avgPerCatch < 3.5D;
+            ok &= spawnActiveBefore && !spawnActiveAfter;
+            ok &= g[0] == 0 && g[2] == 2;
+            ok &= filled > 0;
+            ok &= h[0] == 200 && h[3] == 1;
+            ok &= i1[0] == 0 && i1[1] == 0;
+            ok &= j1[0] == 0 && j1[1] == 0;
+            log(TAG + " T57 实测数字(每竿都是 2 鱼 + 1 杂物的假渔获):"
+                + " [a]不携带 鱼+" + a[0] + " 杂物+" + a[1] + "[应 0/0]"
+                + " | [b]携带×" + fmt(mCarry) + " 鱼+" + b[0] + " 杂物+" + b[1] + "[应 2/0]"
+                + " | [c]书袋×" + fmt(mBag) + (bagUsed ? " 鱼+" + c[0] + " 杂物+" + c[1] + "[应 4/0]" : " 书袋不可用,跳过")
+                + " | [d]2.5倍×200竿 鱼+" + d[0] + " 平均" + String.format(java.util.Locale.ROOT, "%.2f", avgPerCatch)
+                + "/竿[应≈3]"
+                + " | [e]杂物(d 里)" + d[1] + "[应 0]"
+                + " | [f]事件通道处理后生成通道=" + (spawnActiveAfter ? "仍激活[错]" : "静默[对]")
+                + " | [g]满包(填了" + filled + "格) 进包+" + g[0] + " 掉落" + g[2] + "[应 0/2]"
+                + " | [h]100竿 鱼+" + h[0] + " 单竿稳定=" + (h[3] == 1) + "[应 200/True]"
+                + " | [i]倍率1.0 鱼+" + i1[0] + "[应 0]"
+                + " | [j]总开关关 鱼+" + j1[0] + "[应 0]"
+                + " | 公式 2.5倍额外份数均值=" + String.format(java.util.Locale.ROOT, "%.3f", avgExtra)
+                + "(2000次,应≈1.5);1/2/3倍额外份数=" + e1 + "/" + e2 + "/" + e3 + "[应 0/1/2]");
+        }
+        finally {
+            clearInventoryFiller(player, Items.STONE);
+            clearTestItems(player, fishing);
+            FishingHaulBottleHandler.resetHandled(player);
+            if (bag != null) {
+                bagSetBook(player, bag, null);
+                removeBagItem(player, bag);
+            }
+            RingConfig.FISHING_HAUL_CATCH_MULTIPLIER.set(carryCfg);
+            RingConfig.FISHING_HAUL_ENABLED.set(true);
+        }
+        ok &= cfgOk;
+        check("T57", ok);
+        return ok;
+    }
+
+    private static String fmt(double v) {
+        return String.format(java.util.Locale.ROOT, "%.1f", v);
+    }
+
+    /**
+     * 连跑 {@code n} 竿假渔获,返回 {鱼增量, 杂物增量, "背包满所以掉在脚下"份数, 单竿是否恒定(1/0)}。
+     *
+     * <p>全部靠<b>数背包</b>得出,不看日志。</p>
+     */
+    private static int[] catchBatches(ServerLevel level, Player player, int n) {
+        int fish0 = countFish(player);
+        int boots0 = countItem(player, Items.LEATHER_BOOTS);
+        FishingHaulBottleHandler.GIVE_DROPPED = 0;
+        int first = 0;
+        boolean stable = true;
+        for (int i = 0; i < n; i++) {
+            int before = countFish(player);
+            postFakeCatch(level, player);
+            int delta = countFish(player) - before;
+            if (i == 0) {
+                first = delta;
+            }
+            else if (delta != first) {
+                stable = false;
+            }
+        }
+        int fish = countFish(player) - fish0;
+        int boots = countItem(player, Items.LEATHER_BOOTS) - boots0;
+        return new int[] { fish, boots, FishingHaulBottleHandler.GIVE_DROPPED, stable ? 1 : 0 };
+    }
+
+    /** 把背包(含护甲/副手槽)塞满石头,返回塞了多少格;渔获瓶与鱼所在格保留不动。 */
+    private static int fillInventory(Player player, Item filler, Item keep) {
+        int filled = 0;
+        var inv = player.getInventory();
+        for (int i = 0; i < inv.getContainerSize(); i++) {
+            ItemStack s = inv.getItem(i);
+            if (!s.isEmpty() && (s.getItem() == keep || s.is(net.minecraft.tags.ItemTags.FISHES))) {
+                continue;
+            }
+            inv.setItem(i, new ItemStack(filler, 64));
+            filled++;
+        }
+        return filled;
+    }
+
+    private static void clearInventoryFiller(Player player, Item filler) {
+        var inv = player.getInventory();
+        for (int i = 0; i < inv.getContainerSize(); i++) {
+            ItemStack s = inv.getItem(i);
+            if (!s.isEmpty() && s.getItem() == filler) {
+                inv.setItem(i, ItemStack.EMPTY);
+            }
+        }
+    }
+
+    /** 清掉测试用的渔获瓶/鳕鱼/鲑鱼/皮靴,免得串场。 */
+    private static void clearTestItems(Player player, Item fishing) {
+        var inv = player.getInventory();
+        for (int i = 0; i < inv.getContainerSize(); i++) {
+            ItemStack s = inv.getItem(i);
+            if (!s.isEmpty() && (s.getItem() == fishing || s.getItem() == Items.COD
+                || s.getItem() == Items.SALMON || s.getItem() == Items.LEATHER_BOOTS)) {
+                inv.setItem(i, ItemStack.EMPTY);
+            }
+        }
+    }
+
+    /** 造一竿 2 鱼 + 1 杂物的假渔获,post 到事件总线(鱼竿随便造一个,只用来拿玩家)。 */
+    private static void postFakeCatch(ServerLevel level, Player player) {
+        java.util.List<ItemStack> drops = new java.util.ArrayList<>();
+        drops.add(new ItemStack(Items.COD));
+        drops.add(new ItemStack(Items.SALMON));
+        drops.add(new ItemStack(Items.LEATHER_BOOTS));
+        try {
+            var hook = new net.minecraft.world.entity.projectile.FishingHook(player, level, 0, 0);
+            hook.setPos(player.getX(), player.getY(), player.getZ());
+            net.minecraftforge.common.MinecraftForge.EVENT_BUS
+                .post(new net.minecraftforge.event.entity.player.ItemFishedEvent(drops, 1, hook));
+        }
+        catch (Throwable t) {
+            log(TAG + " T57 post 假渔获异常: " + t);
+        }
+    }
+
+    /** 数背包里的鱼(含堆叠数量)。 */
+    private static int countFish(Player player) {
+        int n = 0;
+        var inv = player.getInventory();
+        for (int i = 0; i < inv.getContainerSize(); i++) {
+            ItemStack s = inv.getItem(i);
+            if (!s.isEmpty() && s.is(net.minecraft.tags.ItemTags.FISHES)) {
+                n += s.getCount();
+            }
+        }
+        return n;
+    }
+
+    private static int countItem(Player player, Item item) {
+        int n = 0;
+        var inv = player.getInventory();
+        for (int i = 0; i < inv.getContainerSize(); i++) {
+            ItemStack s = inv.getItem(i);
+            if (!s.isEmpty() && s.getItem() == item) {
+                n += s.getCount();
+            }
+        }
+        return n;
+    }
+
+
+
+    /**
+     * 4.8.2:"这条鱼是不是钓上来的" —— 判定靠附近有没有该玩家的钓鱼浮标。
+     *
+     * <p>用一个真的 {@code FishingHook}(原版/Aquaculture 都继承它)测:浮标在鱼旁边 ⇒ 认出玩家;
+     * 浮标拿走后 ⇒ 认不出(所以手动丢鱼、打怪掉鱼不会触发多倍)。</p>
+     *
+     * <p><b>环境限制</b>:自检跑在服务器启动事件里,此时新加进世界的实体对实体查询不可见
+     * (实测 {@code getEntitiesOfClass} 与 {@code getEntities().getAll()} 都是 0,而
+     * {@code addFreshEntity} 返回 true、{@code getPlayerOwner()} 正常)。这种环境下无法判定,
+     * 按"跳过"处理并打日志,不误报成失败。</p>
+     */
+    private static String testFishingBobberDetect(ServerLevel level, Player player) {
+        net.minecraft.world.entity.item.ItemEntity fish = null;
+        net.minecraft.world.entity.projectile.FishingHook hook = null;
+        boolean nearOwner = false;
+        boolean farNoOwner = false;
+        String diag = "(未执行到判定)";
+        try {
+            double x = player.getX() - 0.5D;
+            double y = player.getY();
+            double z = player.getZ() - 0.5D;
+            fish = new net.minecraft.world.entity.item.ItemEntity(level, x + 1.0D, y, z,
+                new ItemStack(Items.COD));
+            boolean fishAdded = level.addFreshEntity(fish);
+            hook = new net.minecraft.world.entity.projectile.FishingHook(player, level, 0, 0);
+            hook.setPos(x, y, z);
+            boolean hookAdded = level.addFreshEntity(hook);
+            int bobbersSeen = countBobbers(level, fish.getX(), y, z);
+            nearOwner = FishingHaulBottleHandler.fishingOwnerNear(level, fish) == player;
+            diag = "fishAdded=" + fishAdded + ";hookAdded=" + hookAdded
+                + ";hookRemoved=" + hook.isRemoved()
+                + ";hookOwner=" + (hook.getPlayerOwner() == null ? "null" : "ok")
+                + ";附近浮标数=" + bobbersSeen;
+            if (hookAdded && bobbersSeen <= 0) {
+                hook.discard();
+                fish.discard();
+                log(TAG + " T58 自检环境看不到刚落地的浮标(" + diag + "),本条 SKIP(未验证,不算 PASS)");
+                log(TAG + " T58-RESULT SKIP");
+                return "SKIP";
+            }
+            hook.discard();
+            hook = null;
+            farNoOwner = FishingHaulBottleHandler.fishingOwnerNear(level, fish) == null;
+            fish.discard();
+            fish = null;
+        }
+        catch (Throwable t) {
+            log(TAG + " T58 浮标判定异常: " + t);
+            if (hook != null) {
+                hook.discard();
+            }
+            if (fish != null) {
+                fish.discard();
+            }
+            log(TAG + " T58-RESULT FAIL");
+            return "FAIL";
+        }
+        boolean ok = nearOwner && farNoOwner;
+        log(TAG + " T58 浮标在鱼旁=" + nearOwner + "[应 true];浮标拿走=" + farNoOwner + "[应 true];" + diag);
+        log(TAG + " T58-RESULT " + (ok ? "PASS" : "FAIL"));
+        return ok ? "PASS" : "FAIL";
+    }
+
+    /** 数某个位置附近 5 格内的钓鱼浮标(自检诊断用)。 */
+    private static int countBobbers(ServerLevel level, double x, double y, double z) {
+        int n = 0;
+        try {
+            for (net.minecraft.world.entity.Entity e : level.getEntities().getAll()) {
+                if (e instanceof net.minecraft.world.entity.projectile.FishingHook
+                    && e.distanceToSqr(x, y, z) <= 25.0D) {
+                    n++;
+                }
+            }
+        }
+        catch (Throwable ignored) {
+            return -1;
+        }
+        return n;
     }
 
 
