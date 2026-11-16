@@ -1,18 +1,15 @@
 package com.hengx.enigmaticenhance;
 
 import java.util.Random;
-import java.util.UUID;
 
-import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
-import net.minecraft.world.entity.ai.attributes.AttributeInstance;
-import net.minecraft.world.entity.ai.attributes.AttributeModifier;
-import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.item.ItemStack;
-import net.minecraftforge.server.ServerLifecycleHooks;
+import net.minecraftforge.event.entity.living.LivingHurtEvent;
+import net.minecraftforge.eventbus.api.EventPriority;
+import net.minecraftforge.eventbus.api.SubscribeEvent;
 
 /**
  * 「万钧之护卷轴」({@code enigmaticaddons:thunder_scroll},类 {@code auviotre.enigmatic.addon.contents.items.ThunderScroll})的两项改动。
@@ -26,22 +23,23 @@ import net.minecraftforge.server.ServerLifecycleHooks;
  * 状态写在**卷轴自己的 NBT**({@value #NBT_LIGHTNING_DISABLED})上,所以跟着物品走(存档/交易都保留);
  * 键不存在 = 开启(沿用扩展原行为)。
  *
- * <h2>② +100% 攻击伤害(取代原来的"+100% 横扫伤害")</h2>
+ * <h2>② 造成的伤害 +100%(取代原来的"+100% 横扫伤害")</h2>
  * 扩展原本用 {@code MixinEnchantmentHelper.getSweeping} 把
  * {@code EnchantmentHelper#getSweepingDamageRatio}(SRG {@code m_44821_})抬到 {@code max(1.0, 原值)},
- * 于是横扫攻击按 100% 伤害结算。现在改成给佩戴者挂
- * {@code generic.attack_damage} 上的百分比修饰符(见 {@link #attackDamageModifier()});
- * 横扫那一段由 {@code EnchantmentHelperSweepMixin} 还原成原版公式。
+ * 于是横扫攻击按 100% 伤害结算;横扫那一段现在由 {@code EnchantmentHelperSweepMixin} 还原成原版公式。
+ *
+ * <p><b>4.8.4 起不再挂属性修饰符</b>:以前这里给佩戴者挂一条 {@code generic.attack_damage} 的
+ * {@code MULTIPLY_TOTAL} 修饰符,于是"攻击力面板 / 武器 tooltip 显示的伤害 / 其它模组读
+ * {@code ATTACK_DAMAGE} 的地方(觉醒、器灵、剑气面板…)"全都被翻倍,战斗外也能看到。
+ * 现在改成和「恶魔的手骨」同一套做法:在 {@link LivingHurtEvent} 里把<b>这一次伤害</b>
+ * 直接 {@code amount * (1 + percent/100)}(见 {@link #onHurtDirectBoost});属性表一个字节都不动,
+ * 所以面板/ tooltip/ 其它模组的读取结果都与不戴卷轴时完全一致。代价是增伤只对"真的造成伤害"
+ * 生效 —— 不再影响横扫、弹射物、以及任何靠 {@code ATTACK_DAMAGE} 二次计算的东西。</p>
  */
 public final class ScrollHandler {
 
     /** 物品自身 NBT 键:为 true 表示"雷击已关闭"。键不存在 = 开启(扩展原行为)。 */
     public static final String NBT_LIGHTNING_DISABLED = "enigmaticenhance:LightningDisabled";
-
-    /** 我们的攻击伤害修饰符 UUID(本模组专用)。 */
-    public static final UUID ATTACK_DAMAGE_UUID = UUID.fromString("3c9f2f6e-1d4b-4a7e-9c2f-7b5a1e0d6f21");
-
-    private static final String MODIFIER_NAME = "enigmaticenhance:scale_of_protection_attack_damage";
 
     /** 概率判定用,自带随机源(不动世界 RNG,避免影响别人的随机序列)。 */
     private static final Random RNG = new Random();
@@ -99,22 +97,67 @@ public final class ScrollHandler {
         ItemToggleHandler.handleToggleRequest(sender, containerId, slotIndex);
     }
 
-    // ------------------------------------------------------------------ 攻击伤害(百分比,乘区)
+    // ------------------------------------------------------------------ 造成的伤害(直接增伤)
 
-    /** 攻击伤害修饰符:generic.attack_damage + MULTIPLY_TOTAL,数值 = 配置百分比 / 100。 */
-    public static AttributeModifier attackDamageModifier() {
-        return new AttributeModifier(ATTACK_DAMAGE_UUID, MODIFIER_NAME,
-            RingConfig.scaleAttackDamagePercent() / 100.0D, AttributeModifier.Operation.MULTIPLY_TOTAL);
+    /**
+     * 4.8.4:卷轴的增伤改成<b>直接乘这一次伤害</b>(与 {@code DemonBoneHandler} 同一套做法)。
+     *
+     * <p>为什么不再挂 {@code generic.attack_damage} 修饰符:属性修饰符是"改角色面板",副作用是
+     * 武器 tooltip 的伤害数字、其它模组读 {@code ATTACK_DAMAGE} 的结果、以及所有拿攻击力二次计算的
+     * 东西(横扫、剑气、部分挖掘速度实现)都会跟着翻倍 —— 战斗外也看得见。直接增伤只改
+     * {@link LivingHurtEvent} 里这一次的数值,属性表不动。</p>
+     *
+     * <p>优先级 {@code HIGH}:排在多数"按攻击力再算"的处理器之前,但仍在护甲/抗性/附魔减免之前
+     * (那些在 {@code LivingDamageEvent} / {@code ActuallyHurt} 里),所以增伤<b>照旧会被护甲衰减</b>,
+     * 不是穿甲。</p>
+     */
+    @SubscribeEvent(priority = EventPriority.HIGH)
+    public static void onHurtDirectBoost(LivingHurtEvent event) {
+        try {
+            if (!(event.getSource().getEntity() instanceof Player attacker)) {
+                return;
+            }
+            if (event.getEntity() == attacker) {
+                return;
+            }
+            if (!attackDamageActiveFor(attacker)) {
+                return;
+            }
+            double percent = RingConfig.scaleAttackDamagePercent();
+            if (percent == 0.0D) {
+                return;
+            }
+            float before = event.getAmount();
+            event.setAmount((float) (before * (1.0D + percent / 100.0D)));
+            if (RingConfig.debugLog()) {
+                DebugLog.info("[卷轴增伤] {} 命中 {}:{} -> {}(+{}%)", attacker.getGameProfile().getName(),
+                    event.getEntity().getName().getString(), before, event.getAmount(), percent);
+            }
+        }
+        catch (RuntimeException | LinkageError e) {
+            // 增伤失败绝不能影响这一击的正常结算
+        }
     }
 
-    /** 攻击伤害加成是否生效(总开关 + 数值不为 0)。 */
+    /** 增伤是否生效(总开关 + 数值不为 0)。 */
     public static boolean attackDamageActive() {
         return RingConfig.scaleEnabled() && RingConfig.scaleAttackDamagePercent() != 0.0D;
     }
 
-    /** 该实体是否戴着卷轴且加成生效(给 Curios 属性事件用)。 */
+    /** 这张卷轴是否带着生效中的增伤(逐件判定:确实是本卷轴 + 总开关开着)。 */
     public static boolean attackDamageActiveFor(ItemStack scroll) {
         return attackDamageActive() && isTargetScroll(scroll);
+    }
+
+    /** 该玩家此刻是否"戴着卷轴且增伤生效"(取饰品栏里那件,再走 {@link #attackDamageActiveFor(ItemStack)})。 */
+    public static boolean attackDamageActiveFor(Player player) {
+        if (player == null) {
+            return false;
+        }
+        if (!attackDamageActive()) {
+            return false;
+        }
+        return isTargetScroll(Superposition.getCurioStack(player, RingConfig.thunderScrollItem()));
     }
 
     // ------------------------------------------------------------------ 雷击累积判定
@@ -207,30 +250,7 @@ public final class ScrollHandler {
 
     // ------------------------------------------------------------------ 配置热重载
 
-    /** 配置改动后:给所有在线玩家重挂/摘掉我们的攻击伤害修饰符(不重启即生效)。 */
-    public static void reapplyAll() {
-        MinecraftServer server = ServerLifecycleHooks.getCurrentServer();
-        if (server == null) {
-            return;
-        }
-        for (ServerPlayer player : server.getPlayerList().getPlayers()) {
-            reapply(player);
-        }
-    }
-
-    /** 单个玩家:先摘掉旧的,再按当前配置重新挂上(没戴卷轴/关掉就不挂)。 */
-    public static void reapply(ServerPlayer player) {
-        AttributeInstance instance = player.getAttribute(Attributes.ATTACK_DAMAGE);
-        if (instance == null) {
-            return;
-        }
-        instance.removeModifier(ATTACK_DAMAGE_UUID);
-        if (attackDamageActive() && !Superposition.getCurioStack(player, RingConfig.thunderScrollItem()).isEmpty()) {
-            instance.addTransientModifier(attackDamageModifier());
-            if (RingConfig.debugLog()) {
-                DebugLog.info("[卷轴加成] 玩家 {} 攻击伤害修饰符重挂为 {}", player.getGameProfile().getName(),
-                    RingConfig.scaleAttackDamagePercent());
-            }
-        }
-    }
+    // 4.8.4:这里原来有 reapplyAll()/reapply(),用来在配置改动后给在线玩家重挂/摘掉
+    // generic.attack_damage 的瞬时修饰符。改成"受击时直接乘"以后没有需要重挂的状态了
+    // (每次受击都现读 RingConfig.scaleAttackDamagePercent()),整段已删除。
 }

@@ -74,6 +74,8 @@ public class EnigmaticEnhance {
         ModEntities.ENTITY_TYPES.register(modBus);
         // 1.1.28e:恶魔的手骨(hands 槽)的伤害结算与三件套
         safeRegister(DemonBoneHandler.class);
+        // 4.8.4:万钧之护卷轴 —— 雷击闸门 + 受击时直接增伤(不再挂属性修饰符)
+        safeRegister(ScrollHandler.class);
         safeRegister(AutoSmeltLoot.class);
         // 1.1.22:启动时一条 ASCII 自检日志(附魔是否注册 / mixin 注入是否 PRESENT / 对方模组状态)
         safeRegister(AutoSmeltDiagnostics.class);
@@ -156,9 +158,9 @@ public class EnigmaticEnhance {
         }
         EnigmaticNetwork.register();
 
-        // 万钧之护卷轴:配置改动后给在线玩家重挂/摘掉攻击伤害修饰符(不重启即生效)
-        modBus.addListener((net.minecraftforge.fml.event.config.ModConfigEvent.Reloading event) ->
-            ScrollHandler.reapplyAll());
+        // 4.8.4:万钧之护卷轴的增伤改成 LivingHurtEvent 里直接乘(见 ScrollHandler#onHurtDirectBoost),
+        // 不再有"配置改动后给在线玩家重挂攻击伤害修饰符"这回事,原来的 ModConfigEvent.Reloading
+        // → ScrollHandler.reapplyAll() 监听器已删除。
 
         // 1.1.17:静态校验我们自己造的 id/path(1.1.16 的 HUD overlay id 崩溃就是这类问题);正常时零输出
         java.util.List<String> idProblems = ModIds.problems();
@@ -186,6 +188,10 @@ public class EnigmaticEnhance {
             else if (selftest.contains("execution")) {
                 // 4.8.3:【执行之手全额伤害】+【渔获瓶掉落物】的模拟验证(见 ExecutionSelfTest)
                 ExecutionSelfTest.register();
+            }
+            else if (selftest.contains("scroll")) {
+                // 4.8.4:【万钧之护卷轴改成直接增伤】的模拟验证(见 ThunderScrollSelfTest)
+                ThunderScrollSelfTest.register();
             }
             else {
                 FlowerSelfTest.register();
