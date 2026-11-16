@@ -79,7 +79,7 @@
   "tooltip.enigmaticenhance.add.mining": "Can mine blocks normally",
   "tooltip.enigmaticenhance.add.adventure.convert": "Turns into the Despair Insignia on death",
   "tooltip.enigmaticenhance.add.berserk": "Health locked at %s (only clamps down) · %s",
-  "tooltip.enigmaticenhance.add.thunder": "+%s%% attack damage (replaces the old sweep bonus); lightning · %s",
+  "tooltip.enigmaticenhance.add.thunder": "Damage dealt +%s%% (does not change the attack-damage stat; replaces the old sweep bonus); lightning · %s",
   "tooltip.enigmaticenhance.add.books.toggle": "Right-click to read · Ctrl+Left-click to disable",
   "tooltip.enigmaticenhance.add.books.disabled": "Reading disabled · Ctrl+Left-click to restore",
   "tooltip.enigmaticenhance.state.on": "Currently: ON (Ctrl+Left-click to toggle)",

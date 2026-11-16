@@ -239,7 +239,7 @@ public final class RingConfig {
         SCROLL_ENABLER_ID = builder.comment("放行所需的物品(注册 id)。只在上一条开启时有用。")
             .define("enablerItemId", "enigmaticlegacy:fabulous_scroll");
         SCALE_ENABLED = builder
-            .comment("万钧之护卷轴的总开关:开启后改为加攻击伤害、雷击可开关。默认开启。")
+            .comment("万钧之护卷轴的总开关:开启后佩戴者造成的伤害提升(直接乘伤害,不改攻击力面板)、雷击可开关。默认开启。")
             .define("scaleOfProtectionEnabled", true);
         SCALE_LIGHTNING_ENABLED = builder
             .comment("卷轴的雷击效果开关。关闭后命中不再累积电荷,也就不会落雷。默认开启。")
@@ -248,13 +248,14 @@ public final class RingConfig {
             .comment("每次命中累积电荷的概率(百分比)。100 = 每击都累积(默认)。")
             .defineInRange("scaleOfProtectionLightningChance", 100.0D, 0.0D, 100.0D);
         SCALE_ATTACK_DAMAGE_PERCENT = builder
-            .comment("卷轴提供的攻击伤害加成(百分比)。100 = +100%(默认);0 = 不加成。")
+            .comment("卷轴提供的最终伤害加成(百分比)。100 = 造成的伤害 +100%(默认);0 = 不加成。"
+                + "注意:这是\"这一次伤害 ×(1+百分比/100)\",不是攻击力属性,所以武器 tooltip 与属性面板不变。")
             .defineInRange("scaleOfProtectionAttackDamagePercent", 100.0D, -1000.0D, 10000.0D);
         SCALE_CHARGE_SPREAD = builder
             .comment("命中时把雷击电荷像横扫一样带给附近目标(不造成伤害)。默认开启。")
             .define("scaleOfProtectionChargeSpread", true);
         SCALE_RESTORE_SWEEP_BOOST = builder
-            .comment("恢复卷轴原本的\"横扫造成 100% 伤害\"。默认关闭,改用攻击伤害加成。")
+            .comment("恢复卷轴原本的\"横扫造成 100% 伤害\"。默认关闭,改用直接增伤。")
             .define("scaleOfProtectionRestoreSweepBoost", false);
         SCALE_TOGGLE_ENABLED = builder
             .comment("允许用 Ctrl+左键 逐件开关卷轴的雷击。默认开启。")
@@ -781,7 +782,7 @@ public final class RingConfig {
         return SCALE_LIGHTNING_CHANCE.get();
     }
 
-    /** 攻击伤害加成(百分比,100 = +100%)。 */
+    /** 最终伤害加成(百分比,100 = 造成的伤害 +100%;直接乘伤害,不是攻击力属性)。 */
     public static double scaleAttackDamagePercent() {
         return SCALE_ATTACK_DAMAGE_PERCENT.get();
     }

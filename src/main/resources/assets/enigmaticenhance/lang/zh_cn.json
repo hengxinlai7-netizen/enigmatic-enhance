@@ -79,7 +79,7 @@
   "tooltip.enigmaticenhance.add.mining": "已可正常挖掘方块",
   "tooltip.enigmaticenhance.add.adventure.convert": "死亡时转化为绝望者证章",
   "tooltip.enigmaticenhance.add.berserk": "生命值锁定为 %s 点(只往下夹) · %s",
-  "tooltip.enigmaticenhance.add.thunder": "攻击伤害 +%s%%(取代原本的横扫加成);雷击 · %s",
+  "tooltip.enigmaticenhance.add.thunder": "造成的伤害 +%s%%(不改变攻击力面板;取代原本的横扫加成);雷击 · %s",
   "tooltip.enigmaticenhance.add.books.toggle": "可右键翻阅 · Ctrl+左键 禁用",
   "tooltip.enigmaticenhance.add.books.disabled": "已禁用翻阅 · Ctrl+左键 恢复",
   "tooltip.enigmaticenhance.state.on": "当前:开启(Ctrl+左键 切换)",
