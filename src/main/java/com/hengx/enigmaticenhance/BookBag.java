@@ -1,6 +1,8 @@
 package com.hengx.enigmaticenhance;
 
 import java.lang.reflect.Method;
+import java.util.ArrayList;
+import java.util.List;
 
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.player.Player;
@@ -131,8 +133,7 @@ public final class BookBag {
         return findBookInBag(player, item);
     }
     /** 反射调用扩展的 {@code SuperAddonHandler.findBookInBag}。 */
-    private static ItemStack findBookInBag(Player player, Item item) {
-        try {
+    private static ItemStack findBookInBag(Player player, Item item) {        try {
             Method method = method();
             if (method == null) {
                 return ItemStack.EMPTY;
@@ -158,5 +159,83 @@ public final class BookBag {
             findBookInBag = null;
         }
         return findBookInBag;
+    }
+
+    // ------------------------------------------------------------------ 4.8.4:枚举袋内全部书
+
+    /** 扩展的书袋能力: {@code AntiqueBagCapability.INVENTORY}。 */
+    private static final String CAPABILITY_CLASS =
+        "auviotre.enigmatic.addon.contents.objects.bookbag.AntiqueBagCapability";
+
+    private static Object inventoryCapability;
+    private static boolean capabilityResolved;
+    private static Method capGetSlots;
+    private static Method capGetBook;
+    private static Class<?> capHandlerClass;
+
+    /**
+     * 4.8.4:**枚举古旧书袋里现有的每一本书**(而不是按白名单一个个问)。
+     *
+     * <p>为什么要枚举:{@link BagHudEffects} 现在要把"袋里所有书"都列出来(有效果的写效果,
+     * 没效果的写「无加成」),白名单只决定文案,不决定列不列。</p>
+     *
+     * <p>实现与扩展自己一致:拿 {@code AntiqueBagCapability.INVENTORY} 能力 →
+     * {@code IAntiqueBagHandler} → {@code getSlots()}/{@code getBook(i)}。
+     * 和 {@code com.qoocies.goeticlegacy.utils.enigmaticaddons.EnigmaticAddonsBookBagHelper#getAllItems}
+     * 走的是同一套能力,所以诡厄那边认的书袋内容和我们这里的判定完全同源。</p>
+     *
+     * <p>缺扩展 / 无书袋 / 反编译不匹配 ⇒ 返回空表,绝不抛异常。</p>
+     */
+    public static List<ItemStack> booksInBag(Player player) {
+        if (player == null) {
+            return List.of();
+        }
+        try {
+            if (!resolveCapability()) {
+                return List.of();
+            }
+            net.minecraftforge.common.util.LazyOptional<?> optional =
+                player.getCapability((net.minecraftforge.common.capabilities.Capability<?>) inventoryCapability);
+            if (!optional.isPresent()) {
+                return List.of();
+            }
+            Object handler = optional.orElse(null);
+            if (handler == null) {
+                return List.of();
+            }
+            int slots = ((Number) capGetSlots.invoke(handler)).intValue();
+            List<ItemStack> out = new ArrayList<>(slots);
+            for (int i = 0; i < slots; i++) {
+                Object stack = capGetBook.invoke(handler, i);
+                if (stack instanceof ItemStack itemStack && !itemStack.isEmpty()) {
+                    out.add(itemStack);
+                }
+            }
+            return out;
+        }
+        catch (Throwable t) {
+            return List.of();
+        }
+    }
+
+    private static synchronized boolean resolveCapability() {
+        if (capabilityResolved) {
+            return inventoryCapability != null;
+        }
+        capabilityResolved = true;
+        try {
+            Class<?> capClass = Class.forName(CAPABILITY_CLASS);
+            inventoryCapability = capClass.getField("INVENTORY").get(null);
+            capHandlerClass = Class.forName(
+                "auviotre.enigmatic.addon.contents.objects.bookbag.IAntiqueBagHandler");
+            capGetSlots = capHandlerClass.getMethod("getSlots");
+            capGetBook = capHandlerClass.getMethod("getBook", int.class);
+        }
+        catch (Throwable t) {
+            inventoryCapability = null;
+            capGetSlots = null;
+            capGetBook = null;
+        }
+        return inventoryCapability != null;
     }
 }

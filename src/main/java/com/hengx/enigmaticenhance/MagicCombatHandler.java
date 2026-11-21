@@ -67,7 +67,7 @@ public final class MagicCombatHandler {
     /**
      * 1.2.3a:剑气面板攻击力 = <b>玩家当前的 ATTACK_DAMAGE 属性值</b>。
      *
-     * <p>和 1.1.29d 的旧做法({@link #swordBaseDamage},只看剑这件物品的 ADDITION 修饰符)不同:
+     * <p>和 1.1.29d 的旧做法(只看剑这件物品的 ADDITION 修饰符)不同:
      * 属性值已经把玩家基础 1.0、武器伤害、力量药水、饰品/宝石的 +攻击力、七咒等全部算进去,
      * 所以剑气现在<b>吃一切攻击力加成</b>。</p>
      */
@@ -138,40 +138,7 @@ public final class MagicCombatHandler {
         return MagicSwordAuraEnchantment.DAMAGE_PER_LEVEL * Math.max(1, Math.min(3, level));
     }
 
-    /**
-     * 1.1.29d:剑本身的基础攻击力 —— 只算<b>这件物品在主手上的 ATTACK_DAMAGE 修饰符</b>,
-     * 不叠加玩家身上的其它属性来源(力量药水、饰品、七咒等一律不吃)。
-     * <p>
-     * 结果等于物品提示里"攻击伤害"的数值:玩家基础 1.0 + 剑的修饰符(钻石剑 = 7.0)。
-     * 锋利这类附魔不在这里(它在伤害结算时另算),所以也不进剑气基础伤害。
-     */
-    /**
-     * 1.1.29d 的旧做法:<b>只</b>算这件物品在主手上的 ATTACK_DAMAGE ADDITION 修饰符。
-     * <p>
-     * 1.2.3a 起剑气改吃玩家属性({@link #attackPanel}),这个方法只保留给旧引用/对照,
-     * 不再参与剑气伤害。
-     */
-    public static float swordBaseDamage(ItemStack stack) {
-        if (stack == null || stack.isEmpty()) {
-            return 1.0F;
-        }
-        double base = 1.0D;
-        try {
-            var modifiers = stack
-                .getAttributeModifiers(net.minecraft.world.entity.EquipmentSlot.MAINHAND)
-                .get(net.minecraft.world.entity.ai.attributes.Attributes.ATTACK_DAMAGE);
-            for (var modifier : modifiers) {
-                if (modifier.getOperation()
-                    == net.minecraft.world.entity.ai.attributes.AttributeModifier.Operation.ADDITION) {
-                    base += modifier.getAmount();
-                }
-            }
-        }
-        catch (Throwable ignored) {
-            // 取不到就按玩家基础 1.0 处理,绝不让右键因为这里抛异常
-        }
-        return (float) Math.max(0.1D, base);
-    }
+    // ------------------------------------------------------------------ 剑气伤害
 
     /** 玩家四件护甲上魔法保护的等级合计。 */
     public static int protectionLevel(LivingEntity entity) {

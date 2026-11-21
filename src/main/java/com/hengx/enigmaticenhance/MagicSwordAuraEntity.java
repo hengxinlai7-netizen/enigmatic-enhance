@@ -492,29 +492,6 @@ public class MagicSwordAuraEntity extends Projectile {
         }
     }
 
-    /** 法术强度加成:反射读取 irons_spellbooks 的法强属性,取不到就 1.0。 */
-    private float spellPowerMultiplier() {
-        try {
-            var key = net.minecraft.resources.ResourceLocation.tryParse("irons_spellbooks:spell_power");
-            if (key == null) {
-                return 1.0F;
-            }
-            var attr = net.minecraftforge.registries.ForgeRegistries.ATTRIBUTES.getValue(key);
-            if (attr == null) {
-                return 1.0F;
-            }
-            Entity owner = getOwner();
-            if (owner instanceof LivingEntity living && living.getAttributes().hasAttribute(attr)) {
-                double value = living.getAttributeValue(attr);
-                return (float) Math.max(0.1D, 1.0D + value);
-            }
-        }
-        catch (Throwable ignored) {
-            // 没装 irons_spellbooks 就只吃基础伤害
-        }
-        return 1.0F;
-    }
-
     @Override
     protected void readAdditionalSaveData(CompoundTag tag) {
         super.readAdditionalSaveData(tag);

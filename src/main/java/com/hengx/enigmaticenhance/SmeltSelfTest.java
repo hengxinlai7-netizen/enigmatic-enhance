@@ -759,14 +759,6 @@ public final class SmeltSelfTest {
         }
     }
 
-    private static Counts countsNear(ServerLevel level, BlockPos pos, double radius) {
-        Counts counts = new Counts();
-        for (ItemEntity entity : level.getEntitiesOfClass(ItemEntity.class, new AABB(pos).inflate(radius))) {
-            counts.add(entity.getItem());
-        }
-        return counts;
-    }
-
     private static Counts countsNow(ServerLevel level) {
         Counts counts = new Counts();
         for (ItemEntity entity : level.getEntitiesOfClass(ItemEntity.class, testBox())) {

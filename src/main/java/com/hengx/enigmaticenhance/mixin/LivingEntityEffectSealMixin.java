@@ -7,7 +7,6 @@ import org.spongepowered.asm.mixin.injection.Redirect;
 import com.hengx.enigmaticenhance.DemonBloodChaliceHandler;
 
 import net.minecraft.world.effect.MobEffect;
-import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.ai.attributes.AttributeMap;
 

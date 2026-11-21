@@ -36,11 +36,13 @@ public final class StyxSoulHandler {
         if (event.phase != TickEvent.Phase.END || event.player.level().isClientSide) {
             return;
         }
-        Player player = event.player;
-        if (!StyxWaterHandler.hasStyxWater(player)) {
+        // 4.9.1(CPU):先做"每秒一次"的节流,再查身上有没有冥河之水。原来顺序相反 ——
+        // hasStyxWater 每次都要扫 37 个背包槽位 + 反射查一次古旧书袋,而每秒只该查一次。
+        if (event.player.tickCount % 20 != 0) {
             return;
         }
-        if (player.tickCount % 20 != 0) {
+        Player player = event.player;
+        if (!StyxWaterHandler.hasStyxWater(player)) {
             return;
         }
         try {

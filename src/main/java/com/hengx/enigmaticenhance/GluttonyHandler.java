@@ -148,7 +148,7 @@ public final class GluttonyHandler {
             food.setFoodLevel(RingConfig.gluttonyLockedFoodLevel());
             food.setSaturation(RingConfig.gluttonyLockedSaturation());
             food.setExhaustion(0.0F);
-            DebugLog.info("[暴食之证] 锁定生效(%s):饱食度 %d / 饱和度 %s",
+            DebugLog.info("[暴食之证] 锁定生效({}):饱食度 {} / 饱和度 {}",
                 player.getName().getString(), RingConfig.gluttonyLockedFoodLevel(),
                 RingConfig.gluttonyLockedSaturation());
         }
@@ -164,7 +164,7 @@ public final class GluttonyHandler {
             food.setFoodLevel(MAX_FOOD_LEVEL);
             food.setSaturation(0.0F);
             food.setExhaustion(0.0F);
-            DebugLog.info("[暴食之证] 锁定解除(%s):饱食度已恢复 %d", player.getName().getString(), MAX_FOOD_LEVEL);
+            DebugLog.info("[暴食之证] 锁定解除({}):饱食度已恢复 {}", player.getName().getString(), MAX_FOOD_LEVEL);
         }
         catch (RuntimeException ignored) {
             // 同上

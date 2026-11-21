@@ -45,7 +45,7 @@ public final class EngineGuard {
             return;
         }
         for (Player player : event.getLevel().getEntitiesOfClass(Player.class, bolt.getBoundingBox().inflate(RADIUS))) {
-            if (wears(player, engine)) {
+            if (Superposition.hasItem(player, engine)) {
                 event.setCanceled(true);
                 if (RingConfig.debugLog()) {
                     DebugLog.info("[失落引擎] 拦下惩罚雷击:玩家 {} 佩戴引擎(距雷击 {} 格)",
@@ -54,23 +54,5 @@ public final class EngineGuard {
                 return;
             }
         }
-    }
-
-    /** 饰品栏 / 双手 / 背包 任一位置带着该物品。 */
-    private static boolean wears(Player player, Item item) {
-        // 4.6.0(内存):原来这里自己写了一遍 Class.forName + getMethod(和 Superposition 里的重复),
-        // 现在统一走 Superposition 的缓存入口 —— 行为一致(缺模组时同样落到下面手上/背包的检查)。
-        if (Superposition.hasCurio(player, item)) {
-            return true;
-        }
-        if (player.getMainHandItem().is(item) || player.getOffhandItem().is(item)) {
-            return true;
-        }
-        for (int i = 0; i < player.getInventory().getContainerSize(); i++) {
-            if (player.getInventory().getItem(i).is(item)) {
-                return true;
-            }
-        }
-        return false;
     }
 }

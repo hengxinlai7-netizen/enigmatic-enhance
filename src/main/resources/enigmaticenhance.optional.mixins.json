@@ -21,6 +21,7 @@
         "FourthCurseAddonMixin",
         "AntiqueBagIsBookMixin",
         "RevivalLeafFlightMixin",
+        "CursedXpScrollCapMixin",
         "PearlApothEnchantMixin",
         "PearlReforgeMixin",
         "AugmentingSigilMixin",
