@@ -56,9 +56,6 @@ public final class SpiritLightHandler {
     public static final String ANCHOR_Z = "SpiritAnchorZ";
     public static final String ANCHOR_SET = "SpiritAnchorSet";
 
-    /** 神化 festive 词缀的 id。 */
-    public static final ResourceLocation FESTIVE_AFFIX = new ResourceLocation("apotheosis", "sword/special/festive");
-
     /** 神化用来"别再触发一次"的标记键。 */
     public static final String NO_PINATA = "apoth.no_pinata";
 
@@ -193,14 +190,6 @@ public final class SpiritLightHandler {
         }
     }
 
-    /** 已累计的距离(给自检/调试看)。 */
-    public static double movedDistance(ItemStack bottle) {
-        if (bottle == null || bottle.isEmpty() || !bottle.hasTag()) {
-            return 0.0D;
-        }
-        return bottle.getTag().getDouble(MOVED_KEY);
-    }
-
     // ------------------------------------------------------------------ 是否持有
 
     /** 玩家身上(背包/副手/古旧书袋)是否有瓶装灵界之光。 */
@@ -226,18 +215,11 @@ public final class SpiritLightHandler {
     // ------------------------------------------------------------------ 额外掉落
 
     /**
-     * 额外掉落的数量:{@code max(1, 原本数量 - 抢夺等级)}。
-     * 抢夺放大的是原本那一份,这里减掉它,等于"额外这份不吃抢夺"。
-     */
-    /** 每次击杀最多补几种新物品(防止把整张表刷爆)。 */
-    private static final int RARE_MAX_TYPES = 6;
-
-    /**
      * 1.2.12e:低概率掉落保底。
      * <p>神化的「战利品大爆发」只是把<b>已经掉出来的</b>战利品再复制几份,
-     * 所以兔子脚没掷出来时,触发再多次也掉不出来。这里额外补掷受害者自己的战利品表,
-     * 只把"这次还没出现过的物品类型"补进掉落(每种最多 1 份,总数封顶 {@value #RARE_MAX_TYPES})。</p>
-     * <p>用玩家的抢夺等级作为 luck,与原版掉落一致;失败一律静默(不影响正常掉落)。</p>
+     * 所以兔子脚没掷出来时,触发再多次也掉不出来。1.2.28 起改成<b>不碰掉落表</b>:
+     * 只把这次真实掉出来的物品再复制一份(硬编码掉落的 Boss 也能吃到)。</p>
+     * <p>失败一律静默(不影响正常掉落)。</p>
      */
     public static void guaranteeRareDrops(Player player, LivingDropsEvent event) {
         // 1.2.28:**不碰掉落表**,只把这次真实掉出来的物品再复制一份。
@@ -275,6 +257,10 @@ public final class SpiritLightHandler {
         }
     }
 
+    /**
+     * 额外掉落的数量:{@code max(1, 原本数量 - 抢夺等级)}。
+     * 抢夺放大的是原本那一份,这里减掉它,等于"额外这份不吃抢夺"。
+     */
     public static int extraCount(int originalCount, int lootingLevel) {
         int loot = Math.max(0, lootingLevel);
         return Math.max(1, originalCount - loot);

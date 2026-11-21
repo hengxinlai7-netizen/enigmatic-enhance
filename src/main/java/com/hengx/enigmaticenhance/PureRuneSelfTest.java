@@ -318,20 +318,6 @@ final class PureRuneSelfTest {
 
     private record Crafted(CraftingRecipe recipe, ItemStack output) {}
 
-    private static Crafted craft(ServerLevel level, Player player, ItemStack... items) {
-        TransientCraftingContainer grid =
-            new TransientCraftingContainer(new CraftingMenu(0, player.getInventory()), 3, 3);
-        for (int i = 0; i < items.length && i < grid.getContainerSize(); i++) {
-            grid.setItem(i, items[i].copy());
-        }
-        var found = level.getRecipeManager().getRecipeFor(RecipeType.CRAFTING, grid, level);
-        if (found.isEmpty()) {
-            return null;
-        }
-        CraftingRecipe recipe = found.get();
-        return new Crafted(recipe, recipe.assemble(grid, level.registryAccess()));
-    }
-
     /** 一块 9x9 的石头地板 + 上方 4 层空气(每次测试前重置,保证射线判定可预期)。 */
     private static void prepareArea(ServerLevel level) {
         for (int dx = -4; dx <= 4; dx++) {

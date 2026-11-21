@@ -1,7 +1,6 @@
 package com.hengx.enigmaticenhance;
 
 import java.util.List;
-import java.util.Set;
 
 import net.minecraft.ChatFormatting;
 import net.minecraft.nbt.CompoundTag;
@@ -11,8 +10,6 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.enchantment.Enchantment;
-import net.minecraft.world.item.enchantment.EnchantmentHelper;
 import net.minecraftforge.event.entity.player.ItemTooltipEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.registries.ForgeRegistries;
@@ -70,14 +67,10 @@ public final class UnfinishedContent {
     public static final ResourceLocation SEA_OF_CONSCIOUSNESS =
         new ResourceLocation(EnigmaticEnhance.MODID, "sea_of_consciousness");
 
-    /** 三个未完成附魔的 id。 */
-    public static final Set<ResourceLocation> UNFINISHED_ENCHANTMENTS =
-        Set.of(MAGIC_SWORD_AURA, VOID_AURA, HAND_OF_EXECUTION);
-
     /** tooltip 提示行(灰)。 */
     public static final String HINT_KEY = "tooltip.enigmaticenhance.unfinished.hint";
 
-    /** 三个未完成附魔的 id 文本(与 {@link #UNFINISHED_ENCHANTMENTS} 一一对应,类初始化时算好一次)。 */
+    /** 三个未完成附魔的 id 文本(与上面三个 {@link ResourceLocation} 一一对应,类初始化时算好一次)。 */
     private static final String MAGIC_SWORD_AURA_TEXT = MAGIC_SWORD_AURA.toString();
     private static final String VOID_AURA_TEXT = VOID_AURA.toString();
     private static final String HAND_OF_EXECUTION_TEXT = HAND_OF_EXECUTION.toString();
@@ -101,20 +94,6 @@ public final class UnfinishedContent {
     }
 
     // ------------------------------------------------------------------ 判定
-
-    /** 这个附魔是不是未完成内容。 */
-    public static boolean isUnfinished(Enchantment enchantment) {
-        if (enchantment == null) {
-            return false;
-        }
-        try {
-            ResourceLocation id = ForgeRegistries.ENCHANTMENTS.getKey(enchantment);
-            return id != null && UNFINISHED_ENCHANTMENTS.contains(id);
-        }
-        catch (RuntimeException | LinkageError ignored) {
-            return false;
-        }
-    }
 
     /**
      * 这叠物品是不是瓶装意识之海。
@@ -150,7 +129,7 @@ public final class UnfinishedContent {
     /**
      * 4.6.1(帧率):判断这叠物品是否带着三个"未完成"附魔之一 —— <b>不建 Map、不查注册表、零分配</b>。
      *
-     * <p>原来 {@link #onTooltip} 对每个被悬停的物品都调 {@link #hasUnfinishedEnchant},而它内部的
+     * <p>原来 {@link #onTooltip} 对每个被悬停的物品都走一遍旧实现(反序列化附魔表),而它内部的
      * {@code EnchantmentHelper.getEnchantments(stack)} 会:读 NBT → 新建一个 {@code HashMap}
      * → 逐条反查附魔注册表 → 再对每个附魔反查 id。物品一旦被悬停,这段代码就<b>每帧</b>跑一次
      * (60~200 次/秒),绝大多数物品根本没有附魔,等于每秒几十~几百个纯垃圾对象。
@@ -190,24 +169,6 @@ public final class UnfinishedContent {
             }
         }
         return false;
-    }
-
-    /** 这叠物品上是否带着任意一个未完成附魔(剑 / 附魔书 / 任意被塞进去的物品)。 */
-    public static boolean hasUnfinishedEnchant(ItemStack stack) {
-        if (stack == null || stack.isEmpty()) {
-            return false;
-        }
-        try {
-            for (Enchantment enchantment : EnchantmentHelper.getEnchantments(stack).keySet()) {
-                if (isUnfinished(enchantment)) {
-                    return true;
-                }
-            }
-            return false;
-        }
-        catch (RuntimeException | LinkageError ignored) {
-            return false;
-        }
     }
 
     // ------------------------------------------------------------------ tooltip

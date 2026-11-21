@@ -21,7 +21,6 @@ import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.entity.monster.Zombie;
-import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.entity.projectile.FishingHook;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
@@ -32,7 +31,6 @@ import net.minecraft.world.level.block.Blocks;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.common.util.FakePlayer;
 import net.minecraftforge.common.util.FakePlayerFactory;
-import net.minecraftforge.event.TickEvent;
 import net.minecraftforge.event.entity.EntityJoinLevelEvent;
 import net.minecraftforge.event.entity.living.LivingDamageEvent;
 import net.minecraftforge.event.entity.living.LivingHurtEvent;
@@ -92,19 +90,6 @@ public final class ExecutionSelfTest {
     // ---------------------------------------------------------------- tick 阶段
 
     private static boolean phaseActive = false;
-    private static ServerLevel phaseLevel;
-    private static int phaseTick;
-    private static int b3Spawned;
-    private static int s5Ground;
-    private static int s5Inv;
-    private static int s5Delayed;
-    private static int s5InvAfterTouch;
-    private static int s20Ground;
-    private static int s20Inv;
-    private static int s20Delayed;
-    private static int s20InvAfterTouch;
-    private static int s45Ground;
-    private static int s45Inv;
 
     private ExecutionSelfTest() {
     }
@@ -604,37 +589,6 @@ public final class ExecutionSelfTest {
             player.getBoundingBox().inflate(12.0D))) {
             if (item.getItem().is(ItemTags.FISHES)) {
                 item.discard();
-            }
-        }
-    }
-
-    private static int countGroundFish(ServerLevel level) {
-        int n = 0;
-        for (ItemEntity item : level.getEntitiesOfClass(ItemEntity.class,
-            player.getBoundingBox().inflate(12.0D))) {
-            if (item.getItem().is(ItemTags.FISHES)) {
-                n += item.getItem().getCount();
-            }
-        }
-        return n;
-    }
-
-    private static int countDelayedFish(ServerLevel level) {
-        int n = 0;
-        for (ItemEntity item : level.getEntitiesOfClass(ItemEntity.class,
-            player.getBoundingBox().inflate(12.0D))) {
-            if (item.getItem().is(ItemTags.FISHES) && item.hasPickUpDelay()) {
-                n += item.getItem().getCount();
-            }
-        }
-        return n;
-    }
-
-    private static void touchAllFish(ServerLevel level) {
-        for (ItemEntity item : level.getEntitiesOfClass(ItemEntity.class,
-            player.getBoundingBox().inflate(12.0D))) {
-            if (item.getItem().is(ItemTags.FISHES)) {
-                item.playerTouch(player);
             }
         }
     }

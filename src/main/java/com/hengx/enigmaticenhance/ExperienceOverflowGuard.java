@@ -117,10 +117,13 @@ public final class ExperienceOverflowGuard {
                 Object inv = inventoryOf.invoke(null, player);
                 if (inv instanceof java.util.Optional<?> opt && opt.isPresent()) {
                     Object handler = opt.get();
-                    Object curios = handler.getClass().getMethod("getCurios").invoke(handler);
-                    if (curios instanceof java.util.Map<?, ?> map) {
-                        for (Object value : map.values()) {
-                            clampCurioStacks(value);
+                    java.lang.reflect.Method getCurios = curiosMapGetter(handler.getClass());
+                    if (getCurios != null) {
+                        Object curios = getCurios.invoke(handler);
+                        if (curios instanceof java.util.Map<?, ?> map) {
+                            for (Object value : map.values()) {
+                                clampCurioStacks(value);
+                            }
                         }
                     }
                 }
@@ -135,9 +138,64 @@ public final class ExperienceOverflowGuard {
         clampScroll(player.getOffhandItem());
     }
 
-    private static void clampCurioStacks(Object stacks) {
+    /** {@code handler.getClass().getMethod("getCurios")} 的缓存(解析不到就记 null)。 */
+    private static Class<?> curiosMapGetterClass;
+    private static java.lang.reflect.Method curiosMapGetter;
+    private static boolean curiosMapGetterResolved;
+
+    private static synchronized java.lang.reflect.Method curiosMapGetter(Class<?> type) {
+        if (curiosMapGetterResolved && curiosMapGetterClass == type) {
+            return curiosMapGetter;
+        }
+        curiosMapGetterResolved = true;
+        curiosMapGetterClass = type;
         try {
-            Object stackHandler = stacks.getClass().getMethod("getStacksHandler").invoke(stacks);
+            curiosMapGetter = type.getMethod("getCurios");
+        }
+        catch (Throwable t) {
+            curiosMapGetter = null;
+        }
+        return curiosMapGetter;
+    }
+
+    /**
+     * 4.9.1(CPU/内存):{@code getStacksHandler} 的解析结果按运行时类缓存一次。
+     *
+     * <p>Curios 5.14.1 的 {@code ICurioStacksHandler} <b>没有</b>无参 {@code getStacksHandler}
+     * (只有 {@code getStacksHandler(String)}),所以原来这里<b>每次调用</b>都会
+     * {@code getMethod} 抛一次 {@code NoSuchMethodException},然后整段被 catch 掉 —— 等于每秒每名
+     * 玩家 × 每个饰品槽类型都白造一次异常(异常构造要抓栈,是最贵的一类分配)。
+     * 解析结果(成功/失败)缓存后,热路径只剩一次引用比较;行为与原来一致(解析不到就整段跳过)。</p>
+     */
+    private static Class<?> curioStacksHandlerGetterClass;
+    private static java.lang.reflect.Method curioStacksHandlerGetter;
+    private static boolean curioStacksHandlerGetterResolved;
+
+    private static synchronized java.lang.reflect.Method curioStacksHandlerGetter(Class<?> type) {
+        if (curioStacksHandlerGetterResolved && curioStacksHandlerGetterClass == type) {
+            return curioStacksHandlerGetter;
+        }
+        curioStacksHandlerGetterResolved = true;
+        curioStacksHandlerGetterClass = type;
+        try {
+            curioStacksHandlerGetter = type.getMethod("getStacksHandler");
+        }
+        catch (Throwable t) {
+            curioStacksHandlerGetter = null;
+        }
+        return curioStacksHandlerGetter;
+    }
+
+    private static void clampCurioStacks(Object stacks) {
+        if (stacks == null) {
+            return;
+        }
+        java.lang.reflect.Method getStacksHandler = curioStacksHandlerGetter(stacks.getClass());
+        if (getStacksHandler == null) {
+            return;   // 与原来"解析失败 ⇒ 整段跳过"一致
+        }
+        try {
+            Object stackHandler = getStacksHandler.invoke(stacks);
             Object inv = stackHandler.getClass().getMethod("getStacks").invoke(stackHandler);
             int slots = (int) inv.getClass().getMethod("getSlots").invoke(inv);
             for (int i = 0; i < slots; i++) {

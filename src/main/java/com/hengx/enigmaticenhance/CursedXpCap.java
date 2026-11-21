@@ -49,24 +49,6 @@ public final class CursedXpCap {
 
     // ------------------------------------------------------------------ 物品侧判定
 
-    /**
-     * 该卷轴是否已经吸满。
-     *
-     * <p>任何异常都返回 {@code false}(fail-open):宁可维持旧行为,也不能因为反射失败把卷轴彻底废掉。</p>
-     */
-    public static boolean atCap(ItemStack stack) {
-        if (stack == null || stack.isEmpty()) {
-            return false;
-        }
-        try {
-            int limit = limit();
-            return limit > 0 && CursedXpMath.levelForExperience(storedXp(stack)) >= limit;
-        }
-        catch (Throwable t) {
-            return false;
-        }
-    }
-
     /** 卷轴里已存的原始经验值。 */
     public static int storedXp(ItemStack stack) {
         CompoundTag tag = stack.getTag();
@@ -138,16 +120,7 @@ public final class CursedXpCap {
 
     private static long lastLogAt;
 
-    /** 纯数值版本(自检直接断言,不需要 ItemStack)。 */
-    public static boolean shouldSkipValues(int playerXp, int playerLevel, int storedXp, boolean absorptionMode) {
-        return CursedXpMath.shouldSkip(playerXp, playerLevel, storedXp, absorptionMode, limit());
-    }
-
-    // ------------------------------------------------------------------ 转发到纯数学(供 mixin / 自检使用)
-
-    public static long remainingToCap(int storedXp) {
-        return CursedXpMath.remainingToCap(storedXp, limit());
-    }
+    // ------------------------------------------------------------------ 转发到纯数学(供 mixin 使用)
 
     public static int portionForLevel(int level) {
         return CursedXpMath.portionForLevel(level);
@@ -155,10 +128,6 @@ public final class CursedXpCap {
 
     public static int clampPortion(int rawPortion, int storedXp) {
         return CursedXpMath.clampPortion(rawPortion, storedXp, limit());
-    }
-
-    public static int levelForExperience(int xp) {
-        return CursedXpMath.levelForExperience(xp);
     }
 
     public static long xpForLevel(int level) {
@@ -169,8 +138,18 @@ public final class CursedXpCap {
 
     private static Object limitParameter;
     private static boolean limitResolved;
+    /** {@code limitParameter.getClass()#getValue} 的缓存(热路径每 tick 都会问一次上限)。 */
+    private static Method limitGetValue;
+    /** {@link #limitGetValue} 是按哪个类解析的;类型变了就重解析。 */
+    private static Class<?> limitGetValueClass;
 
-    /** {@code CursedXPScroll.XPLevelUpperLimit#getValue()}(取不到用 {@link #DEFAULT_LIMIT})。 */
+    /**
+     * {@code CursedXPScroll.XPLevelUpperLimit#getValue()}(取不到用 {@link #DEFAULT_LIMIT})。
+     *
+     * <p>4.9.1(CPU/内存):{@code getValue()} 的 {@link Method} 只解析一次。原来每 tick 每名佩戴者
+     * 都要走两遍 {@code limit()}(mixin 里 {@code clampPortion} + {@code shouldSkip}),也就是每次
+     * {@code getMethod} 一次 —— 而 {@code getMethod} 每次都会复制一个新的 {@link Method} 对象。</p>
+     */
     public static int limit() {
         if (!limitResolved) {
             limitResolved = true;
@@ -186,8 +165,12 @@ public final class CursedXpCap {
             return DEFAULT_LIMIT;
         }
         try {
-            Method getValue = limitParameter.getClass().getMethod("getValue");
-            Object value = getValue.invoke(limitParameter);
+            Class<?> type = limitParameter.getClass();
+            if (limitGetValue == null || limitGetValueClass != type) {
+                limitGetValueClass = type;
+                limitGetValue = type.getMethod("getValue");
+            }
+            Object value = limitGetValue.invoke(limitParameter);
             return value instanceof Number n ? n.intValue() : DEFAULT_LIMIT;
         }
         catch (Throwable ignored) {

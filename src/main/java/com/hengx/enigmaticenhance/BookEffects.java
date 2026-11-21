@@ -7,7 +7,6 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.function.BiFunction;
 
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
@@ -217,11 +216,6 @@ public final class BookEffects {
         catch (Throwable t) {
             return List.of();
         }
-    }
-
-    /** 已登记的书 id(自检/报告用,顺序固定)。 */
-    public static List<String> knownIds() {
-        return new ArrayList<>(PROVIDERS.keySet());
     }
 
     // ------------------------------------------------------------------ 数字格式

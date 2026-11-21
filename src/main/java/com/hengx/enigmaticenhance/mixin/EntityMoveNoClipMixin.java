@@ -8,7 +8,6 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import com.hengx.enigmaticenhance.NoClipState;
 
 import net.minecraft.world.entity.Entity;
-import net.minecraft.world.phys.Vec3;
 
 /**
  * 1.2.13g:龙首「飞行穿方块」的真正落点。

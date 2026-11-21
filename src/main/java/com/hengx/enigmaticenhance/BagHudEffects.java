@@ -70,7 +70,6 @@ public final class BagHudEffects {
     private static final String LEGACY = "enigmaticlegacy:";
     private static final String ADDONS = "enigmaticaddons:";
 
-    /** 魔法石英花(既是书袋物品 id,也是 {@link #collect} 里的分支)。 */
     /** 瓶装历史迷雾:放进书袋时把记录到的属性加成列出来(1.2.5d)。 */
     public static final String HISTORY_MIST_ID = "enigmaticenhance:history_mist";
 
@@ -130,62 +129,10 @@ public final class BagHudEffects {
         return BOOKS;
     }
 
-    /**
-     * 4.6.0(内存):与 {@link #BOOKS} 逐项对应的 {@link ResourceLocation},<b>静态建好一次</b>。
-     *
-     * <p>原来 {@link #collect(Player)} 里写的是 {@code new ResourceLocation(id)},而这个方法在
-     * {@link BagHudSync#onServerTick} 里<b>每 tick、每个在线玩家</b>都要跑一遍全部 16 个 id:
-     * 20 tps × 16 = <b>每人每秒 320 次</b>字符串解析 + 校验 + 新对象(每个 ≈ 40~64B,含 String 里的
-     * path 段),一个 10 人服就是每秒 3200 个对象、约 150 KB/s 的纯垃圾,全部落在 Young 区。
-     * 预解析之后这条路径上这部分分配归零,而且 ResourceLocation 的构造校验也一次都不做了。</p>
-     */
-    private static final List<ResourceLocation> BOOK_LOCATIONS;
-
     /** 历史迷雾 id 的预解析版本(见 {@link #HISTORY_MIST_ID})。 */
     private static final ResourceLocation HISTORY_MIST_LOCATION = new ResourceLocation(HISTORY_MIST_ID);
 
-    static {
-        ResourceLocation[] locations = new ResourceLocation[BOOKS.size()];
-        for (int i = 0; i < BOOKS.size(); i++) {
-            locations[i] = new ResourceLocation(BOOKS.get(i));
-        }
-        BOOK_LOCATIONS = List.of(locations);
-    }
-
     private BagHudEffects() {}
-
-    /**
-     * 4.6.1(CPU):与 {@link #BOOKS} 逐项对应的物品实例,<b>懒解析一次就缓存</b>。
-     *
-     * <p>{@link #collect(Player)} 在 {@code BagHudSync#onServerTick} 里每 tick、每个在线玩家都要按
-     * 16 个 id 查一次书袋,而 {@code BookBag.findBook(player, ResourceLocation)} 每次都要先
-     * {@code ForgeRegistries.ITEMS.getValue(id)}:重算 {@code ResourceLocation} 的 hash + 查一次 map。
-     * 4.6.0 已经把 {@code new ResourceLocation(id)} 换成静态 {@link #BOOK_LOCATIONS},这里再把
-     * "id → Item"这一段也缓存掉,热路径上只剩反射进 {@code findBookInBag}(那一步没法绕开)。
-     * </p>
-     * <p>解析失败(注册表还没就绪 / 该模组缺失)时<b>不缓存失败</b>,下次调用重试 —— 与原来
-     * {@code getValue} 返回 null 的分支语义相同。</p>
-     */
-    private static final Item[] BOOK_ITEMS = new Item[BOOKS.size()];
-
-    /** 取清单里第 {@code index} 本书的物品实例(解析不到返回 null)。 */
-    private static Item bookItem(int index) {
-        Item cached = BOOK_ITEMS[index];
-        if (cached != null) {
-            return cached;
-        }
-        try {
-            Item found = ForgeRegistries.ITEMS.getValue(BOOK_LOCATIONS.get(index));
-            if (found != null && found != net.minecraft.world.item.Items.AIR) {
-                BOOK_ITEMS[index] = found;
-                return found;
-            }
-        }
-        catch (RuntimeException | LinkageError ignored) {
-            // 注册表没就绪:本 tick 跳过这一本(等价于原来 getValue 返回 null)
-        }
-        return null;
-    }
 
     /** 空结果(4.6.0:无书袋的玩家每个 tick 都走这里,不再每次 new 一个 ArrayList)。 */
     private static final List<Entry> NO_ENTRIES = List.of();
@@ -215,7 +162,7 @@ public final class BagHudEffects {
             if (id == null) {
                 continue;
             }
-            String bookId = id.toString();
+            String bookId = idText(item, id);
             if (!seen.add(bookId)) {
                 continue; // 同一个 id 放了两本:只算一条(去重)
             }
@@ -232,6 +179,26 @@ public final class BagHudEffects {
         }
         sortEntries(out);
         return out;
+    }
+
+    /**
+     * 4.9.1(CPU/内存):物品 → 注册 id 文本的缓存。
+     *
+     * <p>{@link #collect(Player)} 每 tick 都要给袋里每本书取一次 {@code id.toString()},而
+     * {@code ResourceLocation#toString()} 每次都会新建一个 {@code "ns:path"} 字符串。
+     * 物品的注册 id 在游戏运行期不会变,缓存一次即可:热路径上零分配(只剩一次 map 查找)。</p>
+     */
+    private static final java.util.concurrent.ConcurrentHashMap<Item, String> ID_TEXT =
+        new java.util.concurrent.ConcurrentHashMap<>();
+
+    private static String idText(Item item, ResourceLocation id) {
+        String cached = ID_TEXT.get(item);
+        if (cached != null) {
+            return cached;
+        }
+        String text = id.toString();
+        String previous = ID_TEXT.putIfAbsent(item, text);
+        return previous != null ? previous : text;
     }
 
     /** 单本书 → 若干条目(4.8.4 抽出来,方便阅读与自检)。 */
@@ -624,6 +591,16 @@ public final class BagHudEffects {
         return sum;
     }
 
+    /** {@code "+10%"} / {@code "-5"} → 整数(取不到按 0)。 */
+    private static int parseInt(String text) {
+        try {
+            return (int) Double.parseDouble(text.replace("%", "").toLowerCase(Locale.ROOT));
+        }
+        catch (Throwable t) {
+            return 0;
+        }
+    }
+
     public static int activeCount(List<Entry> entries) {
         int n = 0;
         for (Entry e : entries) {
@@ -692,12 +669,11 @@ public final class BagHudEffects {
 
     // ------------------------------------------------------------------ 读取本体/扩展的真实数值(反射,缺模组安全返回)
 
-    /** {@link #flag(Player, int)} 的两种判定(用序号代替字符串,避免每次热路径拼查找键)。 */
+    /** {@link #flag(Player, int)} 的判定序号(用序号代替字符串,避免每次热路径拼查找键)。 */
     private static final int FLAG_CURSED_ONE = 0;
-    private static final int FLAG_WORTHY_ONE = 1;
 
     /** {@link #flag(Player, int)} 对应的扩展方法名,下标与 FLAG_* 一致。 */
-    private static final String[] FLAG_NAMES = { "isTheCursedOne", "isTheWorthyOne" };
+    private static final String[] FLAG_NAMES = { "isTheCursedOne" };
 
     /** 可能提供这两个判定的两个类(本体 / 扩展)。 */
     private static final String[] FLAG_OWNERS = {
@@ -738,7 +714,7 @@ public final class BagHudEffects {
         }
     }
 
-    /** 本体/扩展的布尔判定,如 isTheCursedOne / isTheWorthyOne。 */
+    /** 本体/扩展的布尔判定(isTheCursedOne)。 */
     private static boolean flag(Player player, int which) {
         if (!flagsResolved) {
             resolveFlags();
@@ -759,58 +735,5 @@ public final class BagHudEffects {
             }
         }
         return false;
-    }
-
-    /**
-     * 恩惠之典在袋时的受击无敌帧(AI:取扩展真实配置值)。
-     *
-     * <p>4.6.0(内存/CPU):字段与 {@code getValue()} 都缓存。原来每次调用(书袋里有《恩惠之典》时
-     * <b>每 tick 每玩家</b>一次)都做 {@code Class.forName} + {@code getField} + {@code getMethod},
-     * 三次反射解析。解析失败(缺扩展)时保持 null,返回 0 —— 与原来的 catch 分支一致。</p>
-     */
-    private static java.lang.reflect.Field blessField;
-    private static java.lang.reflect.Method blessGetValue;
-    private static Class<?> blessValueClass;
-    private static boolean blessResolved;
-
-    private static int blessInvulnerableTime() {
-        try {
-            if (!blessResolved) {
-                blessResolved = true;
-                try {
-                    blessField = Class.forName("auviotre.enigmatic.addon.contents.items.TheBless")
-                        .getField("invulnerableTime");
-                }
-                catch (Throwable t) {
-                    blessField = null;
-                }
-            }
-            if (blessField == null) {
-                return 0;
-            }
-            Object param = blessField.get(null);
-            if (param == null) {
-                return 0;
-            }
-            // getValue() 声明在 param 的运行时类型上:按类型缓存一次(类型变了就重解析,不会串)
-            if (blessGetValue == null || blessValueClass != param.getClass()) {
-                blessValueClass = param.getClass();
-                blessGetValue = blessValueClass.getMethod("getValue");
-            }
-            Object value = blessGetValue.invoke(param);
-            return value instanceof Integer i ? i : parseInt(String.valueOf(value));
-        }
-        catch (Throwable t) {
-            return 0;
-        }
-    }
-
-    private static int parseInt(String text) {
-        try {
-            return (int) Double.parseDouble(text.replace("%", "").toLowerCase(Locale.ROOT));
-        }
-        catch (Throwable t) {
-            return 0;
-        }
     }
 }

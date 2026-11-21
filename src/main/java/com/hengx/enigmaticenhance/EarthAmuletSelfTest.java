@@ -1126,10 +1126,6 @@ public final class EarthAmuletSelfTest {
         return total;
     }
 
-    private static int countArrowsInWorld(ServerLevel level, Player player) {
-        return level.getEntitiesOfClass(AbstractArrow.class, testBox(player)).size();
-    }
-
     private static AABB testBox(Player player) {
         return new AABB(player.getX() - 12.0D, Y - 8.0D, player.getZ() - 12.0D,
             player.getX() + 12.0D, Y + 12.0D, player.getZ() + 12.0D);

@@ -1082,16 +1082,6 @@ public final class RingConfig {
         }
     }
 
-    /** 2.7.0:大地之心→附魔师珍珠 灌注开关。 */
-    public static boolean pearlInfusionEnabled() {
-        try {
-            return PEARL_INFUSION_ENABLED.get();
-        }
-        catch (Throwable t) {
-            return true;
-        }
-    }
-
     /** 1.8.4:不受无敌帧限制的伤害白名单(伤害类型 id 或实体类名片段)。 */
     public static List<String> combatInvulnWhitelist() {
         try {
@@ -1143,16 +1133,12 @@ public final class RingConfig {
         return FOURTH_CURSE_FIX_RESIDUAL_PERCENT.get();
     }
 
-    public static boolean isAntiqueBag(Item item) {
-        Item bag = antiqueBagItem();
-        return bag != null && item == bag;
-    }
-
     public static Item antiqueBagItem() {
         return itemOrNull(ANTIQUE_BAG_ID);
     }
 
-    /** 冒险者之证:是否允许挖掘方块(默认 true)。 */    public static boolean adventureCharmAllowMining() {
+    /** 冒险者之证:是否允许挖掘方块(默认 true)。 */
+    public static boolean adventureCharmAllowMining() {
         return ADVENTURE_CHARM_ALLOW_MINING.get();
     }
 

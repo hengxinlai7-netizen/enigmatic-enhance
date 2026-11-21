@@ -96,11 +96,11 @@ public final class ModItems {
     /** 1.2.11a:enigmaticenhance:mirror_shadow —— 瓶装镜中之影(记录/回溯,消耗品)。 */
     public static final RegistryObject<Item> MIRROR_SHADOW =
         ITEMS.register(ModIds.MIRROR_SHADOW_PATH, MirrorShadowItem::new);
-    /** 护符 + 任意药水 → 覆盖保存该药水的全部效果。 */
-
     /** 1.2.14:enigmaticenhance:life_meter —— 生命刻度(携带时显示数字血条)。 */
     public static final RegistryObject<Item> LIFE_METER =
         ITEMS.register(ModIds.LIFE_METER_PATH, LifeMeterItem::new);
+
+    /** 护符 + 任意药水 → 覆盖保存该药水的全部效果。 */
     public static final RegistryObject<RecipeSerializer<EarthAmuletPotionRecipe>> EARTH_AMULET_POTION =
         RECIPE_SERIALIZERS.register(ModIds.RECIPE_EARTH_AMULET_POTION_PATH, EarthAmuletPotionRecipe.Serializer::new);
 
@@ -138,9 +138,6 @@ public final class ModItems {
 
     private ModItems() {}
 
-    /** 稳健取护符实例:注册表还没填时返回 null(调用方据此静默跳过)。 */
-    @Nullable
-    /** 2.4.0:假账生成器(注册顺序未到时返回 null)。 */
     /** 2.4.1:瓶装意识之海(JEI 信息页用)。 */
     public static Item seaOfConsciousnessOrNull() {
         try {
@@ -151,6 +148,7 @@ public final class ModItems {
         }
     }
 
+    /** 2.4.0:假账生成器(注册顺序未到时返回 null)。 */
     public static Item fakeLedgerOrNull() {
         try {
             return FAKE_LEDGER.get();
@@ -160,6 +158,8 @@ public final class ModItems {
         }
     }
 
+    /** 稳健取护符实例:注册表还没填时返回 null(调用方据此静默跳过)。 */
+    @Nullable
     public static Item earthAmuletOrNull() {
         try {
             return EARTH_AMULET.isPresent() ? EARTH_AMULET.get() : null;
@@ -359,6 +359,4 @@ public final class ModItems {
             || item == mirrorShadowOrNull()
             || item == fishingHaulBottleOrNull();
     }
-
-    /** 2.6.1:复苏之叶术石(缺失返回 null)。 */
 }
