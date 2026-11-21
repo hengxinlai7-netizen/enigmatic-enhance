@@ -3,7 +3,7 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Minecraft](https://img.shields.io/badge/Minecraft-1.20.1-green.svg)](https://www.minecraft.net/)
 [![Forge](https://img.shields.io/badge/Forge-47.2.20%2B-orange.svg)](https://files.minecraftforge.net/)
-[![Version](https://img.shields.io/badge/Version-4.8.4-blue.svg)](#)
+[![Version](https://img.shields.io/badge/Version-4.9.0-blue.svg)](#)
 [![CurseForge](https://img.shields.io/badge/CurseForge-Enigmatic%20Enhance-f16436.svg)](https://www.curseforge.com/minecraft/mc-mods/enigmatic-enhance)
 
 对 **神秘遗物（Enigmatic Legacy）** 与 **神秘遗物扩展（Enigmatic Addons）** 的改动与扩展，
@@ -237,6 +237,35 @@ $env:JAVA_HOME = "C:\Program Files\Microsoft\jdk-21.0.8.9-hotspot"
 > ```
 
 ---
+
+## 更新记录
+
+### 4.9.0
+
+**书袋效果显示重构**
+
+* 新增 `BookEffects` 注册表：**22 本书**的效果文本（诡厄遗物 8 + 神秘遗物本体 8 + 扩展 6），
+  lang 键统一为 `baghud.book.<namespace>.<itemid>.lineN`，`collect()` 里不再有散落的 if。
+* 袋内枚举改为**遍历书袋全部槽位**（反射 `AntiqueBagCapability.INVENTORY`）：
+  以前只查白名单，白名单外的书完全不显示；现在袋里有什么就列什么。
+* 未收录 / 判定为无效果的书显示「**仅可存放，无加成**」，不再静默消失
+  （隐藏会让玩家分不清「本来没效果」和「HUD 坏了」）。
+* 效果文本一律从代码 / 运行时配置取值（`HunterGuidebook.*`、`TheBless.invulnerableTime`、
+  `OdeToLiving.*`、`SanguinaryHandbook.DamageMultiplier`、诡厄 `Config.BOOKS.*`），读不到才用默认值。
+* 显示优化：属性名本地化（`goety:spell_potency` → 「法术强度」）、乘法转百分比（`+0.1` → `+10%`）、
+  `≥20 tick` 转秒、排序去重（有效果的在前、无加成的在后）、超 12 条折成「… 还有 N 条（无加成）」。
+
+**无知诅咒卷轴：吸满即停，不再把人吸到 0 级**
+
+* 新增 `CursedXpScrollCapMixin`：`@Redirect` 把每 tick 份额夹到「距上限还剩多少」，
+  并在玩家经验不足一份时把 `getPlayerXP` 退化为 `0` —— 不 drain、不改 `XPStored`，
+  但方法继续执行，**卷轴吸地上经验球的行为保留**。
+* 修复扩展 `curioTick` 里 `else if (getPlayerXP > 0) { drain(全部) }` 分支导致
+  **等级被清空到 0** 的问题。
+* 上限口径 = 存储经验折算的等级 ≥ `ScrollofIgnoranceCurseXPLevelUpperLimit`（默认 1000 级 ≈ 4,339,720 点），
+  与玩家当前等级无关；取回模式 100% 原样，取回到上限以下后下一次 tick 自动恢复吸收。
+* `debugLog=true` 时输出诊断行：`[无知诅咒] stored/cap/limit/portion/playerXp/level/skip`（5 秒节流）。
+* 纯数值部分拆到零 MC 依赖的 `CursedXpMath`，配套 **35 条离线自检全部通过**。
 
 ## 已知问题
 

@@ -75,9 +75,17 @@ public final class FlowerSelfTest {
             boolean f1 = entries.size() == 2;
             for (BagHudEffects.Entry e : entries) {
                 String s = BagHudEffects.display(e).getString();
-                f1 &= s.contains(e.value());
+                // 4.8.4:属性名改为本地化显示(取不到才回退原始 id),所以断言也按本地化名比
+                f1 &= s.contains(BagHudEffects.attributeName(e.value()).getString());
+                log(" F1-line 本地化属性名=" + BagHudEffects.attributeName(e.value()).getString());
             }
-            f1 &= BagHudEffects.display(entries.get(0)).getString().contains("+20");
+            String firstLine = BagHudEffects.display(entries.get(0)).getString();
+            String secondLine = BagHudEffects.display(entries.get(1)).getString();
+            // 4.8.4:ADDITION 保留两位带符号;MULTIPLY_BASE 转百分比;剩余 2000 tick 打秒
+            f1 &= firstLine.contains("+20");
+            f1 &= firstLine.contains("秒");
+            f1 &= secondLine.contains("+10%");
+            log(" F1-line 断言: first=" + firstLine + " | second=" + secondLine);
             log(" F1-RESULT " + (f1 ? "PASS" : "FAIL"));
 
             // ---------------------------------------------------------- ② 无激活属性

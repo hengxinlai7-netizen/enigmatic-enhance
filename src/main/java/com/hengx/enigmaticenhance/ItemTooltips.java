@@ -277,9 +277,25 @@ public final class ItemTooltips {
             out.add(Component.translatable("baghud.empty").withStyle(BODY));
         }
         else {
-            for (BagHudEffects.Entry entry : source) {
+            // 4.8.4:最多显示 BagHudEffects.MAX_LINES 条;多出来的折成一行"还有 N 条"。
+            // 服务端已经把"有效果的"排在前面、"无加成"排在后面,所以这里直接截尾即可。
+            int shown = Math.min(source.size(), BagHudEffects.MAX_LINES);
+            for (int i = 0; i < shown; i++) {
+                BagHudEffects.Entry entry = source.get(i);
                 out.add(BagHudEffects.display(entry)
                     .withStyle(entry.active() ? ChatFormatting.GREEN : ChatFormatting.DARK_GRAY));
+            }
+            if (source.size() > shown) {
+                int rest = source.size() - shown;
+                boolean allNoBonus = true;
+                for (int i = shown; i < source.size(); i++) {
+                    if (!BookEffects.KEY_NO_BONUS.equals(source.get(i).effectKey())) {
+                        allNoBonus = false;
+                        break;
+                    }
+                }
+                out.add(Component.translatable(allNoBonus ? "baghud.more.no_bonus" : "baghud.more",
+                    String.valueOf(rest)).withStyle(ChatFormatting.DARK_GRAY));
             }
             out.add(Component.translatable("baghud.summary",
                 String.valueOf(BagHudEffects.damageBonusSum(source)),
