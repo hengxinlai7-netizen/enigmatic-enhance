@@ -1,5 +1,6 @@
 package com.hengx.enigmaticenhance.mixin;
 
+
 import com.hengx.enigmaticenhance.DebugLog;
 
 import org.spongepowered.asm.mixin.Mixin;

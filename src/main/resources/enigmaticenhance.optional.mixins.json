@@ -11,6 +11,7 @@
         "LivingEntityEffectSealMixin",
         "MobEffectInstanceSealMixin",
         "MobEffectSealMixin",
+        "AddonPunishedStateMixin",
         "BlessRingBarMixin",
         "BlessRingHelperMixin",
         "BlessRingMixin",

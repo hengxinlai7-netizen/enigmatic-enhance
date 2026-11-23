@@ -315,3 +315,13 @@ Minecraft 是 Mojang Studios 的商标，本项目与 Mojang 无关，也未获�
 - [神秘遗物 Enigmatic Legacy](https://www.curseforge.com/minecraft/mc-mods/enigmatic-legacy) —— 本模组的基础
 - 神秘遗物扩展、Curios、神化、铁魔法等模组的作者
 - 所有反馈问题与参与测试的玩家
+
+### 与「七咒之戒 + 救赎之戒」同戴相关的修复
+
+原版扩展在这两枚戒指同时佩戴时会进入「惩罚态」，其中一条副作用是**每帧覆盖原版光照贴图(lightmap)**。
+在装有现代化 UI（ModernUI）的环境里，这会让字体图集与实体/方块纹理无法正常采样，
+表现为**界面文字全部消失、方块与实体纹理变黑**。
+
+本模组在允许两戒同戴时，一并将 `SuperAddonHandler#isPunishedOne` 的判定抑制为 `false`，
+使上述副作用整条链路不再触发（惩罚执行本身本来就是被本模组拦截的）。
+可用配置 `compat.suppressAddonPunishedState = false` 关闭该行为，回到扩展原判定。
