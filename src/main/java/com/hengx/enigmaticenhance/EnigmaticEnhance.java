@@ -193,6 +193,10 @@ public class EnigmaticEnhance {
                 // 4.8.4:【万钧之护卷轴改成直接增伤】的模拟验证(见 ThunderScrollSelfTest)
                 ThunderScrollSelfTest.register();
             }
+            else if (selftest.contains("addonhud")) {
+                // 4.10.0-beta5:扩展 HUD 回调 GL 状态补丁的自检
+                com.hengx.enigmaticenhance.test.CompatPatchSelfTest.register();
+            }
             else {
                 FlowerSelfTest.register();
             }

@@ -69,8 +69,7 @@ public final class RingConfig {
     public static final ForgeConfigSpec.BooleanValue RING_UNBREAKABLE;
     public static final ForgeConfigSpec.BooleanValue RING_FREEZE_BETRAYAL;
     public static final ForgeConfigSpec.BooleanValue RING_HIDE_BETRAYAL_BAR;
-    public static final ForgeConfigSpec.BooleanValue RING_ALLOW_WITH_CURSED_RING;
-    public static final ForgeConfigSpec.BooleanValue RING_ALLOW_WITH_BROKEN_RING;
+    public static final ForgeConfigSpec.BooleanValue RING_ALLOW_WITH_CURSED_RING;    public static final ForgeConfigSpec.BooleanValue RING_ALLOW_WITH_BROKEN_RING;
     public static final ForgeConfigSpec.BooleanValue RING_KEEP_ON_RELOGIN;
     public static final ForgeConfigSpec.BooleanValue SCROLL_ALLOW_WITH_CURSED_SCROLL;
     public static final ForgeConfigSpec.ConfigValue<String> SCROLL_ENABLER_ID;
@@ -202,6 +201,8 @@ public final class RingConfig {
     /** 4.6.7:启动时数据自检(tag 引用完整性 + 配方形状冲突)。 */
     public static final ForgeConfigSpec.BooleanValue DATA_SELF_CHECK;
 
+    public static final ForgeConfigSpec.BooleanValue COMPAT_SUPPRESS_ADDON_PUNISHED_STATE;
+
     static {
         ForgeConfigSpec.Builder builder = new ForgeConfigSpec.Builder();
         builder.comment("神秘遗物增强:所有开关与数值都在这里。").push("enigmaticenhance");
@@ -212,6 +213,14 @@ public final class RingConfig {
             .define("attachToPlayers", true);
         builder.pop();
 
+        builder.comment("与「神秘遗物扩展」(enigmaticaddons)的兼容修复。").push("compat");
+        COMPAT_SUPPRESS_ADDON_PUNISHED_STATE = builder
+            .comment("允许「七咒之戒 + 救赎之戒」同戴时,同时抑制扩展的\"惩罚态\"判定。默认开启。",
+                "扩展在惩罚态下会每帧覆盖原版光照贴图(lightmap),在现代化 UI(ModernUI) 环境里",
+                "会导致文字/方块/实体纹理渲染异常甚至整体消失。关掉本项即为扩展原行为。",
+                "实现:把 SuperAddonHandler#isPunishedOne 的返回值抑制为 false(仅在玩家允许同戴且两戒都在身上时)。")
+            .define("suppressAddonPunishedState", true);
+        builder.pop();
         builder.comment("救赎之戒:让它不会损坏、可与七咒之戒同戴。").push("ring");
         RING_OMNI_BONUS = builder.comment("全属性加成;0.2 = 所有属性 +20%(默认)。")
             .defineInRange("omniBonus", 0.2D, -10.0D, 10.0D);
@@ -626,8 +635,20 @@ public final class RingConfig {
         return RING_UNBREAKABLE.get() && RING_HIDE_BETRAYAL_BAR.get();
     }
 
+
+    /** 是否允许「七咒之戒 + 救赎之戒同戴」。就是配置值本身(4.9.0 行为)。 */
     public static boolean allowRingWithCursedRing() {
         return RING_ALLOW_WITH_CURSED_RING.get();
+    }
+
+    /** 是否抑制扩展的「惩罚态」判定(配置未加载时按默认 true)。 */
+    public static boolean compatSuppressAddonPunishedState() {
+        try {
+            return COMPAT_SUPPRESS_ADDON_PUNISHED_STATE.get();
+        }
+        catch (RuntimeException | LinkageError e) {
+            return true;
+        }
     }
 
     public static boolean allowRingWithBrokenRing() {
