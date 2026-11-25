@@ -38,10 +38,10 @@ public class HandOfExecutionEnchantment extends Enchantment {
         return true;
     }
 
-    /** 无限制:附魔台也能刷出来(但正常附魔池里看不到,见 isDiscoverable);4.5.0 起受未完成开关拦截。 */
+    /** 4.14.0: 已从"未完成名单"移出 —— 附魔台可用, 但正常附魔池仍然刷不到(见 isDiscoverable)。 */
     @Override
     public boolean canApplyAtEnchantingTable(ItemStack stack) {
-        return UnfinishedContent.allowAcquisition();
+        return true;
     }
 
     /** 不出现在战利品/随机附魔里。 */

@@ -26,7 +26,7 @@ import net.minecraftforge.registries.ForgeRegistries;
  *       <td>{@link VoidAuraEnchantment}(效果落在 {@code MagicSwordAuraEntity} 的 voidAura 标记上)</td></tr>
  *   <tr><td>瓶装意识之海</td><td><b>自定义物品</b></td><td>{@code enigmaticenhance:sea_of_consciousness}</td>
  *       <td>{@link ConsciousnessSeaItem} + {@link ConsciousnessSeaHandler}</td></tr>
- *   <tr><td>执行之手</td><td><b>附魔</b></td><td>{@code enigmaticenhance:hand_of_execution}</td>
+ *   <tr><td><s>执行之手</s></td><td><b>附魔</b></td><td>4.14.0 已移出: 改为后期配方获得</td>
  *       <td>{@link HandOfExecutionEnchantment} + {@link HandOfExecutionHandler}</td></tr>
  * </table>
  *

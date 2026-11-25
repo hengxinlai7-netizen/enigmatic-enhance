@@ -59,6 +59,9 @@ public final class ExecutionDamage {
      */
     private static final ThreadLocal<Boolean> FORCED = ThreadLocal.withInitial(() -> Boolean.FALSE);
 
+    /** 正在执行"执行之手结算"的线程标记: 防止同一脚在事件里被自己再次接管。 */
+    private static final ThreadLocal<Boolean> APPLYING = ThreadLocal.withInitial(() -> Boolean.FALSE);
+
     private ExecutionDamage() {
     }
 
@@ -76,6 +79,10 @@ public final class ExecutionDamage {
     }
 
     /** 当前线程是否处在"补发"阶段(给 {@code ExecutionBypassMixin} 读)。 */
+    public static boolean applying() {
+        return Boolean.TRUE.equals(APPLYING.get());
+    }
+
     public static boolean forced() {
         return Boolean.TRUE.equals(FORCED.get());
     }
@@ -114,34 +121,62 @@ public final class ExecutionDamage {
         if (target == null || amount <= 0.0F || !target.isAlive() || target.level().isClientSide) {
             return null;
         }
-        DamageSource src = source(attacker);
+        // 4.12.0: 不再更换伤害类型 —— 保留原始 DamageSource,
+        // 只把被削减的差额补回来, 表现为"真实伤害"的效果。
+        DamageSource src = fallback;
         if (src == null) {
-            // 数据包缺失:只有调用方本来就拿着 execution 源时才勉强继续,否则交还普通伤害
-            if (!isExecution(fallback)) {
-                return null;
-            }
-            src = fallback;
+            return null;
         }
         ExecutionGuard.Hit hit = ExecutionGuard.remember(target, amount);
         hit.absorptionBefore(target.getAbsorptionAmount());
         float healthBefore = target.getHealth();
+
+        APPLYING.set(Boolean.TRUE);
+        // 4.12.0 隐藏机制: 这一脚足以致死 -> 直接斩杀, 不进入普通结算
+        if (RingConfig.handOfExecutionExecute() && amount >= healthBefore + target.getAbsorptionAmount()) {
+            boolean killed = executeKill(target, src);
+            hit.noteDealt(healthBefore - target.getHealth());
+            ExecutionGuard.forget(target);
+            if (DebugLog.debugEnabled()) {
+                DebugLog.info("[执行之手] 斩杀: 目标={} 伤害={} 血量={} 成功={}",
+                    target.getName().getString(), amount, healthBefore, killed);
+            }
+            APPLYING.set(Boolean.FALSE);
+            return hit;
+        }
         try {
             target.invulnerableTime = 0;
+            float absorbBefore = target.getAbsorptionAmount();
             target.hurt(src, amount);
-            hit.noteDealt(healthBefore - target.getHealth());
-            // ---- 兜底:事件层(含排在我们后面的 LOWEST)吃掉的部分,跳过事件派发补回来 ----
-            // 用"真实掉血"作判据,只补差额,不会重复伤害。
-            float missing = hit.missing();
-            if (hit.blockedByEvents() && missing > 1.0E-4F && target.isAlive() && hit.forcedTimes() == 0) {
-                DebugLog.warn("[执行之手] 事件层拦掉了 {} 点伤害,跳过事件派发补发一次", missing);
-                hit.markForced();
-                forceHurt(target, src, missing);
+
+            // ---- 全 bypass: 用"实际减少的 血+吸收"对比意图值, 差额直接写血 ----
+            // 不换伤害类型, 但护甲/抗性/保护附魔/限伤/取消 全都不影响最终结果。
+            float want = settle(target, amount, healthBefore, absorbBefore, src);
+
+            // 4.13.0: 伤害锁 —— 接下来 10 tick 内禁止回血, 被加回来就再写回去
+            if (want > 0.0F) {
+                DamageLock.lock(target, want);
             }
+            hit.noteDealt(healthBefore - target.getHealth());
         }
         catch (RuntimeException | LinkageError e) {
-            DebugLog.warn("[执行之手] 结算失败,退回普通伤害: {}", e.toString());
+            DebugLog.warn("[执行之手] 结算异常,改为纯写血兜底: {}", e.toString());
+            try {
+                float want = Math.max(0.0F, healthBefore - amount);
+                target.setHealth(want);
+                if (target.getHealth() > want + 1.0E-4F) {
+                    writeHealthDirect(target, want);
+                }
+                if (target.getHealth() <= 0.0F && target.isAlive()) {
+                    target.die(src);
+                }
+                DamageLock.lock(target, Math.max(0.0F, target.getHealth()));
+            }
+            catch (RuntimeException | LinkageError ignored) {
+            }
         }
         finally {
+            APPLYING.set(Boolean.FALSE);
             hit.noteDealt(healthBefore - target.getHealth());
             ExecutionGuard.forget(target);
         }
@@ -149,9 +184,114 @@ public final class ExecutionDamage {
     }
 
     /**
+     * 4.13.0: 把"应该掉的血"彻底扣到位 —— 可重复尝试, 直到掉够或目标死亡。
+     *
+     * @return 目标最终应停留的血量（用于伤害锁）
+     */
+    private static float settle(LivingEntity target, float amount, float healthBefore,
+                                float absorbBefore, DamageSource src) {
+        for (int attempt = 0; attempt < 3 && target.isAlive(); attempt++) {
+            float dealt = (healthBefore + absorbBefore)
+                        - (target.getHealth() + target.getAbsorptionAmount());
+            float missing = amount - dealt;
+            if (missing <= 1.0E-4F) {
+                break;
+            }
+            // 4.14.1: 先吃黄心(吸收), 剩下的才扣血 —— 与"总伤害"语义一致
+            float absorb = target.getAbsorptionAmount();
+            if (absorb > 0.0F) {
+                float use = Math.min(absorb, missing);
+                target.setAbsorptionAmount(absorb - use);
+                missing -= use;
+            }
+            if (missing <= 1.0E-4F) {
+                break;
+            }
+            float want = Math.max(0.0F, target.getHealth() - missing);
+            if (attempt > 0) {
+                DebugLog.debug("[执行之手] 第 {} 次补写血量: {} -> {}", attempt + 1, target.getHealth(), want);
+            }
+            target.setHealth(want);
+            if (target.getHealth() > want + 1.0E-4F) {
+                writeHealthDirect(target, want);
+            }
+            if (target.getHealth() <= 0.0F) {
+                if (target.isAlive()) {
+                    target.die(src);
+                }
+                break;
+            }
+        }
+        return Math.max(0.0F, target.getHealth());
+    }
+
+    /**
      * 补发:置位 {@link #FORCED()} 后再打一次 —— 此时
      * {@code ExecutionBypassMixin} 让 Forge 的三道伤害钩子直接返回原值,任何模组都插不上手。
      */
+    /**
+     * 4.12.0:斩杀。思路取"樱花炸弹"的最简版 —— 只保留三步：
+     * <ol>
+     *   <li>清无敌帧，{@code setHealth(0)}；</li>
+     *   <li>还活着就用"跳过事件派发"的一脚补一次致死伤害（穿透减伤/限伤）；</li>
+     *   <li>仍然活着就 {@code die()} 兜底。</li>
+     * </ol>
+     * <p>不做批量擦除、不做引用切断 —— 目标死掉就够，掉落/经验照常走原版。</p>
+     */
+    private static volatile net.minecraft.network.syncher.EntityDataAccessor<Float> HEALTH_ACCESSOR;
+
+    /** 直写同步血量(绕过 setHealth 重写/血量托管)。 */
+    private static boolean writeHealthDirect(LivingEntity target, float value) {
+        try {
+            var accessor = healthAccessor();
+            if (accessor == null) {
+                return false;
+            }
+            target.getEntityData().set(accessor, value);
+            return Math.abs(target.getHealth() - value) < 1.0E-3F;
+        }
+        catch (RuntimeException | LinkageError e) {
+            return false;
+        }
+    }
+
+    @SuppressWarnings("unchecked")
+    private static net.minecraft.network.syncher.EntityDataAccessor<Float> healthAccessor() {
+        if (HEALTH_ACCESSOR == null) {
+            for (String name : new String[]{"f_20961_", "DATA_HEALTH_ID"}) {
+                try {
+                    var field = LivingEntity.class.getDeclaredField(name);
+                    field.setAccessible(true);
+                    HEALTH_ACCESSOR = (net.minecraft.network.syncher.EntityDataAccessor<Float>) field.get(null);
+                    break;
+                }
+                catch (Throwable ignored) {
+                }
+            }
+        }
+        return HEALTH_ACCESSOR;
+    }
+
+    private static boolean executeKill(LivingEntity target, DamageSource src) {
+        try {
+            target.invulnerableTime = 0;
+            target.setHealth(0.0F);
+            if (target.getHealth() > 0.0F) {
+                forceHurt(target, src, Math.max(target.getMaxHealth() * 4.0F, 1000.0F));
+            }
+            if (!target.isDeadOrDying() && target.isAlive()) {
+                target.die(src);
+            }
+            // 4.12.2: 死亡锁 —— 之后任何"取消死亡/复活/回血"都会被驳回
+            DeathLock.doom(target, src);
+            return target.isDeadOrDying() || !target.isAlive();
+        }
+        catch (RuntimeException | LinkageError e) {
+            DebugLog.warn("[执行之手] 斩杀失败: {}", e.toString());
+            return false;
+        }
+    }
+
     private static boolean forceHurt(LivingEntity target, DamageSource src, float amount) {
         FORCED.set(Boolean.TRUE);
         try {
@@ -167,3 +307,4 @@ public final class ExecutionDamage {
         }
     }
 }
+
