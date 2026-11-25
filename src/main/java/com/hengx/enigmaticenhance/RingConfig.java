@@ -102,6 +102,8 @@ public final class RingConfig {
 
     /** 3.8.2:执行之手总开关(未完成功能,默认关闭)。 */
     public static final ForgeConfigSpec.BooleanValue HAND_OF_EXECUTION_ENABLED;
+    /** 4.12.0:执行之手的隐藏斩杀(伤害 >= 目标当前血量时直接斩杀)。 */
+    public static final ForgeConfigSpec.BooleanValue HAND_OF_EXECUTION_EXECUTE;
 
     /** 4.5.0:磁吸戒指 / 超级磁吸戒指 的吸取范围增强。 */
     public static final ForgeConfigSpec.BooleanValue MAGNET_RANGE_ENABLED;
@@ -346,6 +348,9 @@ public final class RingConfig {
         HAND_OF_EXECUTION_ENABLED = builder
             .comment("执行之手总开关。false = 完全失效(既不改伤害类型、也不破防 Boss)。默认 false。")
             .define("enabled", false);
+        HAND_OF_EXECUTION_EXECUTE = builder
+            .comment("隐藏机制: 这一脚的伤害 >= 目标当前血量时, 直接斩杀(不进入普通伤害结算)。默认 true。")
+            .define("executeOnLethal", true);
         builder.pop();
         SPELLSTONE_BOOST_ENABLED = builder
             .comment("3.1.0:给神秘遗物/扩展的战利品表追加一个术石池,大幅提升术石被抽到的概率。默认开启。")
@@ -949,7 +954,16 @@ public final class RingConfig {
         }
     }
     /** 3.8.2:执行之手是否启用(默认 false)。 */
-    public static boolean handOfExecutionEnabled() {
+        /** 4.12.0:执行之手隐藏斩杀开关。 */
+    public static boolean handOfExecutionExecute() {
+        try {
+            return HAND_OF_EXECUTION_EXECUTE.get();
+        }
+        catch (RuntimeException | LinkageError e) {
+            return true;
+        }
+    }
+public static boolean handOfExecutionEnabled() {
         try {
             return HAND_OF_EXECUTION_ENABLED.get();
         }

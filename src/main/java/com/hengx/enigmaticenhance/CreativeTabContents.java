@@ -176,11 +176,8 @@ public final class CreativeTabContents {
         for (Item item : items()) {
             output.accept(new ItemStack(item), CreativeModeTab.TabVisibility.PARENT_AND_SEARCH_TABS);
         }
-        // 2.9.0:「执行之手」—— 附魔书形式,只能靠创造模式取用
-        // 4.5.0:未完成内容,禁止获得时不投递
-        if (!UnfinishedContent.allowAcquisition()) {
-            return;
-        }
+        // 2.9.0:「执行之手」—— 附魔书形式
+        // 4.14.0: 已从"未完成名单"移出, 常驻创造栏(正常获取走后期配方)
         try {
             HandOfExecutionEnchantment ench = ModEnchantments.handOfExecutionOrNull();
             if (ench != null) {

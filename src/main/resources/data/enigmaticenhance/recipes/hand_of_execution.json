@@ -1,0 +1,32 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "group": "enigmaticenhance_execution",
+  "pattern": [
+    "EAE",
+    "SBS",
+    "EVE"
+  ],
+  "key": {
+    "E": {
+      "item": "enigmaticlegacy:etherium_ingot"
+    },
+    "A": {
+      "item": "enigmaticlegacy:eye_of_nebula"
+    },
+    "S": {
+      "item": "enigmaticlegacy:astral_dust"
+    },
+    "B": {
+      "item": "minecraft:enchanted_book"
+    },
+    "V": {
+      "item": "enigmaticlegacy:void_pearl"
+    }
+  },
+  "result": {
+    "item": "minecraft:enchanted_book",
+    "count": 1,
+    "nbt": "{StoredEnchantments:[{id:\"enigmaticenhance:hand_of_execution\",lvl:1s}]}"
+  }
+}

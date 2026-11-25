@@ -128,8 +128,8 @@ public final class HandOfExecutionHandler {
         }
         try {
             DamageSource source = event.getSource();
-            if (ExecutionDamage.isExecution(source)) {
-                return;   // 我们自己刚发出去的那一脚
+            if (ExecutionDamage.applying()) {
+                return;   // 我们自己正在结算的那一脚(同源, 靠线程标记区分)
             }
             LivingEntity target = event.getEntity();
             if (target == null || event.getAmount() <= 0.0F) {
@@ -173,6 +173,10 @@ public final class HandOfExecutionHandler {
     @SubscribeEvent(priority = EventPriority.HIGHEST, receiveCanceled = true)
     public static void onHurtHighest(LivingHurtEvent event) {
         try {
+            // 4.14.1: 内部结算那一脚不能被"清零原伤害"逻辑误伤
+            if (ExecutionDamage.applying()) {
+                return;
+            }
             LivingEntity target = event.getEntity();
             DamageSource source = event.getSource();
             // 4.6.2 同款思路:先做一次"几乎必然命中空表"的 map.get,再谈读配置/查附魔 ——

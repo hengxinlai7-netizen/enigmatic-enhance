@@ -144,6 +144,8 @@ public class EnigmaticEnhance {
         safeRegister(HellBladeLootHandler.class);
         safeRegister(SpellstoneLootBoostHandler.class);   // 3.1.0:术石战利品加权   // 2.7.0:地狱刃片保底
         safeRegister(HandOfExecutionHandler.class);
+        safeRegister(DeathLock.class);
+        safeRegister(DamageLock.class);
         safeRegister(BeaconEnhanceHandler.class);
         safeRegister(BastionTreasureHandler.class);   // 3.0.0:扭曲之心堡垒遗迹抽取   // 2.11.15:信标增强   // 2.9.6:执行之手
         safeRegister(ItemUseGuard.class);   // 2.5.0:禁用物品统一拦截   // 2.3.0:大地之心记录战利品表

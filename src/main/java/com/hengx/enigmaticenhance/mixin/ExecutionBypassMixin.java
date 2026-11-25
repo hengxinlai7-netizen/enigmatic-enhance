@@ -33,7 +33,7 @@ public class ExecutionBypassMixin {
     @Inject(method = "onLivingAttack", at = @At("HEAD"), cancellable = true, remap = false, require = 0)
     private static void enigmaticenhance$skipAttack(LivingEntity entity, DamageSource src, float amount,
         CallbackInfoReturnable<Boolean> cir) {
-        if (ExecutionDamage.forced() && ExecutionDamage.isExecution(src)) {
+        if (ExecutionDamage.forced()) {
             cir.setReturnValue(Boolean.TRUE);
         }
     }
@@ -41,7 +41,7 @@ public class ExecutionBypassMixin {
     @Inject(method = "onLivingHurt", at = @At("HEAD"), cancellable = true, remap = false, require = 0)
     private static void enigmaticenhance$skipHurt(LivingEntity entity, DamageSource src, float amount,
         CallbackInfoReturnable<Float> cir) {
-        if (ExecutionDamage.forced() && ExecutionDamage.isExecution(src)) {
+        if (ExecutionDamage.forced()) {
             cir.setReturnValue(amount);
         }
     }
@@ -49,7 +49,7 @@ public class ExecutionBypassMixin {
     @Inject(method = "onLivingDamage", at = @At("HEAD"), cancellable = true, remap = false, require = 0)
     private static void enigmaticenhance$skipDamage(LivingEntity entity, DamageSource src, float amount,
         CallbackInfoReturnable<Float> cir) {
-        if (ExecutionDamage.forced() && ExecutionDamage.isExecution(src)) {
+        if (ExecutionDamage.forced()) {
             cir.setReturnValue(amount);
         }
     }
