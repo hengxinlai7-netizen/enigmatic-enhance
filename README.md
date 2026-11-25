@@ -369,3 +369,16 @@ Minecraft 是 Mojang Studios 的商标，本项目与 Mojang 无关，也未获�
 本模组在允许两戒同戴时，一并将 `SuperAddonHandler#isPunishedOne` 的判定抑制为 `false`，
 使上述副作用整条链路不再触发（惩罚执行本身本来就是被本模组拦截的）。
 可用配置 `compat.suppressAddonPunishedState = false` 关闭该行为，回到扩展原判定。
+
+### 水银之蛇：拦截「直调致死」（4.11.1）
+
+- **拦截直调致死**：有些模组（例如涟漪之篇的 `CovenantCombat`）会绕过伤害事件直接
+  `setHealth(<=0)` + `die()`。层数 > 0 时这两条路径都会被拦下并回满血，每次拦截消耗 1 层。
+  配置项 `ring.mercuryGuardDirectDeath`。
+
+**水银之蛇：拦下「直调致死」**
+* 新增 `MercuryDirectDeathGuardMixin` / `MercuryHealthWriteGuardMixin`：
+  层数 > 0 时取消 `ServerPlayer#die`、并把 `setHealth(<=0)` 改写回满血（`ALLOW_WRITE` 旁路防递归）。
+* 起因：涟漪之篇的 `CovenantCombat.around` 在 `LivingHurtEvent` 之外直接 `setHealth` + `die()`，
+  导致水银之蛇 / 防洪之闸 / 灵魂方舟等所有事件层保护同时失效（死亡→复活每秒循环）。
+* 每次拦截消耗 1 层；层数耗尽后照常放行。配置 `ring.mercuryGuardDirectDeath`（默认 true）。

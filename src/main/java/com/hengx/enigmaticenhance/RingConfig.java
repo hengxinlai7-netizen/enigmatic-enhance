@@ -202,6 +202,7 @@ public final class RingConfig {
     public static final ForgeConfigSpec.BooleanValue DATA_SELF_CHECK;
 
     public static final ForgeConfigSpec.BooleanValue COMPAT_SUPPRESS_ADDON_PUNISHED_STATE;
+    public static final ForgeConfigSpec.BooleanValue MERCURY_GUARD_DIRECT_DEATH;
 
     static {
         ForgeConfigSpec.Builder builder = new ForgeConfigSpec.Builder();
@@ -221,6 +222,7 @@ public final class RingConfig {
                 "实现:把 SuperAddonHandler#isPunishedOne 的返回值抑制为 false(仅在玩家允许同戴且两戒都在身上时)。")
             .define("suppressAddonPunishedState", true);
         builder.pop();
+
         builder.comment("救赎之戒:让它不会损坏、可与七咒之戒同戴。").push("ring");
         RING_OMNI_BONUS = builder.comment("全属性加成;0.2 = 所有属性 +20%(默认)。")
             .defineInRange("omniBonus", 0.2D, -10.0D, 10.0D);
@@ -235,6 +237,10 @@ public final class RingConfig {
         RING_ALLOW_WITH_CURSED_RING = builder
             .comment("允许和七咒之戒一起戴,并且不再受同戴的惩罚。默认开启。")
             .define("allowWithCursedRing", true);
+        MERCURY_GUARD_DIRECT_DEATH = builder
+            .comment("水银之蛇:拦下直调 setHealth(<=0) / die() 的致死路径(涟漪包 CovenantCombat 这类)。",
+                "只在层数 > 0 时生效,每次拦截消耗 1 层。默认开启。")
+            .define("mercuryGuardDirectDeath", true);
         RING_ALLOW_WITH_BROKEN_RING = builder.comment("允许和破损之戒一起戴。默认开启。")
             .define("allowWithBrokenRing", true);
         RING_KEEP_ON_RELOGIN = builder
@@ -641,6 +647,15 @@ public final class RingConfig {
         return RING_ALLOW_WITH_CURSED_RING.get();
     }
 
+    /** 水银之蛇:是否拦下直调 setHealth(<=0) / die() 的致死路径(配置未加载时按默认 true)。 */
+    public static boolean mercuryGuardDirectDeath() {
+        try {
+            return MERCURY_GUARD_DIRECT_DEATH.get();
+        }
+        catch (RuntimeException | LinkageError e) {
+            return true;
+        }
+    }
     /** 是否抑制扩展的「惩罚态」判定(配置未加载时按默认 true)。 */
     public static boolean compatSuppressAddonPunishedState() {
         try {
