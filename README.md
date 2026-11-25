@@ -129,6 +129,29 @@
 - `Ctrl + 左键` 切换「龙首是否授予创造飞行」
 - tooltip 实时显示当前状态（绿色 = 开 / 红色 = 关）
 
+**水银之蛇（回满血 + 次数盾）**
+
+- 生命降到 **50%** 时回满血并获得次数盾，每层盾抵挡一次任意伤害并给 10 tick 无敌
+- **次数与 buff 等级已解耦**：触发不再降低 buff 等级，次数记在 `mercury_triggers_left`
+  （键不存在时按「buff 等级」初始化），次数用尽只移除效果、**已获得的层数仍然可用**
+- **不依赖 buff 存在**：层数 > 0 就受保护；buff 被外部移除（例如石英花对同一效果的 `DENY`）时
+  会自动补回并同步客户端 HUD
+- 每次抵消都会打日志（「剩余 N 层」），不再只打第一次
+
+**执行之手**
+
+- 造成伤害时转为 `enigmaticenhance:execution` 真实伤害，绕过事件层的限伤、免伤与无敌帧；
+  被拦截时自动退回普通伤害
+- **不再针对任何特定生物**：强度完全来自 execution 的 bypass 标签 + 事件层「记账 → 还原被削减数值 →
+  驳回取消」的通用链路，对所有目标一致生效（各 Boss 的死亡动画免疫不再单独打补丁）
+
+**全属性（`enigmaticenhance:omni`）**
+
+- 数值即全局加成（`0.2` = 所有属性 +20%），作为 `MULTIPLY_TOTAL` 独立乘区挂到每个属性上
+- **兼容三种修饰符操作**：`ADDITION`（+0.2）、`MULTIPLY_BASE`（+12%）、`MULTIPLY_TOTAL`（+12%）
+  都会正确折算成本次加成（内部以 1.0 为基数展平），因此**魔法石英花提供的百分比全属性终于生效**
+- 神化 / L2 等第三方属性面板读到的也是折算后的值
+
 ---
 
 ## 配套机制
@@ -240,6 +263,27 @@ $env:JAVA_HOME = "C:\Program Files\Microsoft\jdk-21.0.8.9-hotspot"
 
 ## 更新记录
 
+### 4.11.0
+
+**水银之蛇：次数与 buff 等级解耦**
+
+* 触发时**不再降低 buff 等级**、不再 `forceRemove` 后按等级写回 —— 旧写法在等级降到 -1 时会把效果摘掉，
+  而石英花对同一效果设了 `MobEffectEvent.Applicable → DENY`，导致**buff 再也装不回来**、保护整条失效。
+* 次数改记在 `mercury_triggers_left`（首次按 `amplifier + 1` 初始化），用尽只移除效果、**层数保留可用**。
+* 保护判定改为 `charges > 0`（不再要求带 buff）；buff 丢失时每 tick 自动补回并同步 `ClientboundUpdateMobEffectPacket`。
+* 抵消日志从 `once` 改为每次都打。
+
+**执行之手：去掉 7 个逐 Boss 特判**
+
+* 删除 `GoetyNamelessOne / GoetyVizier / GoetyApostle / GoetyMushroomMonstrosity /
+  LegendaryPaladin / LegendaryObliterator / LegendaryCloudGolem` 七个 mixin 及其 mixin 配置条目。
+* 强度统一由 `execution` 的 bypass 标签 + `LivingHurt/LivingDamage` 的「HIGHEST 记账 → LOWEST 还原 → 驳回取消」通用链路承担。
+
+**全属性：兼容三种修饰符操作**
+
+* `omni` 基础值为 0，`MULTIPLY_BASE` 系数的结果恒为 0 —— 石英花给的「+12% 全属性」从来没生效。
+* 新增 `OmniAttribute.effectiveBonus(...)`：以 1.0 为基数展平 `ADDITION / MULTIPLY_BASE / MULTIPLY_TOTAL`，返回 `v - 1`。
+* `OmniAttributeApplier` 与 `AttributeInstance#getValue`（新增 `OmniAttributeValueMixin`）都改用它，面板同步可见。
 ### 4.9.0
 
 **书袋效果显示重构**
