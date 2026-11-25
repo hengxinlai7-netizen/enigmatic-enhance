@@ -193,6 +193,14 @@ public class EnigmaticEnhance {
                 // 4.8.4:【万钧之护卷轴改成直接增伤】的模拟验证(见 ThunderScrollSelfTest)
                 ThunderScrollSelfTest.register();
             }
+            else if (selftest.contains("omni")) {
+                // 4.11.0:【全属性】百分比展平的自检
+                com.hengx.enigmaticenhance.test.OmniSelfTest.register();
+            }
+            else if (selftest.contains("mercury")) {
+                // 4.11.0:水银之蛇「次数与等级解耦」的自检
+                com.hengx.enigmaticenhance.test.MercurySelfTest.register();
+            }
             else if (selftest.contains("addonhud")) {
                 // 4.10.0-beta5:扩展 HUD 回调 GL 状态补丁的自检
                 com.hengx.enigmaticenhance.test.CompatPatchSelfTest.register();

@@ -26,14 +26,7 @@
         "PearlApothEnchantMixin",
         "PearlReforgeMixin",
         "AugmentingSigilMixin",
-        "ReforgingMenuMixin",
-        "GoetyNamelessOneMixin",
-        "GoetyVizierMixin",
-        "GoetyApostleMixin",
-        "GoetyMushroomMonstrosityMixin",
-        "LegendaryPaladinMixin",
-        "LegendaryObliteratorMixin",
-        "LegendaryCloudGolemMixin"
+        "ReforgingMenuMixin"
     ],
     "injectors": {
         "defaultRequire": 0

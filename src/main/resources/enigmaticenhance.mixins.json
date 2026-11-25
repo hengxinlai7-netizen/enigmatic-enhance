@@ -30,6 +30,7 @@
         "MercurySerpentHealthRollbackMixin",
         "BloodbathHealthLockMixin",
         "ExecutionBypassMixin",
+        "OmniAttributeValueMixin",
         "BeaconApplyEffectsMixin",
         "MercurySerpentDieGuardMixin",
         "WitherSkullMixin",

@@ -55,7 +55,7 @@ public final class OmniAttributeApplier {
         if (omni == null) {
             return;
         }
-        double value = player.getAttributeValue(omni);
+        double value = OmniAttribute.effectiveBonus(player.getAttribute(omni));
 
         for (Attribute attribute : ForgeRegistries.ATTRIBUTES) {
             if (attribute == omni || !player.getAttributes().hasAttribute(attribute)) {

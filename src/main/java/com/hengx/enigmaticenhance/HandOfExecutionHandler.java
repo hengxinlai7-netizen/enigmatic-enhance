@@ -80,6 +80,15 @@ public final class HandOfExecutionHandler {
      *
      * @return 带附魔的攻击者;没有则 {@code null}
      */
+    /** 该物品上「执行之手」的等级(取不到按 0)。 */
+    private static int levelOf(ItemStack stack, HandOfExecutionEnchantment enchant) {
+        try {
+            return EnchantmentHelper.getItemEnchantmentLevel(enchant, stack);
+        }
+        catch (RuntimeException | LinkageError e) {
+            return 0;
+        }
+    }
     private static LivingEntity attackerWithExecution(DamageSource source) {
         if (!RingConfig.handOfExecutionEnabled() || source == null) {
             return null;
@@ -101,41 +110,6 @@ public final class HandOfExecutionHandler {
         catch (RuntimeException | LinkageError ignored) {
             return null;
         }
-    }
-
-    /** 2.10.6:这次伤害的攻击者是否带着「执行之手」(给针对性 Boss Mixin 用)。 */
-    public static boolean shouldBypass(DamageSource source) {
-        // 3.8.2:总开关关闭 ⇒ 所有 Boss 破防 Mixin 直接放行,绝不干预击杀流程
-        if (!RingConfig.handOfExecutionEnabled()) {
-            return false;
-        }
-        try {
-            LivingEntity attacker = attackerWithExecution(source);
-            if (attacker == null) {
-                return false;
-            }
-            // 4.6.2:先问 oncePending() 再拼 key(每击一次白花)
-            if (DebugLog.oncePending()) {
-                HandOfExecutionEnchantment enchant = ModEnchantments.handOfExecutionOrNull();
-                int mainLevel = enchant == null ? 0 : levelOf(attacker.getMainHandItem(), enchant);
-                int offLevel = enchant == null ? 0 : levelOf(attacker.getOffhandItem(), enchant);
-                DebugLog.once("exec:bypass:" + attacker.getUUID(),
-                    "[Execution] 破防已启用:主手等级={} 副手等级={}", mainLevel, offLevel);
-            }
-            return true;
-        }
-        catch (RuntimeException | LinkageError ignored) {
-            return false;
-        }
-    }
-
-    /** 附魔等级(附魔书 / 被别的模组塞进 StoredEnchantments 的物品也认)。 */
-    private static int levelOf(ItemStack stack, HandOfExecutionEnchantment enchant) {
-        if (stack == null || stack.isEmpty()) {
-            return 0;
-        }
-        Integer level = EnchantmentHelper.getEnchantments(stack).get(enchant);
-        return level == null ? 0 : level;
     }
 
     // ------------------------------------------------------------------ 第 2 层:接管
