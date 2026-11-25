@@ -389,4 +389,54 @@ public final class MercurySerpentHandler {
             // 忽略
         }
     }
+    /**
+     * 4.11.1:拦截"直调致死"路径(涟漪包 CovenantCombat 这类直接 {@code setHealth(-N)} 再 {@code die()} 的模组)。
+     *
+     * <p>事件层({@code LivingHurtEvent})拦不到这种调用,所以这里在 {@code die()} / {@code setHealth(<=0)}
+     * 的入口直接拦:只要还有层数,就消耗 1 层并拉回满血,返回 {@code true} 表示调用方应取消原操作。</p>
+     *
+     * @return 是否已拦截
+     */
+    public static boolean guardDirectDeath(LivingEntity entity) {
+        try {
+            if (entity == null || entity.level().isClientSide) {
+                return false;
+            }
+            if (!RingConfig.mercuryGuardDirectDeath() || !RingConfig.mercurySerpentEnabled()) {
+                return false;
+            }
+            if (charges(entity) <= 0) {
+                return false;
+            }
+            consumeShieldOnBlock(entity);
+            setHealthBypass(entity, entity.getMaxHealth());
+            DebugLog.info("[Mercury] {} 拦截直调死亡(剩余 {} 层)", entity.getName().getString(), charges(entity));
+            return true;
+        }
+        catch (RuntimeException | LinkageError e) {
+            return false;
+        }
+    }
+
+    /** {@code setHealth} 守卫的判定:新血量 <= 0 且还有层数才拦。 */
+    public static boolean shouldGuardSetHealth(float newHealth, int charges) {
+        return newHealth <= 0.0F && charges > 0;
+    }
+
+    /** 内部写血旁路:避免自己的 {@code setHealth} mixin 把自己再拦一次。 */
+    public static void setHealthBypass(LivingEntity entity, float health) {
+        Boolean previous = ALLOW_WRITE.get();
+        ALLOW_WRITE.set(Boolean.TRUE);
+        try {
+            entity.setHealth(health);
+        }
+        finally {
+            ALLOW_WRITE.set(previous);
+        }
+    }
+
+    /** 当前是否处于"内部写血"旁路(供 mixin 判定,避免递归)。 */
+    public static boolean bypassingWrite() {
+        return Boolean.TRUE.equals(ALLOW_WRITE.get());
+    }
 }
