@@ -17,6 +17,12 @@ public class HandOfExecutionEnchantment extends Enchantment {
         super(Rarity.VERY_RARE, EnchantmentCategory.BREAKABLE, EquipmentSlot.values());
     }
 
+    /** 4.17.0: 附魔名显示为金色。 */
+    @Override
+    public net.minecraft.network.chat.Component getFullname(int level) {
+        return super.getFullname(level).copy().withStyle(net.minecraft.ChatFormatting.GOLD);
+    }
+
     @Override
     public int getMaxLevel() {
         return 1;

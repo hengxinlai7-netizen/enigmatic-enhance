@@ -93,9 +93,40 @@ public final class BloodbathHandler {
 
     // ------------------------------------------------------------------ 生效条件 / 锁定值
 
-    /** 锁定到多少点生命值(配置下限 0.5,这里再兜一次)。 */
-    public static float lockValue() {
+    /** 锁血方式:固定值。 */
+    public static float fixedLockValue() {
         return Math.max(MIN_LOCK_VALUE, (float) RingConfig.bloodbathLockValue());
+    }
+
+    /**
+     * 锁定到多少点生命值。
+     *
+     * <p>4.15.0: 支持两种模式</p>
+     * <ul>
+     *   <li>{@code FIXED}(默认): 固定值, 取 {@code bloodbathLockValue}(默认 1.0)</li>
+     *   <li>{@code PERCENT}: {@code 最大生命 × bloodbathLockPercent / 100}</li>
+     * </ul>
+     */
+    public static float lockValue(net.minecraft.world.entity.player.Player player) {
+        return lockValueForTest(player,
+                RingConfig.bloodbathLockMode() == RingConfig.BloodbathLockMode.PERCENT,
+                RingConfig.bloodbathLockValue(),
+                RingConfig.bloodbathLockPercent());
+    }
+
+    /** 纯计算入口（自检用，不读配置，保证可重复）。 */
+    public static float lockValueForTest(net.minecraft.world.entity.player.Player player,
+                                         boolean percentMode, double fixed, double percent) {
+        if (player != null && percentMode) {
+            float max = player.getMaxHealth();
+            return Math.max(MIN_LOCK_VALUE, max * (float) percent / 100.0F);
+        }
+        return Math.max(MIN_LOCK_VALUE, (float) fixed);
+    }
+
+    /** 无玩家上下文时的兜底(UI / 日志)。 */
+    public static float lockValue() {
+        return fixedLockValue();
     }
 
     /** 完整生效条件:总开关 + 佩戴该勋章 + 该件的锁血没被关掉。 */
@@ -117,7 +148,7 @@ public final class BloodbathHandler {
     public static float fakeHealth(ServerPlayer player) {
         net.minecraft.nbt.CompoundTag tag = player.getPersistentData();
         if (!tag.contains(TAG_FAKE)) {
-            tag.putFloat(TAG_FAKE, lockValue());
+            tag.putFloat(TAG_FAKE, lockValue(player));
         }
         return tag.getFloat(TAG_FAKE);
     }
@@ -128,7 +159,7 @@ public final class BloodbathHandler {
 
     /** 把假血条重置为锁值(重新佩戴/开关切换时用)。 */
     public static void resetFakeHealth(ServerPlayer player) {
-        player.getPersistentData().putFloat(TAG_FAKE, lockValue());
+        player.getPersistentData().putFloat(TAG_FAKE, lockValue(player));
     }
 
     @SubscribeEvent

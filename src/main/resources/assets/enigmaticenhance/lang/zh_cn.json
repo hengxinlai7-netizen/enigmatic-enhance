@@ -295,5 +295,15 @@
   "baghud.book.goeticlegacy.the_unholy_writ.line2": " · 秽经:狱炎额外造成目标最大生命 %s%% 的伤害",
   "baghud.book.goeticlegacy.spider_specimen_book.line1": " · 蜘蛛标本册:荒野法术伤害 +%s%%",
   "baghud.book.goeticlegacy.spider_specimen_book.line2": " · 蜘蛛标本册:荒野仆从伤害 +%s%%、减伤 %s%%",
-  "baghud.book.goeticlegacy.spider_specimen_book.line3": " · 蜘蛛标本册:蜘蛛最大生命不超过你的 %s 倍时保持中立"
+  "baghud.book.goeticlegacy.spider_specimen_book.line3": " · 蜘蛛标本册:蜘蛛最大生命不超过你的 %s 倍时保持中立",
+  "jei.enigmaticenhance.enigmatic_pearl.line1": "获取：地牢战利品箱里若开出「大地之心碎片」，有 1/100000 概率被替换成神秘珍珠。",
+  "jei.enigmaticenhance.enigmatic_pearl.line2": "使用：在铁砧把它改名为 [#EnigamticEssence]（原模组拼写如此），佩戴后持续获得「纯净抗性」III。",
+  "jei.enigmaticenhance.enigmatic_pearl.line3": "（本页显示开关：showAcquisitionPaths，默认关闭）",
+  "jei.enigmaticenhance.annihilating_sword.line1": "获取：把「未知之剑」和所需材料丢在地上，用「万钧之护」的雷击劈中即可转化。",
+  "jei.enigmaticenhance.annihilating_sword.line2": "材料由 DecisionofAnnihilationCraftingIngredients 配置，本包当前为：宇宙之心 + 邪祟锭 + 扭曲之心。",
+  "jei.enigmaticenhance.annihilating_sword.line3": "（本页显示开关：showAcquisitionPaths，默认关闭）",
+  "book.enigmaticenhance.entry.acquisition_pearl.name": "神秘珍珠 · 获取途径",
+  "book.enigmaticenhance.entry.acquisition_pearl.page.1": "获取途径：地牢战利品箱中，如果掉落表里出现「大地之心碎片」，有 $(l)1/100000$() 的概率被替换为神秘珍珠。$(br2)使用途径：在铁砧把神秘珍珠改名为 $(l)[#EnigamticEssence]$()（注意原模组就是这个拼写），佩戴后会持续获得「纯净抗性」III。",
+  "book.enigmaticenhance.entry.acquisition_sword.name": "寂灭之决 · 获取途径",
+  "book.enigmaticenhance.entry.acquisition_sword.page.1": "获取途径：把「未知之剑」与所需材料一起丢在地上，再用「万钧之护」的雷击劈中，就会转化（不是工作台合成）。$(br2)所需材料由 enigmaticaddons-common.omniconf 的 DecisionofAnnihilationCraftingIngredients 决定；本整合包当前为：宇宙之心 + 邪祟锭 + 扭曲之心。"
 }

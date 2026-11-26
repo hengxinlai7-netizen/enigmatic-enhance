@@ -287,5 +287,15 @@
   "baghud.book.goeticlegacy.the_unholy_writ.line2": " - Unholy Writ: hellfire also deals %s%% of the target's max health",
   "baghud.book.goeticlegacy.spider_specimen_book.line1": " - Spider Specimen Book: Wild spell damage +%s%%",
   "baghud.book.goeticlegacy.spider_specimen_book.line2": " - Spider Specimen Book: Wild servant damage +%s%%, damage taken -%s%%",
-  "baghud.book.goeticlegacy.spider_specimen_book.line3": " - Spider Specimen Book: spiders with max health <= %sx yours stay neutral"
+  "baghud.book.goeticlegacy.spider_specimen_book.line3": " - Spider Specimen Book: spiders with max health <= %sx yours stay neutral",
+  "jei.enigmaticenhance.enigmatic_pearl.line1": "Acquisition: dungeon loot has a 1/100000 chance to replace an Earth Heart Fragment with the Enigmatic Pearl.",
+  "jei.enigmaticenhance.enigmatic_pearl.line2": "Usage: rename it to [#EnigamticEssence] at an anvil; while worn it grants Pure Resistance III.",
+  "jei.enigmaticenhance.enigmatic_pearl.line3": "(Page toggle: showAcquisitionPaths, default off)",
+  "jei.enigmaticenhance.annihilating_sword.line1": "Acquisition: drop the Unknown Sword with the required items and strike the pile with the Thunder Scroll's lightning.",
+  "jei.enigmaticenhance.annihilating_sword.line2": "Ingredients come from DecisionofAnnihilationCraftingIngredients: Cosmic Heart + Evil Ingot + Twisted Heart in this pack.",
+  "jei.enigmaticenhance.annihilating_sword.line3": "(Page toggle: showAcquisitionPaths, default off)",
+  "book.enigmaticenhance.entry.acquisition_pearl.name": "Enigmatic Pearl - Acquisition",
+  "book.enigmaticenhance.entry.acquisition_pearl.page.1": "Acquisition: dungeon chest loot has a 1/100000 chance to replace an Earth Heart Fragment with the Enigmatic Pearl.$(br2)Usage: rename it to [#EnigamticEssence] at an anvil (the addon spells it that way); while worn it grants Pure Resistance III.",
+  "book.enigmaticenhance.entry.acquisition_sword.name": "Decision of Annihilation - Acquisition",
+  "book.enigmaticenhance.entry.acquisition_sword.page.1": "Acquisition: drop the Unknown Sword with the required items, then strike the pile with the Thunder Scroll's lightning. This is a conversion, not a crafting recipe.$(br2)Ingredients come from DecisionofAnnihilationCraftingIngredients; in this pack: Cosmic Heart + Evil Ingot + Twisted Heart."
 }

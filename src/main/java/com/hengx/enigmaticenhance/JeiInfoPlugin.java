@@ -40,6 +40,11 @@ public class JeiInfoPlugin implements IModPlugin {
         register(registration, ModItems.mirrorShadowOrNull(), "mirror_shadow", 3);
         // 2.4.1:瓶装意识之海(2.1.4 加的物品一直没接 JEI)
         register(registration, ModItems.seaOfConsciousnessOrNull(), "sea_of_consciousness", 5);
+        // 4.16.0: 神秘遗物扩展的「神秘珍珠 / 寂灭之决」获取途径(默认关闭)
+        if (RingConfig.showAcquisitionPaths()) {
+            registerAddon(registration, "enigmaticaddons:enigmatic_pearl", "enigmatic_pearl", 3);
+            registerAddon(registration, "enigmaticaddons:annihilating_sword", "annihilating_sword", 3);
+        }
     }
 
     /** 一件物品的信息页:按 {@code line1..lineN} 逐行取语言键。 */
@@ -52,5 +57,19 @@ public class JeiInfoPlugin implements IModPlugin {
             text[i] = Component.translatable("jei.enigmaticenhance." + id + ".line" + (i + 1));
         }
         registration.addIngredientInfo(new ItemStack(item), mezz.jei.api.constants.VanillaTypes.ITEM_STACK, text);
+    }
+
+    /** 按注册名找物品(不依赖 enigmaticaddons 的编译期类)。 */
+    private void registerAddon(IRecipeRegistration registration, String itemId, String langId, int lines) {
+        try {
+            var rl = new ResourceLocation(itemId);
+            Item item = net.minecraft.core.registries.BuiltInRegistries.ITEM.get(rl);
+            if (item == null || item == net.minecraft.world.item.Items.AIR) {
+                return;
+            }
+            register(registration, item, langId, lines);
+        }
+        catch (RuntimeException | LinkageError ignored) {
+        }
     }
 }

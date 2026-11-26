@@ -80,7 +80,23 @@ public final class RingConfig {
     public static final ForgeConfigSpec.BooleanValue BAG_TOOLTIP_ENABLED;
     public static final ForgeConfigSpec.BooleanValue BLOODBATH_LOCK_ENABLED;
     public static final ForgeConfigSpec.BooleanValue BLOODBATH_ALLOW_TOGGLE;
+
+    /** 4.16.0: 是否在 JEI 信息页显示"神秘珍珠 / 寂灭之决"的获取途径。默认关闭。 */
+    public static final ForgeConfigSpec.BooleanValue SHOW_ACQUISITION_PATHS;
     public static final ForgeConfigSpec.DoubleValue BLOODBATH_LOCK_VALUE;
+
+    /** 锁血方式。 */
+    public enum BloodbathLockMode {
+        /** 固定值(默认)。 */
+        FIXED,
+        /** 按最大生命百分比。 */
+        PERCENT
+    }
+
+    /** 锁血方式: 固定值 / 百分比。 */
+    public static final ForgeConfigSpec.EnumValue<BloodbathLockMode> BLOODBATH_LOCK_MODE;
+    /** 百分比模式下锁到最大生命的百分之多少。 */
+    public static final ForgeConfigSpec.DoubleValue BLOODBATH_LOCK_PERCENT;
 
     /** 1.8.0:战斗无敌帧(所有实体,可配置)。 */
     public static final ForgeConfigSpec.BooleanValue COMBAT_INVULN_ENABLED;
@@ -295,6 +311,18 @@ public final class RingConfig {
         BLOODBATH_LOCK_VALUE = builder
             .comment("锁定到多少点生命值。默认 1,最低 0.5。")
             .defineInRange("bloodbathLockValue", 1.0D, 0.5D, 1024.0D);
+        BLOODBATH_LOCK_MODE = builder
+            .comment("锁血方式: FIXED = 固定值(默认), PERCENT = 按最大生命百分比。")
+            .defineEnum("bloodbathLockMode", BloodbathLockMode.FIXED);
+
+        BLOODBATH_LOCK_PERCENT = builder
+            .comment("百分比模式: 锁定为最大生命的百分之多少。默认 1.0 (即 1%)。")
+            .defineInRange("bloodbathLockPercent", 1.0D, 0.1D, 100.0D);
+
+        SHOW_ACQUISITION_PATHS = builder
+            .comment("在 JEI 信息页显示「神秘珍珠」「寂灭之决」的获取途径。默认关闭。")
+            .define("showAcquisitionPaths", false);
+
         builder.pop();
 
         builder.comment("战斗无敌帧:受伤后一段时间免疫任何形式的伤害,末尾可放开若干 tick 作为输出窗口。").push("combatInvuln");
@@ -867,6 +895,15 @@ public final class RingConfig {
     }
 
     /** 血战沙场之证:锁血总开关。 */
+    public static boolean showAcquisitionPaths() {
+        try {
+            return SHOW_ACQUISITION_PATHS.get();
+        }
+        catch (RuntimeException | LinkageError e) {
+            return false;
+        }
+    }
+
     public static boolean bloodbathLockEnabled() {
         return BLOODBATH_LOCK_ENABLED.get();
     }
@@ -877,6 +914,24 @@ public final class RingConfig {
     }
 
     /** 血战沙场之证:锁定到多少点生命值。 */
+    public static BloodbathLockMode bloodbathLockMode() {
+        try {
+            return BLOODBATH_LOCK_MODE.get();
+        }
+        catch (RuntimeException | LinkageError e) {
+            return BloodbathLockMode.FIXED;
+        }
+    }
+
+    public static double bloodbathLockPercent() {
+        try {
+            return BLOODBATH_LOCK_PERCENT.get();
+        }
+        catch (RuntimeException | LinkageError e) {
+            return 1.0D;
+        }
+    }
+
     public static double bloodbathLockValue() {
         return BLOODBATH_LOCK_VALUE.get();
     }
