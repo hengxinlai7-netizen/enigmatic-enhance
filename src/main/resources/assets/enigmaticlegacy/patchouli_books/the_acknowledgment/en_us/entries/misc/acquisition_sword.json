@@ -1,0 +1,15 @@
+{
+  "name": "book.enigmaticenhance.entry.acquisition_sword.name",
+  "icon": "enigmaticaddons:annihilating_sword",
+  "category": "enigmaticlegacy:misc",
+  "secret": false,
+  "priority": false,
+  "read_by_default": true,
+  "sortnum": 301,
+  "pages": [
+    {
+      "type": "text",
+      "text": "book.enigmaticenhance.entry.acquisition_sword.page.1"
+    }
+  ]
+}

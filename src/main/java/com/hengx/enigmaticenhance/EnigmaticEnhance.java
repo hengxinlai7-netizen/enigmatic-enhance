@@ -187,6 +187,10 @@ public class EnigmaticEnhance {
                 // 4.8.2:【地狱刃片唯一性】+【万钧之护雷击开关】的模拟验证(见 HellBladeThunderSelfTest)
                 HellBladeThunderSelfTest.register();
             }
+            else if (selftest.contains("newcontent")) {
+                // 4.17.0:【锁血双模式 + 执行之手抗封印】的模拟验证
+                com.hengx.enigmaticenhance.test.BloodbathUnsealSelfTest.register();
+            }
             else if (selftest.contains("execution")) {
                 // 4.8.3:【执行之手全额伤害】+【渔获瓶掉落物】的模拟验证(见 ExecutionSelfTest)
                 ExecutionSelfTest.register();

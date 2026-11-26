@@ -81,13 +81,56 @@ public final class HandOfExecutionHandler {
      * @return 带附魔的攻击者;没有则 {@code null}
      */
     /** 该物品上「执行之手」的等级(取不到按 0)。 */
+    /**
+     * 4.15.0: 直接读 NBT 判定附魔等级 —— 不经过 EnchantmentHelper。
+     *
+     * 封装 / 封印 / 附魔禁用类模组通常只让 EnchantmentHelper 返回 0(或改写查询)，
+     * 物品上的 Enchantments 标签其实还在。这里优先读标签，读不到再退回 helper，
+     * 保证"被封印的执行之手仍然有效"。
+     */
     private static int levelOf(ItemStack stack, HandOfExecutionEnchantment enchant) {
+        int fromNbt = levelFromNbt(stack);
+        if (fromNbt > 0) {
+            return fromNbt;
+        }
         try {
             return EnchantmentHelper.getItemEnchantmentLevel(enchant, stack);
         }
         catch (RuntimeException | LinkageError e) {
             return 0;
         }
+    }
+
+    /** 从物品 NBT 的 Enchantments / StoredEnchantments 里直接找执行之手。 */
+    private static int levelFromNbt(ItemStack stack) {
+        if (stack == null || stack.isEmpty()) {
+            return 0;
+        }
+        try {
+            net.minecraft.nbt.CompoundTag tag = stack.getTag();
+            if (tag == null) {
+                return 0;
+            }
+            int level = scanEnchantList(tag.getList("Enchantments", 10));
+            if (level > 0) {
+                return level;
+            }
+            return scanEnchantList(tag.getList("StoredEnchantments", 10));
+        }
+        catch (RuntimeException | LinkageError e) {
+            return 0;
+        }
+    }
+
+    private static int scanEnchantList(net.minecraft.nbt.ListTag list) {
+        for (int i = 0; i < list.size(); i++) {
+            net.minecraft.nbt.CompoundTag entry = list.getCompound(i);
+            String id = entry.getString("id");
+            if (id != null && (id.equals(ENCHANT_ID) || id.endsWith(":hand_of_execution"))) {
+                return Math.max(1, entry.getInt("lvl"));
+            }
+        }
+        return 0;
     }
     private static LivingEntity attackerWithExecution(DamageSource source) {
         if (!RingConfig.handOfExecutionEnabled() || source == null) {
