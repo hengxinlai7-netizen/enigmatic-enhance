@@ -63,9 +63,6 @@ public final class HandOfExecutionHandler {
     private static final Component BYPASS_LINE =
         Component.translatable("tooltip.enigmaticenhance.hand_of_execution.bypass")
             .withStyle(ChatFormatting.GRAY);
-    private static final Component TOTEM_LINE =
-        Component.translatable("tooltip.enigmaticenhance.hand_of_execution.totem")
-            .withStyle(ChatFormatting.GRAY);
 
     /** 附魔 id 的 NBT 文本形式(快速判定用,避免每帧反序列化附魔表)。 */
     private static final String ENCHANT_ID = EnigmaticEnhance.MODID + ":hand_of_execution";
@@ -387,7 +384,6 @@ public final class HandOfExecutionHandler {
                 }
             }
             lines.add(BYPASS_LINE);
-            lines.add(TOTEM_LINE);
         }
         catch (RuntimeException | LinkageError ignored) {
             // tooltip 失败不影响物品

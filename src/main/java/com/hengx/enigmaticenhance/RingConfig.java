@@ -121,6 +121,7 @@ public final class RingConfig {
     /** 4.12.0:执行之手的隐藏斩杀(伤害 >= 目标当前血量时直接斩杀)。 */
     public static final ForgeConfigSpec.BooleanValue HAND_OF_EXECUTION_EXECUTE;
 
+
     /** 4.5.0:磁吸戒指 / 超级磁吸戒指 的吸取范围增强。 */
     public static final ForgeConfigSpec.BooleanValue MAGNET_RANGE_ENABLED;
     public static final ForgeConfigSpec.IntValue MAGNET_RANGE;

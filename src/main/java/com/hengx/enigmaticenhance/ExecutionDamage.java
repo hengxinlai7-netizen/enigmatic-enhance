@@ -163,7 +163,7 @@ public final class ExecutionDamage {
             DebugLog.warn("[执行之手] 结算异常,改为纯写血兜底: {}", e.toString());
             try {
                 float want = Math.max(0.0F, healthBefore - amount);
-                target.setHealth(want);
+                DamageLock.write(target, want);
                 if (target.getHealth() > want + 1.0E-4F) {
                     writeHealthDirect(target, want);
                 }
@@ -211,7 +211,7 @@ public final class ExecutionDamage {
             if (attempt > 0) {
                 DebugLog.debug("[执行之手] 第 {} 次补写血量: {} -> {}", attempt + 1, target.getHealth(), want);
             }
-            target.setHealth(want);
+            DamageLock.write(target, want);
             if (target.getHealth() > want + 1.0E-4F) {
                 writeHealthDirect(target, want);
             }
@@ -281,6 +281,10 @@ public final class ExecutionDamage {
             }
             if (!target.isDeadOrDying() && target.isAlive()) {
                 target.die(src);
+            }
+            // 4.17.1: 死亡被外部拦下时补一次掉落, 避免"死了但没掉东西"
+            if (!target.isDeadOrDying() && target.isAlive()) {
+                DeathDrops.force(target, src);
             }
             // 4.12.2: 死亡锁 —— 之后任何"取消死亡/复活/回血"都会被驳回
             DeathLock.doom(target, src);

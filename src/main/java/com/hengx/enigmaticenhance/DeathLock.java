@@ -71,12 +71,16 @@ public final class DeathLock {
         }
         try {
             target.invulnerableTime = 0;
-            target.setHealth(0.0F);
+            DamageLock.write(target, 0.0F);
             if (target.isDeadOrDying() || !target.isAlive()) {
                 return;
             }
             if (source != null) {
                 target.die(source);
+            }
+            // 4.17.1: 还被拦着就补一次掉落
+            if (!target.isDeadOrDying() && target.isAlive() && source != null) {
+                DeathDrops.force(target, source);
             }
         }
         catch (RuntimeException | LinkageError e) {
