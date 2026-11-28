@@ -36,6 +36,7 @@ import top.theillusivec4.curios.api.SlotResult;
  * (见 {@link TravelerHatData});取下后**停止记录**但数据保留(死亡重生由 {@code PlayerEvent.Clone} 复制)。
  * 所有日志走 {@link DebugLog}(默认 debugLog=false ⇒ 零输出)。
  */
+@SuppressWarnings({"removal", "deprecation"})
 public final class TravelerHatHandler {
 
     public static final String LOG_TAG = "[TravelerHat]";

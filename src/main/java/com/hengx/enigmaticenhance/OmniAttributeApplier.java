@@ -50,6 +50,11 @@ public final class OmniAttributeApplier {
         apply(event.player);
     }
 
+    /** 这条修饰符是不是我们自己挂的。 */
+    public static boolean isOwnModifier(AttributeModifier modifier) {
+        return modifier != null && UUID_OMNI.equals(modifier.getId());
+    }
+
     private static void apply(Player player) {
         Attribute omni = OmniAttribute.getOrNull();
         if (omni == null) {

@@ -38,6 +38,22 @@ public class EnigmaticEnhance {
     public static IEventBus MOD_BUS;
 
     public EnigmaticEnhance() {
+        // 正式版: 本模组日志全关(log4j 层 OFF)
+        try {
+            org.apache.logging.log4j.core.LoggerContext quietCtx =
+                    (org.apache.logging.log4j.core.LoggerContext) org.apache.logging.log4j.LogManager.getContext(false);
+            // 日志级别: -Dhengx.loglevel=OFF|FATAL|ERROR|WARN|INFO|DEBUG (默认 FATAL)
+
+            quietCtx.getConfiguration().getLoggerConfig("enigmaticenhance").setLevel(
+
+                    org.apache.logging.log4j.Level.toLevel(System.getProperty("hengx.loglevel", "FATAL"),
+
+                            org.apache.logging.log4j.Level.FATAL));
+            quietCtx.updateLoggers();
+        }
+        catch (Throwable ignored) {
+        }
+
         IEventBus modBus = FMLJavaModLoadingContext.get().getModEventBus();
         MOD_BUS = modBus;
 

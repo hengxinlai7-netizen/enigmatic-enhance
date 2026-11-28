@@ -64,6 +64,8 @@ public final class RingConfig {
     public static final ForgeConfigSpec SPEC;
 
     public static final ForgeConfigSpec.BooleanValue OMNI_ENABLED;
+    /** 4.18.2: 阻止别家「全属性」修饰符挂到属性上,避免互叠。 */
+    public static final ForgeConfigSpec.BooleanValue OMNI_BLOCK_FOREIGN;
     public static final ForgeConfigSpec.BooleanValue OMNI_ATTACH_TO_PLAYERS;
     public static final ForgeConfigSpec.DoubleValue RING_OMNI_BONUS;
     public static final ForgeConfigSpec.BooleanValue RING_UNBREAKABLE;
@@ -229,6 +231,10 @@ public final class RingConfig {
 
         builder.comment("【全属性】:给所有属性加成的独立加成项。").push("omni");
         OMNI_ENABLED = builder.comment("是否启用这个加成项。默认开启。").define("enabled", true);
+    OMNI_BLOCK_FOREIGN = builder
+        .comment("阻止其它模组的『全属性』修饰符(名字含 all attribute / omni attribute)挂到属性上,",
+                "让全属性只由本模组提供,避免两套乘区互叠。默认 true。")
+        .define("omniBlockForeign", true);
         OMNI_ATTACH_TO_PLAYERS = builder.comment("是否让它对玩家生效。默认开启。")
             .define("attachToPlayers", true);
         builder.pop();
@@ -652,6 +658,15 @@ public final class RingConfig {
     }
 
     private RingConfig() {}
+
+    public static boolean omniBlockForeign() {
+        try {
+            return OMNI_BLOCK_FOREIGN.get();
+        }
+        catch (RuntimeException | LinkageError e) {
+            return true;
+        }
+    }
 
     public static boolean omniEnabled() {
         return OMNI_ENABLED.get();
